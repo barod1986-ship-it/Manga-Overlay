@@ -52,7 +52,7 @@ jobs:
           unzip -l build/manga-overlay-core-t03.zip | grep -F 'manga-overlay-core/vendor/autoload.php'
 
       - name: Upload installable plugin
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: manga-overlay-core-t03
           path: build/manga-overlay-core-t03.zip

@@ -63,6 +63,19 @@ foreach ($tables->all() as $suffix => $table) {
     ));
     molIntegrationAssert(is_string($engine) && 0 === strcasecmp('InnoDB', $engine), sprintf('%s is not InnoDB.', $table));
 
+    $foreignKeyCount = (int) $wpdb->get_var($wpdb->prepare(
+        'SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = %s',
+        $table
+    ));
+    molIntegrationAssert(0 === $foreignKeyCount, sprintf('%s unexpectedly contains a foreign key.', $table));
+
+    $columnRows = $wpdb->get_results("SHOW COLUMNS FROM `{$table}`", ARRAY_A);
+    molIntegrationAssert(is_array($columnRows), sprintf('Could not inspect columns for %s.', $table));
+    molIntegrationAssert(
+        Schema::requiredColumns()[$suffix] === array_column($columnRows, 'Field'),
+        sprintf('%s columns do not match the canonical schema.', $table)
+    );
+
     $actualIndexes = molIntegrationIndexNames($wpdb, $table);
     foreach (Schema::requiredIndexes()[$suffix] as $requiredIndex) {
         molIntegrationAssert(in_array($requiredIndex, $actualIndexes, true), sprintf(
@@ -70,6 +83,19 @@ foreach ($tables->all() as $suffix => $table) {
             $table,
             $requiredIndex
         ));
+    }
+
+    $indexRows = $wpdb->get_results("SHOW INDEX FROM `{$table}`", ARRAY_A);
+    molIntegrationAssert(is_array($indexRows), sprintf('Could not inspect index uniqueness for %s.', $table));
+    foreach ($indexRows as $indexRow) {
+        $indexName = (string) $indexRow['Key_name'];
+        if ('PRIMARY' === $indexName || str_starts_with($indexName, 'uq_')) {
+            molIntegrationAssert(0 === (int) $indexRow['Non_unique'], sprintf(
+                '%s index %s must be unique.',
+                $table,
+                $indexName
+            ));
+        }
     }
 }
 

@@ -53,6 +53,8 @@ molDatabaseAssert('wp_7_mol_elements' === $tables->elements, 'Multisite table pr
 
 $statements = Schema::statements('wp_', 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
 molDatabaseAssert(9 === count($statements), 'Schema did not return nine CREATE TABLE statements.');
+molDatabaseAssert(9 === count(Schema::requiredColumns()), 'Schema column contract must cover nine tables.');
+molDatabaseAssert(9 === count(Schema::requiredIndexes()), 'Schema index contract must cover nine tables.');
 $schemaSql = implode("\n", $statements);
 foreach (array_keys($tables->all()) as $suffix) {
     molDatabaseAssert(str_contains($schemaSql, 'wp_' . $suffix), sprintf('Schema is missing %s.', $suffix));
