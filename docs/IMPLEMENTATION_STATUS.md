@@ -75,6 +75,7 @@ Implemented candidate:
 - Versioned canonical roles/capabilities from `USER_ROLES_PERMISSIONS.md`, including administrator access without role-name authorization checks.
 - No data removal on deactivation; uninstall cleanup requires the explicit `mol_delete_data_on_uninstall=1` option.
 - PHP 8.4 lint, bootstrap smoke tests, Composer validation, and an authoritative production-autoloader check in CI.
+- CI packages that production autoloader into a short-lived installable `manga-overlay-core-t03` ZIP for the WordPress runtime gate.
 - `PHP Bootstrap` run #1 passed all steps for commit `9e0c9e5`: <https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33766290181>.
 
 Pending before T-03 is marked complete:

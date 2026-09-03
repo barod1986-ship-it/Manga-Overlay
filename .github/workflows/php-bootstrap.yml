@@ -43,3 +43,18 @@ jobs:
         run: |
           composer --working-dir=wp-content/plugins/manga-overlay-core dump-autoload --no-dev --classmap-authoritative
           php -r "require 'wp-content/plugins/manga-overlay-core/vendor/autoload.php'; exit(class_exists('MOL\\Plugin') ? 0 : 1);"
+
+      - name: Package installable plugin
+        run: |
+          mkdir -p build/manga-overlay-core
+          rsync -a --exclude='tests/' wp-content/plugins/manga-overlay-core/ build/manga-overlay-core/
+          (cd build && zip -qr manga-overlay-core-t03.zip manga-overlay-core)
+          unzip -l build/manga-overlay-core-t03.zip | grep -F 'manga-overlay-core/vendor/autoload.php'
+
+      - name: Upload installable plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: manga-overlay-core-t03
+          path: build/manga-overlay-core-t03.zip
+          if-no-files-found: error
+          retention-days: 14

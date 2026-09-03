@@ -18,3 +18,8 @@ Database tables, CPTs, REST routes, and editor integration deliberately belong t
 composer install
 composer run check
 ```
+
+The `PHP Bootstrap` workflow also publishes a 14-day `manga-overlay-core-t03`
+artifact containing an installable ZIP with the authoritative production
+autoloader. It remains a staging candidate until the WordPress runtime gate is
+recorded.
