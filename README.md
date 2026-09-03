@@ -4,15 +4,16 @@
 
 ## حالة المشروع
 
-المشروع في مرحلة إثبات واجهة التحرير وبناء نواة إضافة WordPress ضمن الـMVP وفق **Manga Overlay Master Spec v1.1.3**. توجد نواة bootstrap قابلة للفحص وليست حزمة إنتاج مكتملة؛ لم تبدأ بعد الجداول أو REST API.
+المشروع في مرحلة إثبات واجهة التحرير وبناء إضافة WordPress ضمن الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات T‑04 في CI؛ لم تبدأ بعد بنية المحتوى أو REST API.
 
 | المهمة | الحالة |
 |---|---|
-| T-00 — تثبيت بيئة التطوير | Node 24 وPHP 8.4 يعملان في CI؛ WordPress وقاعدتا البيانات ما زالت بوابات لاحقة |
+| T-00 — تثبيت بيئة التطوير | Node 24 وPHP 8.4 وWordPress 7.1 ومصفوفة DB تعمل في CI |
 | T-01 — PoC renderer | منفذ ومختبر آليًا في `poc/renderer`؛ الاعتماد البصري النهائي معلّق |
 | T-02 — PoC React + Moveable | مرشح اختبار منفذ في `poc/editor-input`؛ أجهزة iOS/Android الفعلية معلّقة |
-| T-03 — Plugin bootstrap | مرشح منفذ وناجح في PHP 8.4 CI؛ تفعيل WordPress 7.1 الفعلي معلّق |
-| T-04 وما بعده | لم يبدأ |
+| T-03 — Plugin bootstrap | مكتمل ومختبر بالتفعيل داخل WordPress 7.1 حقيقي في CI |
+| T-04 — Schema/repositories | مكتمل: 9 جداول + repositories + validators + transactions على المحركين |
+| T-05 وما بعده | لم يبدأ |
 
 ## بنية المستودع
 
@@ -22,7 +23,7 @@
 - `poc/renderer/`: نموذج T-01 المستقل لعرض DOM/SVG بإحداثيات normalized.
 - `poc/editor-input/`: نموذج T-02 بـReact وMoveable للسحب والتحجيم والدوران وإدخال العربية.
 - `scripts/check-environment.sh`: فحص متطلبات بيئة T-00.
-- `wp-content/plugins/manga-overlay-core/`: أساس إضافة T-03؛ لا جداول أو REST قبل مهامها المحددة.
+- `wp-content/plugins/manga-overlay-core/`: نواة الإضافة ومخطط T-04 وطبقة repositories؛ لا REST قبل مهمته المحددة.
 
 ## تشغيل نموذج العرض
 

@@ -3,6 +3,8 @@
 // WP-CLI eval-file injects bootstrap code before this file, so a strict_types
 // declaration cannot legally be the first evaluated statement here.
 
+use MOL\Activation\Activator;
+use MOL\Activation\RoleManager;
 use MOL\Database\Migrator;
 use MOL\Database\Schema;
 use MOL\Database\TableNames;
@@ -41,6 +43,25 @@ global $wpdb;
 molIntegrationAssert($wpdb instanceof wpdb, 'WordPress did not expose wpdb.');
 molIntegrationAssert(Versions::DATABASE === (string) get_option(Versions::DATABASE_OPTION), 'DB version was not activated.');
 molIntegrationAssert(Versions::ROLES === (string) get_option(Versions::ROLES_OPTION), 'Role version was not activated.');
+
+// Exercise the real activation callback a second time before inspecting state.
+Activator::activate();
+foreach (RoleManager::managedRoleSlugs() as $roleSlug) {
+    $role = get_role($roleSlug);
+    molIntegrationAssert($role instanceof WP_Role, sprintf('WordPress role %s is missing.', $roleSlug));
+    foreach (RoleManager::canonicalCapabilities() as $capability) {
+        $expected = in_array($capability, RoleManager::capabilitiesForRole($roleSlug), true);
+        molIntegrationAssert(
+            $expected === $role->has_cap($capability),
+            sprintf('%s has an incorrect value for %s.', $roleSlug, $capability)
+        );
+    }
+}
+$administrator = get_role('administrator');
+molIntegrationAssert($administrator instanceof WP_Role, 'The administrator role is missing.');
+foreach (RoleManager::canonicalCapabilities() as $capability) {
+    molIntegrationAssert($administrator->has_cap($capability), sprintf('Administrator is missing %s.', $capability));
+}
 
 $optionTable = $wpdb->options;
 foreach (array(Versions::DATABASE_OPTION, Versions::ROLES_OPTION) as $optionName) {

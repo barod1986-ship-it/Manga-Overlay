@@ -76,6 +76,10 @@ AllowedValues::reportStatus('in_review');
 AllowedValues::presetScope('work');
 molDatabaseRejects(static fn () => AllowedValues::elementType('video'), 'element_type');
 molDatabaseRejects(static fn () => AllowedValues::readerMode('scroll'), 'reader_mode');
+molDatabaseRejects(
+    static fn () => AllowedValues::readerMode('scroll', true, 'reader_mode_override'),
+    'reader_mode_override'
+);
 
 $geometry = array(
     'x_unit' => 100000,

@@ -34,8 +34,8 @@ final class ChapterRepository extends AbstractRepository
         $readerMode = $chapter['reader_mode_override'] ?? null;
         $direction = $chapter['direction_override'] ?? null;
         AllowedValues::chapterTranslationStatus($status);
-        AllowedValues::readerMode($readerMode, true);
-        AllowedValues::direction($direction, true);
+        AllowedValues::readerMode($readerMode, true, 'reader_mode_override');
+        AllowedValues::direction($direction, true, 'direction_override');
         $now = $this->utcNow();
 
         return $this->insertRow(

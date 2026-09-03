@@ -48,13 +48,13 @@ jobs:
         run: |
           mkdir -p build/manga-overlay-core
           rsync -a --exclude='tests/' wp-content/plugins/manga-overlay-core/ build/manga-overlay-core/
-          (cd build && zip -qr manga-overlay-core-t03.zip manga-overlay-core)
-          unzip -l build/manga-overlay-core-t03.zip | grep -F 'manga-overlay-core/vendor/autoload.php'
+          (cd build && zip -qr manga-overlay-core.zip manga-overlay-core)
+          unzip -l build/manga-overlay-core.zip | grep -F 'manga-overlay-core/vendor/autoload.php'
 
       - name: Upload installable plugin
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: manga-overlay-core-t03
-          path: build/manga-overlay-core-t03.zip
+          name: manga-overlay-core-candidate
+          path: build/manga-overlay-core.zip
           if-no-files-found: error
           retention-days: 14

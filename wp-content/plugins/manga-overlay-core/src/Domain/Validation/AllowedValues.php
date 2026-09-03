@@ -19,14 +19,22 @@ final class AllowedValues
         self::oneOf('translation_status', $value, self::CHAPTER_TRANSLATION_STATUSES);
     }
 
-    public static function readerMode(?string $value, bool $allowNull = false): void
+    public static function readerMode(
+        ?string $value,
+        bool $allowNull = false,
+        string $field = 'reader_mode'
+    ): void
     {
-        self::nullableOneOf('reader_mode', $value, self::READER_MODES, $allowNull);
+        self::nullableOneOf($field, $value, self::READER_MODES, $allowNull);
     }
 
-    public static function direction(?string $value, bool $allowNull = false): void
+    public static function direction(
+        ?string $value,
+        bool $allowNull = false,
+        string $field = 'direction'
+    ): void
     {
-        self::nullableOneOf('direction', $value, self::DIRECTIONS, $allowNull);
+        self::nullableOneOf($field, $value, self::DIRECTIONS, $allowNull);
     }
 
     public static function elementType(string $value): void

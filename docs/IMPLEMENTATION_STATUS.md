@@ -6,9 +6,9 @@ Last updated: 2026-09-03
 
 - Node.js target fixed to major 24 via `.nvmrc` and `engines`.
 - Frontend PoC CI runs on Node 24.
-- PHP 8.4 and Composer are now exercised by the plugin-bootstrap CI job.
-- WordPress 7.1.x, MySQL 8.4, and MariaDB 10.11 runtime gates remain pending; the database matrix belongs to T-04.
-- The local bootstrap environment used for this change has Node 24 but does not expose PHP, Composer, or a database client; no backend compatibility claim is made yet.
+- PHP 8.4 and Composer are exercised by the plugin-bootstrap CI job.
+- WordPress 7.1, MySQL 8.4, and MariaDB 10.11 are exercised by the real migration matrix.
+- The local bootstrap environment has Node 24 but does not expose PHP, Composer, or a database client; backend compatibility is therefore established by the pinned GitHub Actions jobs below.
 
 ## T-01 — PoC renderer
 
@@ -62,22 +62,40 @@ Do not begin T-03 WordPress/API scaffolding until the physical iOS and Android T
 
 ## Owner-directed parallel work
 
-The owner repeatedly directed implementation to continue after the open hardware gate was reported. T-03 bootstrap work is therefore developed on the same draft PR without marking T-02 complete and without treating the branch as release-ready.
+The owner repeatedly directed implementation to continue after the open hardware gate was reported. T-03 and T-04 work therefore continue on the same draft PR without marking T-02 complete and without treating the branch as release-ready.
 
 ## T-03 — Plugin bootstrap
 
-Implemented candidate:
+Implemented and verified:
 
 - Real `manga-overlay-core` WordPress plugin entry point with direct-access guard and missing-autoloader admin notice.
 - Composer PSR-4 mapping from `MOL\\` to `src/`, requiring PHP 8.4.
 - Idempotent activation/runtime version manager.
-- Non-autoloaded `mol_db_version=0` baseline; T-03 creates no schema and never downgrades a later migration version.
+- T-03 introduced the non-autoloaded DB-version mechanism without creating schema; T-04 now advances it to version `1` and never downgrades a later version.
 - Versioned canonical roles/capabilities from `USER_ROLES_PERMISSIONS.md`, including administrator access without role-name authorization checks.
 - No data removal on deactivation; uninstall cleanup requires the explicit `mol_delete_data_on_uninstall=1` option.
 - PHP 8.4 lint, bootstrap smoke tests, Composer validation, and an authoritative production-autoloader check in CI.
-- CI packages that production autoloader into a short-lived installable `manga-overlay-core-t03` ZIP for the WordPress runtime gate.
+- CI packages the production autoloader into a short-lived installable plugin ZIP.
 - `PHP Bootstrap` run #1 passed all steps for commit `9e0c9e5`: <https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33766290181>.
+- Activation passed inside a real WordPress 7.1 installation in the T-04 database matrix.
 
-Pending before T-03 is marked complete:
+T-03 is complete at the implementation/CI level. The draft PR and physical-device release gates remain independent.
 
-- Activation must be smoke-tested in a real WordPress 7.1.x installation; the isolated CI harness is not a substitute for WordPress runtime validation.
+## T-04 — Schema and repositories
+
+Implemented and verified:
+
+- Database version `1` creates exactly the nine canonical `mol_*` tables through WordPress `dbDelta()`.
+- Every migrated table is checked for its complete ordered column set, required indexes, unique constraints, and InnoDB engine.
+- The migration deliberately contains no foreign keys, `ENUM`, or read-counter table.
+- Idempotent migration reruns are executed against a real WordPress 7.1 install.
+- Repository classes cover chapters, pages, elements, element locks, contributions, reports, reading progress, style presets, and idempotency keys.
+- Chapter `sort_order decimal(14,4)` is explicitly normalized to PHP `float` at the repository boundary.
+- JSON writes use `wp_json_encode()` and object validation; stored style/response JSON is decoded with exceptions on corruption.
+- Geometry, canonical dictionary, element-style, and preset-scope validators enforce the frozen contracts.
+- `TransactionManager` supplies explicit start/commit/rollback behavior and preserves the original application exception.
+- Contribution and reading-progress UPSERT behavior, preset resolution order, repository normalization, UTC writes, and rollback are integration-tested.
+- Explicit opt-in uninstall now removes the nine tables as well as roles/version options; default uninstall remains non-destructive.
+- [Database Matrix run #3](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33785889346) passed on MySQL 8.4.11 and MariaDB 10.11.19 using PHP 8.4 and WordPress 7.1.
+
+T-04 is complete at the implementation/CI level. T-05 (`mol_work` CPT, taxonomies, metadata, and permalinks) is next.

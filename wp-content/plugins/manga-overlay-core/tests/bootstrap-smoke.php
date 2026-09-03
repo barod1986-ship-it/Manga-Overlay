@@ -197,6 +197,22 @@ $versions->maybeUpgrade();
 molTestAssert('999' === get_option(Versions::DATABASE_OPTION), 'Bootstrap downgraded the DB version.');
 molTestAssert(1 === $migrations->runs, 'Bootstrap migrated a future DB version.');
 
+$molTestOptions[Versions::DATABASE_OPTION] = '0';
+$failingMigrations = new class() implements MigrationRunner {
+    public function migrate(): void
+    {
+        throw new RuntimeException('Intentional migration failure.');
+    }
+};
+try {
+    (new VersionManager($roles, $failingMigrations))->activate();
+    throw new RuntimeException('A failed migration did not throw.');
+} catch (RuntimeException $error) {
+    molTestAssert('Intentional migration failure.' === $error->getMessage(), 'Migration failure was replaced.');
+}
+molTestAssert('0' === get_option(Versions::DATABASE_OPTION), 'A failed migration advanced the DB version.');
+$molTestOptions[Versions::DATABASE_OPTION] = '999';
+
 if (! defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__) . '/tests/wordpress/');
 }
