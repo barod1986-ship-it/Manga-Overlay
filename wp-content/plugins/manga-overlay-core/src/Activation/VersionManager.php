@@ -4,33 +4,47 @@ declare(strict_types=1);
 
 namespace MOL\Activation;
 
+use MOL\Database\MigrationRunner;
+use MOL\Database\Migrator;
 use MOL\Support\Versions;
 
 final class VersionManager
 {
-    public function __construct(private readonly RoleManager $roles = new RoleManager())
-    {
+    public function __construct(
+        private readonly RoleManager $roles = new RoleManager(),
+        private readonly MigrationRunner $migrations = new Migrator()
+    ) {
     }
 
     public function activate(): void
     {
-        $this->ensureDatabaseBaseline();
+        $this->migrateDatabaseWhenNeeded();
         $this->synchronizeRolesWhenNeeded();
     }
 
     public function maybeUpgrade(): void
     {
-        $this->ensureDatabaseBaseline();
+        $this->migrateDatabaseWhenNeeded();
         $this->synchronizeRolesWhenNeeded();
     }
 
-    private function ensureDatabaseBaseline(): void
+    private function migrateDatabaseWhenNeeded(): void
     {
-        if (false !== get_option(Versions::DATABASE_OPTION, false)) {
+        $installed = get_option(Versions::DATABASE_OPTION, false);
+        $installedVersion = false === $installed ? '0' : (string) $installed;
+
+        // Preserve unknown or newer version markers rather than risking a
+        // destructive downgrade from a bootstrap request.
+        if (1 !== preg_match('/^\d+(?:\.\d+)*$/', $installedVersion)) {
             return;
         }
 
-        add_option(Versions::DATABASE_OPTION, Versions::DATABASE, '', false);
+        if (version_compare($installedVersion, Versions::DATABASE, '>=')) {
+            return;
+        }
+
+        $this->migrations->migrate();
+        update_option(Versions::DATABASE_OPTION, Versions::DATABASE, false);
     }
 
     private function synchronizeRolesWhenNeeded(): void

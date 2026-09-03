@@ -1,0 +1,81 @@
+name: Database Matrix
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/database-matrix.yml'
+      - 'wp-content/plugins/manga-overlay-core/**'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/database-matrix.yml'
+      - 'wp-content/plugins/manga-overlay-core/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-matrix-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migration:
+    name: ${{ matrix.database.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - name: MySQL 8.4
+            image: mysql:8.4
+          - name: MariaDB 10.11
+            image: mariadb:10.11
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          MYSQL_DATABASE: mol_test
+          MYSQL_USER: mol
+          MYSQL_PASSWORD: mol
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up PHP 8.4, Composer, and WP-CLI
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: mysqli, mbstring, zip
+          tools: composer:v2, wp-cli
+
+      - name: Install plugin autoloader
+        run: composer --working-dir=wp-content/plugins/manga-overlay-core install --no-interaction --no-progress --prefer-dist
+
+      - name: Install WordPress 7.1
+        env:
+          WP_PATH: ${{ runner.temp }}/wordpress
+        run: |
+          wp core download --path="$WP_PATH" --version=7.1 --force
+          wp config create --path="$WP_PATH" --dbname=mol_test --dbuser=mol --dbpass=mol --dbhost=127.0.0.1:3306 --dbprefix=wp_
+          wp core install --path="$WP_PATH" --url=http://mol.test --title='Manga Overlay CI' --admin_user=mol_admin --admin_password='ci-only-password' --admin_email=ci@example.invalid --skip-email
+          mkdir -p "$WP_PATH/wp-content/plugins/manga-overlay-core"
+          rsync -a wp-content/plugins/manga-overlay-core/ "$WP_PATH/wp-content/plugins/manga-overlay-core/"
+
+      - name: Activate plugin and verify migration
+        env:
+          WP_PATH: ${{ runner.temp }}/wordpress
+        run: |
+          wp plugin activate manga-overlay-core --path="$WP_PATH"
+          wp eval-file "$WP_PATH/wp-content/plugins/manga-overlay-core/tests/database-integration.php" --path="$WP_PATH" --user=1

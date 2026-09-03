@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use MOL\Activation\RoleManager;
 use MOL\Activation\VersionManager;
+use MOL\Database\MigrationRunner;
 use MOL\Support\Versions;
 
 final class MolTestRole
@@ -140,6 +141,15 @@ if (! is_readable($autoload)) {
 }
 require_once $autoload;
 
+$migrations = new class() implements MigrationRunner {
+    public int $runs = 0;
+
+    public function migrate(): void
+    {
+        ++$this->runs;
+    }
+};
+
 $roles = new RoleManager();
 molTestAssert($roles->synchronize(), 'Role synchronization failed.');
 
@@ -171,16 +181,21 @@ foreach (RoleManager::canonicalCapabilities() as $capability) {
     molTestAssert($administrator->has_cap($capability), sprintf('Administrator is missing %s.', $capability));
 }
 
-$versions = new VersionManager($roles);
+$versions = new VersionManager($roles, $migrations);
 $versions->activate();
 molTestAssert(Versions::DATABASE === get_option(Versions::DATABASE_OPTION), 'Database baseline was not stored.');
 molTestAssert(Versions::ROLES === get_option(Versions::ROLES_OPTION), 'Roles version was not stored.');
 molTestAssert(false === $molTestAutoload[Versions::DATABASE_OPTION], 'Database version must not autoload.');
 molTestAssert(false === $molTestAutoload[Versions::ROLES_OPTION], 'Roles version must not autoload.');
+molTestAssert(1 === $migrations->runs, 'Database migration did not run exactly once.');
 
-$molTestOptions[Versions::DATABASE_OPTION] = 'future-schema-version';
 $versions->maybeUpgrade();
-molTestAssert('future-schema-version' === get_option(Versions::DATABASE_OPTION), 'Bootstrap downgraded the DB version.');
+molTestAssert(1 === $migrations->runs, 'Current database migration ran more than once.');
+
+$molTestOptions[Versions::DATABASE_OPTION] = '999';
+$versions->maybeUpgrade();
+molTestAssert('999' === get_option(Versions::DATABASE_OPTION), 'Bootstrap downgraded the DB version.');
+molTestAssert(1 === $migrations->runs, 'Bootstrap migrated a future DB version.');
 
 if (! defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__) . '/tests/wordpress/');

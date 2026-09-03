@@ -17,6 +17,7 @@ if (! is_readable($mol_autoloader)) {
 
 require_once $mol_autoloader;
 
+(new MOL\Database\Migrator())->removeSchema();
 (new MOL\Activation\RoleManager())->uninstall();
 
 delete_option(MOL\Support\Versions::DATABASE_OPTION);
