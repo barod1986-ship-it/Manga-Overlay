@@ -1,0 +1,41 @@
+﻿file,content_class,claim_groups,audit_result,runtime_validation_needed,notes
+README.md,mixed,"C01,C02,C03,C04,C06,C37,C39",PASS,لا,خط الأساس الخارجي متحقق؛ بقية المحتوى قاعدة مرجعية.
+PROJECT_OVERVIEW.md,design,C37,PASS,لا,رؤية ونطاق منتج؛ فُحص الاتساق مع المتطلبات والقرارات.
+REQUIREMENTS.md,mixed,"C17,C18,C24,C28,C29,C30,C36,C37",PASS_WITH_RUNTIME_GATES,نعم,أهداف الأداء/الجوال/auto-fit تبقى اختبارات قبول وليست وعودًا عامة.
+DECISIONS.md,mixed,"C01-C04,C14-C20,C24-C32,C36-C39",PASS,جزئي,القرارات الخارجية مدعومة؛ الأرقام التشغيلية PoC/benchmark.
+ARCHITECTURE.md,mixed,"C05,C06,C14,C15,C24,C37",PASS,نعم,اختيار DOM/SVG/React معماري؛ touch/perf عبر PoC.
+WORDPRESS_STRUCTURE.md,mixed,"C06,C07,C08,C11,C37,C39",PASS_AFTER_CORRECTION,لا,CapabilitiesController + strict Elements/Locks policies موثقة.
+DATABASE_SCHEMA.md,mixed,"C08-C10,C14-C17,C36,C37,C39",PASS,نعم,DDL يحتاج dbDelta CI؛ slug algorithm يستخدم sanitize_title مع unique guard خاص بالمشروع؛ attribution IDs تبقى non-null.
+API_SPEC.md,mixed,"C05,C06,C18-C23,C36-C39",PASS_AFTER_SCHEMA_ERROR_HARDENING,نعم,Error/status semantics، lock-lost، slug generation، capabilities وETag/version contract مكتملة.
+API.openapi.yaml,structured,"C05,C18-C23,C37,C39",PASS_STATIC_DEEP_1.1.3,نعم,22 paths، 31 operations؛ بلا YAML aliases؛ strict element schemas + semantic error contracts + runtime capabilities؛ refs/examples checked.
+TRANSLATION_EDITOR_SPEC.md,mixed,"C24-C28,C36,C37",PASS_WITH_POC,نعم,Moveable features موثقة؛ Arabic SFX/auto-fit/touch تحتاج device visual PoC.
+READER_SPEC.md,mixed,"C29-C32,C36,C37",PASS_WITH_BENCHMARK,نعم,lazy/preload/fetchpriority strategy تقاس على فصول حقيقية.
+UI_UX_SPEC.md,design,C37,PASS,نعم,مسارات وتجربة منتج؛ تحقق E2E/visual.
+MOBILE_SPEC.md,mixed,"C24,C28,C36,C37",PASS_WITH_POC,نعم,44px هدف داخلي؛ البديل غير القائم على drag مثبت في المواصفة.
+USER_ROLES_PERMISSIONS.md,mixed,"C06,C37",PASS,نعم,فحص capability صحيح نظريًا ويحتاج integration tests.
+CONTRIBUTION_SYSTEM.md,design,C37,PASS,نعم,"تعريف مساهمة unique(user,element) متسق مع DB/tests."
+CONTENT_MANAGEMENT.md,mixed,"C31-C34,C37,C39",PASS,نعم,Slug generation موثق؛ upload/media integration يبقى runtime test.
+PROFILES_AND_COMMUNITY.md,design,C37,PASS,نعم,متطلبات منتج؛ لا ادعاءات تقنية خارجية جوهرية.
+PERFORMANCE_AND_MEDIA.md,mixed,"C13,C29-C32,C36,C37",PASS_WITH_BENCHMARK,نعم,AVIF أصبح runtime capability عبر /capabilities؛ الأداء benchmark.
+SECURITY.md,mixed,"C05,C06,C13,C18,C33-C35,C37,C38",PASS,نعم,Strict request schemas + semantic contract checks؛ runtime security integration remains tested.
+ERROR_HANDLING.md,mixed,"C18-C21,C36,C37",PASS,نعم,401/409/413/423/429 semantics واضحة؛ error examples status-checked.
+TEST_STRATEGY.md,mixed,"C04,C08,C24,C27,C29-C33,C36-C39",PASS,نعم,أضيف semantic contract harness gates قبل DTO/T-07.
+ACCEPTANCE_CRITERIA.md,mixed,"C18-C20,C24,C27-C32,C36-C39",PASS_WITH_RUNTIME_GATES,نعم,معايير device/performance لا تُعلن ناجحة حتى تشغيلها.
+MVP_ROADMAP.md,plan,C37,PASS,لا,خطة ترتيب فقط.
+DEVELOPMENT_PLAN.md,plan,"C08,C24,C36,C37",PASS,نعم,PoCs موضوعة قبل التنفيذ الكامل.
+DEPLOYMENT_REQUIREMENTS.md,mixed,"C01-C04,C12,C36,C38",PASS,نعم,أضيف smoke فعلي عبر reverse proxy لـIf-Match/ETag.
+DATA_MODEL_EXAMPLES.md,examples,"C17,C37",PASS_SCHEMA_VALIDATED_1.1.3,لا,8 أمثلة موسومة تُفحص آليًا؛ أضيف created_at وCapabilitiesResponse.
+CODING_STANDARDS.md,mixed,"C09-C11,C15,C37",PASS_AFTER_CORRECTION,لا,تم تصحيح wp_json_decode غير الموجودة سابقًا.
+GLOSSARY.md,internal,C37,PASS,لا,المصطلحات متسقة مع الملفات الرسمية.
+SOURCE_COMPARISON.md,internal,C37,PASS,لا,توثيق قرارات المصادر القديمة؛ ليس مرجع تنفيذ أعلى من DECISIONS.
+SOURCES.md,sources,C01-C39,PASS,لا,60 رابطًا رسميًا/أوليًا فريدًا؛ أضيف sanitize_title الرسمي.
+RISK_REGISTER.md,risk,"C08,C13,C24,C27,C31,C32,C36,C37",PASS,نعم,المخاطر ليست وعودًا؛ mitigations متوافقة مع التحقق.
+ELEMENT_STYLE.schema.json,structured,C37,PASS_STATIC,لا,مطابق حرفيًا لـOpenAPI ElementStyle؛ type-specific restrictions توجد في Bubble/Narration/FreeText/Sfx style schemas.
+VALIDATION_REPORT.md,internal,C37,PASS_1.1.3,لا,Generated after schema/error hardening; harness + integrity/package checks summarized.
+CONTRACT_HARDENING_REPORT.md,internal,C37,DESIGN_CONSISTENCY,جزئي,يوثق ثغرات العقود التي سُدت في 1.1.1؛ لا يضيف ادعاءات خارجية جوهرية.
+API_VISIBILITY_HARDENING_REPORT.md,internal,"C05,C18-C21,C37,C38",DESIGN_CONSISTENCY,جزئي,يوثق إصلاحات 1.1.2 ولا يضيف ادعاءات خارجية جديدة.
+SCHEMA_ERROR_HARDENING_REPORT.md,internal,"C18-C23,C37-C39",DESIGN_CONSISTENCY,جزئي,يوثق إصلاحات v1.1.3 ونتيجة harness؛ لا يغير الخط الأساسي الخارجي.
+VALIDATION_HARNESS.py,tooling,C37,PASS_EXECUTED,لا,يفحص YAML aliases/duplicates، refs، error semantics، strict request schemas، examples، contract usage.
+SHA256SUMS.txt,integrity,—,REGENERATED_AT_PACKAGING,لا,يولد بعد آخر تعديل ويُتحقق منه قبل إنشاء ZIP.
+INTERNET_VERIFICATION_REPORT.md,audit,C01-C39,PASS,لا,التقرير المحمول إلى 1.1.3 مع C39.
+INTERNET_VERIFICATION_MATRIX.csv,audit,C01-C39,PASS,لا,مصفوفة 1.1.3 تغطي كل ملفات الحزمة النهائية.

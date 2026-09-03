@@ -1,0 +1,21 @@
+{
+  "name": "@mol/poc-renderer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "check": "npm run test && npm run build",
+    "dev": "vite --host 0.0.0.0",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
+  }
+}

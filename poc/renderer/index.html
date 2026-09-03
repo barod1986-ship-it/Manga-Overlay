@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Manga Overlay — Renderer PoC</title>
+  </head>
+  <body>
+    <main class="mol-poc-shell">
+      <header class="mol-poc-toolbar">
+        <div>
+          <p class="mol-poc-kicker">T-01 · نموذج العرض</p>
+          <h1>الفصل ١ — الاختبار البصري</h1>
+        </div>
+        <button
+          id="translation-toggle"
+          class="mol-translation-toggle"
+          type="button"
+          aria-controls="overlay-layer"
+          aria-pressed="true"
+        >
+          الترجمة ظاهرة
+        </button>
+      </header>
+
+      <section class="mol-reader-surface" aria-label="صفحة مانجا تجريبية">
+        <figure id="page-frame" class="mol-page-frame">
+          <img
+            id="page-image"
+            src="./sample-page.svg"
+            width="1200"
+            height="1800"
+            alt="صفحة تجريبية أصلية مؤلفة من لوحات مرسومة"
+          />
+          <div
+            id="overlay-layer"
+            class="mol-overlay-layer"
+            aria-label="طبقة الترجمة العربية"
+          ></div>
+        </figure>
+      </section>
+
+      <footer class="mol-poc-note">
+        <span id="viewport-readout" aria-live="polite"></span>
+        <span>الإحداثيات مرتبطة بمحتوى الصورة الفعلي وليست بحاوية الواجهة.</span>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

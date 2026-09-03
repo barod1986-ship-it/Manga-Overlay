@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/mol/element-style.schema.json",
+  "title": "MOL Element Style",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "fontId": {
+      "type": "string",
+      "enum": [
+        "noto-sans-arabic",
+        "cairo",
+        "tajawal",
+        "noto-kufi-arabic",
+        "sfx-display-1"
+      ]
+    },
+    "fontSizeUnit": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 200000
+    },
+    "fontWeight": {
+      "type": "integer",
+      "enum": [
+        400,
+        500,
+        600,
+        700,
+        800,
+        900
+      ]
+    },
+    "lineHeight": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 2.5
+    },
+    "textAlign": {
+      "type": "string",
+      "enum": [
+        "start",
+        "center",
+        "end"
+      ]
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "backgroundColor": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "backgroundOpacity": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "borderColor": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "borderWidthUnit": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 50000
+    },
+    "borderRadiusUnit": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500000
+    },
+    "paddingUnit": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "shape": {
+      "type": "string",
+      "enum": [
+        "ellipse",
+        "rounded_rect",
+        "rect",
+        "cloud",
+        "none",
+        "burst",
+        "impact"
+      ]
+    },
+    "strokeColor": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "strokeWidthUnit": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 50000
+    },
+    "shadow": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "xUnit": {
+          "type": "integer",
+          "minimum": -50000,
+          "maximum": 50000
+        },
+        "yUnit": {
+          "type": "integer",
+          "minimum": -50000,
+          "maximum": 50000
+        },
+        "blurUnit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50000
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "tail": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "angleMdeg": {
+          "type": "integer",
+          "minimum": -360000,
+          "maximum": 360000
+        },
+        "lengthUnit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300000
+        },
+        "widthUnit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200000
+        }
+      }
+    },
+    "burst": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "points": {
+          "type": "integer",
+          "enum": [
+            8,
+            12,
+            16,
+            24
+          ]
+        },
+        "depth": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "scaleX": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 2
+    },
+    "scaleY": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 2
+    },
+    "autoFit": {
+      "type": "boolean"
+    },
+    "minFontSizeUnit": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 100000
+    }
+  }
+}
