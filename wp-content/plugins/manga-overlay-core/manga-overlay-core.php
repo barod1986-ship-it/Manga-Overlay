@@ -3,7 +3,7 @@
  * Plugin Name:       Manga Overlay Core
  * Plugin URI:        https://github.com/barod1986-ship-it/Manga-Overlay
  * Description:       Core domain, persistence, and editor services for Manga Overlay.
- * Version:           0.4.0
+ * Version:           0.5.0
  * Requires at least: 7.1
  * Requires PHP:      8.4
  * Author:            Manga Overlay
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('MOL_PLUGIN_VERSION')) {
-    define('MOL_PLUGIN_VERSION', '0.4.0');
+    define('MOL_PLUGIN_VERSION', '0.5.0');
 }
 
 if (! defined('MOL_PLUGIN_FILE')) {
@@ -49,6 +49,7 @@ if (! is_readable($mol_autoloader)) {
 }
 
 require_once $mol_autoloader;
+require_once MOL_PLUGIN_DIR . 'public-api.php';
 
 register_activation_hook(MOL_PLUGIN_FILE, array(MOL\Activation\Activator::class, 'activate'));
 add_action('plugins_loaded', array(MOL\Plugin::class, 'boot'), 5);

@@ -27,19 +27,15 @@ final class ChapterPresenter
                 ? null
                 : (string) $chapter['direction_override'],
             'is_published' => (bool) $chapter['is_published'],
-            'published_at' => self::dateTime($chapter['published_at']),
-            'created_at' => self::dateTime($chapter['created_at']),
-            'updated_at' => self::dateTime($chapter['updated_at']),
+            'published_at' => PresenterSupport::dateTime($chapter['published_at']),
+            'created_at' => PresenterSupport::dateTime($chapter['created_at']),
+            'updated_at' => PresenterSupport::dateTime($chapter['updated_at']),
         );
     }
 
-    private static function dateTime(mixed $value): ?string
+    /** @param list<array<string, mixed>> $chapters @return list<array<string, mixed>> */
+    public static function many(array $chapters): array
     {
-        if (! is_string($value) || '' === $value) {
-            return null;
-        }
-        $timestamp = strtotime($value . ' UTC');
-
-        return false === $timestamp ? null : gmdate('c', $timestamp);
+        return array_map(self::one(...), $chapters);
     }
 }

@@ -91,6 +91,23 @@ final class ElementRepository extends AbstractRepository
         return array_map($this->normalize(...), $rows);
     }
 
+    /** @return list<array<string, mixed>> */
+    public function forChapter(int $chapterId, string $targetLang = 'ar'): array
+    {
+        $this->positiveId($chapterId, 'chapter_id');
+        $rows = $this->fetchAll($this->prepare(
+            "SELECT elements.*, pages.page_index
+             FROM {$this->tables->elements} AS elements
+             INNER JOIN {$this->tables->pages} AS pages ON pages.id = elements.page_id
+             WHERE pages.chapter_id = %d AND elements.target_lang = %s
+             ORDER BY pages.page_index, elements.z_index, elements.id",
+            $chapterId,
+            $targetLang
+        ));
+
+        return array_map($this->normalize(...), $rows);
+    }
+
     /** @param array<string, mixed> $row @return array<string, mixed> */
     private function normalize(array $row): array
     {
@@ -108,6 +125,9 @@ final class ElementRepository extends AbstractRepository
             'updated_by',
         ) as $field) {
             $row[$field] = (int) $row[$field];
+        }
+        if (array_key_exists('page_index', $row)) {
+            $row['page_index'] = (int) $row['page_index'];
         }
         $row['style'] = JsonDocument::decodeObject((string) $row['style_json']);
         unset($row['style_json']);

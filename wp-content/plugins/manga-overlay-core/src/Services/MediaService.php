@@ -174,6 +174,35 @@ final class MediaService
         return $mimes;
     }
 
+    /**
+     * @return array{
+     *   upload_mime_types: list<string>,
+     *   derived_image_formats: list<string>,
+     *   most_read_available: false
+     * }
+     */
+    public function runtimeCapabilities(): array
+    {
+        $derivedFormats = array();
+        foreach (array(
+            'image/jpeg' => 'jpeg',
+            'image/webp' => 'webp',
+            'image/avif' => 'avif',
+        ) as $mimeType => $format) {
+            if (function_exists('wp_image_editor_supports')
+                && wp_image_editor_supports(array('mime_type' => $mimeType))
+            ) {
+                $derivedFormats[] = $format;
+            }
+        }
+
+        return array(
+            'upload_mime_types' => array_values(array_unique(array_values($this->allowedMimes()))),
+            'derived_image_formats' => $derivedFormats,
+            'most_read_available' => false,
+        );
+    }
+
     private function generateWebpDerivative(int $attachmentId, string $sourceMime): void
     {
         if ('image/webp' === $sourceMime) {

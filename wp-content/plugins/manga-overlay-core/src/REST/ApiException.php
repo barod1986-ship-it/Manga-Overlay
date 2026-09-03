@@ -33,6 +33,11 @@ final class ApiException extends RuntimeException
         return new self('mol_forbidden', $message, 403);
     }
 
+    public static function sortUnavailable(string $message = 'The requested sort is not available.'): self
+    {
+        return new self('mol_sort_unavailable', $message, 400);
+    }
+
     public function errorCode(): string
     {
         return $this->errorCode;

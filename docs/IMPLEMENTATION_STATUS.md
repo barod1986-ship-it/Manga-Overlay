@@ -135,3 +135,15 @@ Implemented and verified:
 - [PHP Bootstrap run #12](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33813543388) passed PHP 8.4 lint, unit/smoke checks, authoritative autoloading, and installable packaging.
 
 T-06 is complete at the implementation/CI level. T-07 (public library/work/chapter/page APIs, visibility, DTOs, and cache behavior) is next. The draft PR and physical-device release gates remain independent.
+
+### T-06 staging smoke test
+
+On 2026-09-03, the installable `manga-overlay-core` 0.4.0 artifact from PHP Bootstrap run #13 was installed and activated on the project staging site running WordPress 7.1, PHP 8.4.25, and MySQL 8.4.11.
+
+- Activation completed without a PHP error and registered the Manga Overlay admin menu.
+- The six canonical work-type terms were present after activation.
+- A published work and chapter were created through the WordPress admin screens.
+- Two PNG pages were uploaded, reordered, saved, and verified after a full page reload.
+- A `.png` file with invalid image contents was rejected as `Unsupported media type.` and created no page.
+- The `/library/` archive and `/series/{work-slug}/` single-work permalink rendered successfully.
+- Public MOL read APIs and a chapter reader remain intentionally absent until T-07 and T-09 respectively.

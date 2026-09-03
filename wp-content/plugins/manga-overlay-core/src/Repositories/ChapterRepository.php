@@ -178,6 +178,44 @@ final class ChapterRepository extends AbstractRepository
         return array_map($this->normalize(...), $rows);
     }
 
+    /**
+     * @return array{items: list<array<string, mixed>>, total: int, total_pages: int}
+     */
+    public function forWorkPaginated(
+        int $workId,
+        int $page,
+        int $perPage,
+        bool $publishedOnly = true
+    ): array {
+        $this->positiveId($workId, 'work_id');
+        if ($page < 1 || $perPage < 1 || $perPage > 100) {
+            throw new \InvalidArgumentException('Chapter pagination is invalid.');
+        }
+
+        $publishedClause = $publishedOnly ? ' AND is_published = 1' : '';
+        $countRow = $this->fetchOne($this->prepare(
+            "SELECT COUNT(*) AS total FROM {$this->tables->chapters} WHERE work_id = %d{$publishedClause}",
+            $workId
+        ));
+        $total = (int) ($countRow['total'] ?? 0);
+        $offset = ($page - 1) * $perPage;
+        $rows = $this->fetchAll($this->prepare(
+            "SELECT * FROM {$this->tables->chapters}
+             WHERE work_id = %d{$publishedClause}
+             ORDER BY sort_order, id
+             LIMIT %d OFFSET %d",
+            $workId,
+            $perPage,
+            $offset
+        ));
+
+        return array(
+            'items' => array_map($this->normalize(...), $rows),
+            'total' => $total,
+            'total_pages' => 0 === $total ? 0 : (int) ceil($total / $perPage),
+        );
+    }
+
     /** @return list<array<string, mixed>> */
     public function recent(int $limit = 200): array
     {
