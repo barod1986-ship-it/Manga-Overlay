@@ -1,6 +1,7 @@
 <?php
 
-declare(strict_types=1);
+// WP-CLI eval-file injects bootstrap code before this file, so a strict_types
+// declaration cannot legally be the first evaluated statement here.
 
 use MOL\Database\Migrator;
 use MOL\Database\Schema;
