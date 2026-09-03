@@ -147,8 +147,13 @@ foreach (RoleManager::managedRoleSlugs() as $roleSlug) {
     $role = get_role($roleSlug);
     molTestAssert(null !== $role, sprintf('Role %s was not created.', $roleSlug));
     molTestAssert($role->has_cap('read'), sprintf('Role %s cannot read.', $roleSlug));
-    foreach (RoleManager::capabilitiesForRole($roleSlug) as $capability) {
-        molTestAssert($role->has_cap($capability), sprintf('%s is missing %s.', $roleSlug, $capability));
+    $expectedCapabilities = RoleManager::capabilitiesForRole($roleSlug);
+    foreach (RoleManager::canonicalCapabilities() as $capability) {
+        $expected = in_array($capability, $expectedCapabilities, true);
+        molTestAssert(
+            $expected === $role->has_cap($capability),
+            sprintf('%s has an incorrect value for %s.', $roleSlug, $capability)
+        );
     }
 }
 
