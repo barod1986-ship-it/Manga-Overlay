@@ -1,6 +1,6 @@
 # Manga Overlay Core
 
-T-03/T-04 WordPress core and persistence foundation for Master Spec v1.1.3.
+T-03 through T-05 WordPress core, persistence, and work-content foundation for Master Spec v1.1.3.
 
 ## Scope
 
@@ -11,9 +11,12 @@ T-03/T-04 WordPress core and persistence foundation for Master Spec v1.1.3.
 - Repositories for every domain table, with explicit scalar/JSON normalization.
 - Geometry, dictionary, style, and preset-scope validators.
 - Explicit transaction start/commit/rollback boundaries.
+- Public `mol_work` CPT and the four canonical taxonomies.
+- Registered work metadata with typed Core REST schemas and capability-gated mutation.
+- `/library/`, `/series/{slug}/`, chapter/editor, and user-profile rewrite contracts.
 - Opt-in-only uninstall cleanup through `mol_delete_data_on_uninstall=1`.
 
-CPTs, REST routes, and editor integration deliberately belong to later tasks.
+Chapter/page administration, MOL REST controllers, the public theme, and editor integration deliberately belong to later tasks.
 
 ## Check
 

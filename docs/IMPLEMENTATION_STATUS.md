@@ -56,13 +56,13 @@ Still required before T-02 is marked complete:
 - Review the candidate visually at desktop and narrow mobile widths.
 - Persisted preset, REST autosave, lease-renewal, and lock-conflict scenarios remain integration gates for their backend/editor tasks; the local interaction PoC does not simulate them.
 
-## Next gate
+## Release gate
 
-Do not begin T-03 WordPress/API scaffolding until the physical iOS and Android T-02 checks pass or the Master Spec is amended through its decision process.
+T-02 remains incomplete until its physical iOS and Android checks pass. Owner-directed parallel backend work does not waive that release requirement.
 
 ## Owner-directed parallel work
 
-The owner repeatedly directed implementation to continue after the open hardware gate was reported. T-03 and T-04 work therefore continue on the same draft PR without marking T-02 complete and without treating the branch as release-ready.
+The owner repeatedly directed implementation to continue after the open hardware gate was reported. T-03 through T-05 therefore continue on the same draft PR without marking T-02 complete and without treating the branch as release-ready.
 
 ## T-03 — Plugin bootstrap
 
@@ -98,4 +98,21 @@ Implemented and verified:
 - Explicit opt-in uninstall now removes the nine tables as well as roles/version options; default uninstall remains non-destructive.
 - [Database Matrix run #3](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33785889346) passed on MySQL 8.4.11 and MariaDB 10.11.19 using PHP 8.4 and WordPress 7.1.
 
-T-04 is complete at the implementation/CI level. T-05 (`mol_work` CPT, taxonomies, metadata, and permalinks) is next.
+T-04 is complete at the implementation/CI level.
+
+## T-05 — Work CPT, taxonomies, and permalinks
+
+Implemented and verified:
+
+- Public `mol_work` CPT with Core REST exposure, `/library/` archive, `/series/{slug}/` singles, and exactly the required editor/content/thumbnail/custom-fields supports.
+- Meta-cap mapping keeps public reads available while mapping work creation, editing, publishing, private reads, and deletion to `mol_manage_content` rather than role names.
+- `mol_genre`, `mol_work_type`, `mol_source_language`, and `mol_work_status` are registered for `mol_work`, exposed through Core REST, and managed/assigned through `mol_manage_content`.
+- The six canonical work-type slugs (`manga`, `manhwa`, `manhua`, `comic`, `webtoon`, `other`) are synchronized idempotently on activation.
+- `_mol_alt_titles`, `_mol_default_reader_mode`, and `_mol_reading_direction` are registered as single protected meta with sanitize/auth callbacks, typed Core REST schemas, and safe defaults.
+- Core REST returns those fields publicly for published works, rejects invalid reader-mode values, denies creation to an unprivileged member, and permits a content manager to update them.
+- Rewrite rules cover the chapter reader/editor and user-profile paths reserved by v1.1.3, without implementing future chapter/editor controllers early.
+- Rewrite flushing is versioned through a non-autoloaded option and runs on activation or a stale rewrite contract, not on every request.
+- [Database Matrix run #6](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33788214237) passed the database and content suites on WordPress 7.1 with MySQL 8.4.11 and MariaDB 10.11.19.
+- [PHP Bootstrap run #10](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33788214114) passed PHP 8.4 lint, unit/smoke checks, and installable packaging.
+
+T-05 is complete at the implementation/CI level. T-06 (chapter/page administration, upload queue, collision-safe page reorder, and review policy) is next.

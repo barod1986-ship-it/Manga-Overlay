@@ -4,7 +4,7 @@
 
 ## حالة المشروع
 
-المشروع في مرحلة إثبات واجهة التحرير وبناء إضافة WordPress ضمن الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات T‑04 في CI؛ لم تبدأ بعد بنية المحتوى أو REST API.
+المشروع في مرحلة إثبات واجهة التحرير وبناء إضافة WordPress ضمن الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات ونموذج العمل T‑05 في CI؛ لم تبدأ بعد إدارة الفصول أو REST API الخاص بالمشروع.
 
 | المهمة | الحالة |
 |---|---|
@@ -13,7 +13,8 @@
 | T-02 — PoC React + Moveable | مرشح اختبار منفذ في `poc/editor-input`؛ أجهزة iOS/Android الفعلية معلّقة |
 | T-03 — Plugin bootstrap | مكتمل ومختبر بالتفعيل داخل WordPress 7.1 حقيقي في CI |
 | T-04 — Schema/repositories | مكتمل: 9 جداول + repositories + validators + transactions على المحركين |
-| T-05 وما بعده | لم يبدأ |
+| T-05 — Work CPT/taxonomies | مكتمل: `mol_work` + 4 taxonomies + meta + permalinks + Core REST permissions |
+| T-06 وما بعده | لم يبدأ |
 
 ## بنية المستودع
 
@@ -23,7 +24,7 @@
 - `poc/renderer/`: نموذج T-01 المستقل لعرض DOM/SVG بإحداثيات normalized.
 - `poc/editor-input/`: نموذج T-02 بـReact وMoveable للسحب والتحجيم والدوران وإدخال العربية.
 - `scripts/check-environment.sh`: فحص متطلبات بيئة T-00.
-- `wp-content/plugins/manga-overlay-core/`: نواة الإضافة ومخطط T-04 وطبقة repositories؛ لا REST قبل مهمته المحددة.
+- `wp-content/plugins/manga-overlay-core/`: نواة الإضافة وطبقات T-04/T-05؛ لا MOL REST قبل مهمته المحددة.
 
 ## تشغيل نموذج العرض
 
