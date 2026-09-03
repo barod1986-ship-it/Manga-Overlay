@@ -19,10 +19,11 @@ Implemented:
 - Bubble, narration, free-text, and SFX fixtures.
 - ResizeObserver-based scale refresh and translation visibility toggle.
 - Unit tests proving proportional geometry at different displayed widths.
+- Playwright checks for Chromium, Firefox, and WebKit at mobile and desktop widths.
 
 Still required before T-01 is marked complete:
 
-- Visual checks on current Chrome, Firefox, and Safari.
+- Final visual approval in real Chrome, Firefox, and Safari (WebKit automation is not a substitute for physical Safari).
 - Confirm Arabic shaping and SFX stroke behavior with the final self-hosted fonts.
 - Capture reference screenshots at mobile, tablet, and desktop widths.
 

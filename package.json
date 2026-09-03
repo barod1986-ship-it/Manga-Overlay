@@ -12,6 +12,7 @@
     "build:poc": "npm --workspace @mol/poc-renderer run build",
     "check:poc": "npm --workspace @mol/poc-renderer run check",
     "dev:poc": "npm --workspace @mol/poc-renderer run dev",
+    "test:e2e:poc": "npm --workspace @mol/poc-renderer run test:e2e",
     "test:poc": "npm --workspace @mol/poc-renderer run test"
   }
 }

@@ -40,3 +40,9 @@ jobs:
 
       - name: Check renderer PoC
         run: npm run check:poc
+
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Verify responsive geometry in browsers
+        run: npm run test:e2e:poc
