@@ -29,4 +29,27 @@ Still required before T-01 is marked complete:
 
 ## Next gate
 
-T-02 must test React + Moveable drag/resize/rotate and Arabic text input on physical iOS and Android devices before the full editor architecture is committed.
+## T-02 — PoC editor input
+
+Candidate implemented:
+
+- React editor shell backed by the shared T-01 renderer package.
+- Moveable drag, eight-direction resize, rotation, snapping, and element guidelines.
+- Normalized-state commits only at gesture end; pointer moves stay local and issue no network requests.
+- Safe live Arabic textarea editing through renderer `textContent`.
+- Numeric X/Y/W/H/rotation fields plus nudge, width, and rotation buttons as non-drag alternatives.
+- Desktop properties/layers layout and a mobile bottom toolbar with bottom sheets.
+- Touch targets of at least 44px for primary mobile controls.
+- Stage zoom buttons and a two-pointer pinch handler outside selected elements.
+- Five unit tests for normalized transform state and Playwright coverage for Chromium, Firefox, and mobile WebKit.
+
+Still required before T-02 is marked complete:
+
+- Run drag, resize, rotate, Arabic textarea, keyboard, and pinch-zoom checks on a physical iOS device.
+- Run the same checks on a physical Android device.
+- Record browser/device/OS versions and any Moveable quirks in this status file.
+- Review the candidate visually at desktop and narrow mobile widths.
+
+## Next gate
+
+Do not begin T-03 WordPress/API scaffolding until the physical iOS and Android T-02 checks pass or the Master Spec is amended through its decision process.

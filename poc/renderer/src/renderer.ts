@@ -58,7 +58,7 @@ export function createOverlayNode(element: OverlayElement, imageWidth: number): 
   node.style.top = geometry.top;
   node.style.width = geometry.width;
   node.style.height = geometry.height;
-  node.style.rotate = geometry.rotation;
+  node.style.transform = `rotate(${geometry.rotation})`;
   node.style.zIndex = geometry.zIndex;
 
   const shape = createShapeLayer(element.element_type, element.style, imageWidth);

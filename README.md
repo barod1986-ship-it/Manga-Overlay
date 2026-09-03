@@ -4,13 +4,13 @@
 
 ## حالة المشروع
 
-المشروع في بداية تنفيذ الـMVP وفق **Manga Overlay Master Spec v1.1.3**. لا توجد حاليًا حزمة WordPress جاهزة للنشر؛ أول مسار تنفيذي هو إثبات ثبات renderer فوق صورة الفصل قبل بناء المحرر الكامل.
+المشروع في مرحلة إثبات واجهة التحرير ضمن الـMVP وفق **Manga Overlay Master Spec v1.1.3**. لا توجد حاليًا حزمة WordPress جاهزة للنشر؛ يجري تثبيت سلوك العرض والإدخال أولًا قبل بناء الإضافة والـREST API.
 
 | المهمة | الحالة |
 |---|---|
 | T-00 — تثبيت بيئة التطوير | بدأ: Node 24 مضبوط، والتحقق من PHP/DB ينتظر CI/بيئة WordPress |
-| T-01 — PoC renderer | منفذ في `poc/renderer` ويحتاج مراجعة بصرية عبر المتصفحات |
-| T-02 — PoC React + Moveable | لم يبدأ |
+| T-01 — PoC renderer | منفذ ومختبر آليًا في `poc/renderer`؛ الاعتماد البصري النهائي معلّق |
+| T-02 — PoC React + Moveable | مرشح اختبار منفذ في `poc/editor-input`؛ أجهزة iOS/Android الفعلية معلّقة |
 | T-03 وما بعده | لم يبدأ |
 
 ## بنية المستودع
@@ -18,6 +18,7 @@
 - `docs/master-spec/v1.1.3/`: النسخة المجمدة من المواصفات والعقود والتقارير.
 - `docs/IMPLEMENTATION_STATUS.md`: سجل التنفيذ والبوابات المتبقية.
 - `poc/renderer/`: نموذج T-01 المستقل لعرض DOM/SVG بإحداثيات normalized.
+- `poc/editor-input/`: نموذج T-02 بـReact وMoveable للسحب والتحجيم والدوران وإدخال العربية.
 - `scripts/check-environment.sh`: فحص متطلبات بيئة T-00.
 - `wp-content/`: سيُضاف عند الوصول إلى T-03؛ لن تُنشأ إضافة شكلية قبل اجتياز PoCs.
 
@@ -27,11 +28,18 @@
 
 ```bash
 npm ci
-npm run check:poc
-npm run dev:poc
+npm run check
+npm run dev:editor-poc
 ```
 
-ثم افتح العنوان الذي يعرضه Vite. صورة الاختبار SVG أصلية خاصة بالـPoC وليست صيغة رفع مسموحة لصفحات الإنتاج.
+ثم افتح العنوان الذي يعرضه Vite. لتشغيل نموذج T-01 المستقل استخدم `npm run dev:poc`. صورة الاختبار SVG أصلية خاصة بالـPoC وليست صيغة رفع مسموحة لصفحات الإنتاج.
+
+اختبارات المتصفح الكاملة تحتاج محركات Playwright:
+
+```bash
+npx playwright install chromium firefox webkit
+npm run test:e2e
+```
 
 ## قاعدة المرجع
 

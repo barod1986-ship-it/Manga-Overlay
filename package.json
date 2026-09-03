@@ -3,16 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "poc/renderer"
+    "poc/*"
   ],
   "engines": {
     "node": ">=24 <25"
   },
   "scripts": {
+    "build": "npm run build:poc && npm run build:editor-poc",
+    "build:editor-poc": "npm --workspace @mol/poc-editor-input run build",
     "build:poc": "npm --workspace @mol/poc-renderer run build",
+    "check": "npm run check:poc && npm run check:editor-poc",
+    "check:editor-poc": "npm --workspace @mol/poc-editor-input run check",
     "check:poc": "npm --workspace @mol/poc-renderer run check",
+    "dev:editor-poc": "npm --workspace @mol/poc-editor-input run dev",
     "dev:poc": "npm --workspace @mol/poc-renderer run dev",
+    "test:e2e": "npm run test:e2e:poc && npm run test:e2e:editor-poc",
+    "test:e2e:editor-poc": "npm --workspace @mol/poc-editor-input run test:e2e",
     "test:e2e:poc": "npm --workspace @mol/poc-renderer run test:e2e",
+    "test:editor-poc": "npm --workspace @mol/poc-editor-input run test",
     "test:poc": "npm --workspace @mol/poc-renderer run test"
   }
 }

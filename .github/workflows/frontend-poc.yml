@@ -7,6 +7,7 @@ on:
       - '.nvmrc'
       - 'package.json'
       - 'package-lock.json'
+      - 'poc/editor-input/**'
       - 'poc/renderer/**'
   push:
     branches:
@@ -16,15 +17,16 @@ on:
       - '.nvmrc'
       - 'package.json'
       - 'package-lock.json'
+      - 'poc/editor-input/**'
       - 'poc/renderer/**'
 
 permissions:
   contents: read
 
 jobs:
-  renderer:
+  frontend-pocs:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v7.0.1
@@ -38,11 +40,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check renderer PoC
-        run: npm run check:poc
+      - name: Check renderer and editor-input PoCs
+        run: npm run check
 
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Verify responsive geometry in browsers
-        run: npm run test:e2e:poc
+      - name: Verify renderer and editor input in browsers
+        run: npm run test:e2e
