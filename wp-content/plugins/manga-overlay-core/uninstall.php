@@ -22,4 +22,7 @@ require_once $mol_autoloader;
 
 delete_option(MOL\Support\Versions::DATABASE_OPTION);
 delete_option(MOL\Support\Versions::ROLES_OPTION);
+delete_option(MOL\Content\RewriteManager::VERSION_OPTION);
 delete_option('mol_delete_data_on_uninstall');
+
+flush_rewrite_rules(false);

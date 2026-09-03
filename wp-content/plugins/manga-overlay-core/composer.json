@@ -19,9 +19,11 @@
   "scripts": {
     "lint": "@php tests/lint.php",
     "test:bootstrap": "@php tests/bootstrap-smoke.php",
+    "test:content-unit": "@php tests/content-unit.php",
     "test:database-unit": "@php tests/database-unit.php",
     "test": [
       "@test:bootstrap",
+      "@test:content-unit",
       "@test:database-unit"
     ],
     "check": [

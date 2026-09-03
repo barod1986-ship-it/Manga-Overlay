@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace MOL;
 
 use MOL\Activation\VersionManager;
+use MOL\Content\RewriteManager;
+use MOL\Content\WorkContent;
 
 final class Plugin
 {
@@ -16,6 +18,8 @@ final class Plugin
             return;
         }
 
+        (new WorkContent())->registerHooks();
+        (new RewriteManager())->registerHooks();
         (new VersionManager())->maybeUpgrade();
         self::$booted = true;
     }

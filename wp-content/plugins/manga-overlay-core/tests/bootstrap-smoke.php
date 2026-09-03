@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use MOL\Activation\RoleManager;
 use MOL\Activation\VersionManager;
+use MOL\Content\RewriteManager;
+use MOL\Content\WorkContent;
+use MOL\Content\WorkMeta;
 use MOL\Database\MigrationRunner;
 use MOL\Support\Versions;
 
@@ -42,6 +45,19 @@ $molTestAutoload = array();
 $molTestRoles = array('administrator' => new MolTestRole(array('manage_options' => true)));
 /** @var array<string, list<callable>> $molTestActions */
 $molTestActions = array();
+/** @var array<string, list<callable>> $molTestFilters */
+$molTestFilters = array();
+/** @var array<string, array<string, mixed>> $molTestPostTypes */
+$molTestPostTypes = array();
+/** @var array<string, array<string, mixed>> $molTestTaxonomies */
+$molTestTaxonomies = array();
+/** @var array<string, array<string, array<string, mixed>>> $molTestPostMeta */
+$molTestPostMeta = array();
+/** @var array<string, array<string, true>> $molTestTerms */
+$molTestTerms = array();
+/** @var array<string, string> $molTestRewriteRules */
+$molTestRewriteRules = array();
+$molTestRewriteFlushes = 0;
 $molTestActivationCallback = null;
 
 function get_option(string $name, mixed $default = false): mixed
@@ -110,6 +126,14 @@ function add_action(string $hook, callable $callback, int $priority = 10, int $a
     return true;
 }
 
+function add_filter(string $hook, callable $callback, int $priority = 10, int $acceptedArgs = 1): bool
+{
+    global $molTestFilters;
+    unset($priority, $acceptedArgs);
+    $molTestFilters[$hook][] = $callback;
+    return true;
+}
+
 function register_activation_hook(string $file, callable $callback): void
 {
     global $molTestActivationCallback;
@@ -126,6 +150,80 @@ function esc_html_e(string $text, string $domain = 'default'): void
 {
     unset($domain);
     echo htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function __(string $text, string $domain = 'default'): string
+{
+    unset($domain);
+    return $text;
+}
+
+function post_type_exists(string $postType): bool
+{
+    global $molTestPostTypes;
+    return isset($molTestPostTypes[$postType]);
+}
+
+function register_post_type(string $postType, array $arguments = array()): object
+{
+    global $molTestPostTypes;
+    $molTestPostTypes[$postType] = $arguments;
+    return (object) $arguments;
+}
+
+function taxonomy_exists(string $taxonomy): bool
+{
+    global $molTestTaxonomies;
+    return isset($molTestTaxonomies[$taxonomy]);
+}
+
+function register_taxonomy(string $taxonomy, array|string $objectType, array $arguments = array()): object
+{
+    global $molTestTaxonomies;
+    $arguments['object_type'] = (array) $objectType;
+    $molTestTaxonomies[$taxonomy] = $arguments;
+    return (object) $arguments;
+}
+
+function register_post_meta(string $postType, string $metaKey, array $arguments): bool
+{
+    global $molTestPostMeta;
+    $molTestPostMeta[$postType][$metaKey] = $arguments;
+    return true;
+}
+
+function term_exists(int|string $term, string $taxonomy = ''): int|array|null
+{
+    global $molTestTerms;
+    return isset($molTestTerms[$taxonomy][(string) $term]) ? 1 : null;
+}
+
+function wp_insert_term(string $term, string $taxonomy, array $arguments = array()): array
+{
+    global $molTestTerms;
+    $slug = (string) ($arguments['slug'] ?? $term);
+    $molTestTerms[$taxonomy][$slug] = true;
+    return array('term_id' => count($molTestTerms[$taxonomy]), 'term_taxonomy_id' => count($molTestTerms[$taxonomy]));
+}
+
+function is_wp_error(mixed $value): bool
+{
+    unset($value);
+    return false;
+}
+
+function add_rewrite_rule(string $regex, string $query, string $after = 'bottom'): void
+{
+    global $molTestRewriteRules;
+    unset($after);
+    $molTestRewriteRules[$regex] = $query;
+}
+
+function flush_rewrite_rules(bool $hard = true): void
+{
+    global $molTestRewriteFlushes;
+    unset($hard);
+    ++$molTestRewriteFlushes;
 }
 
 function molTestAssert(bool $condition, string $message): void
@@ -222,5 +320,40 @@ molTestAssert(isset($molTestActions['plugins_loaded'][0]), 'Plugin boot hook was
 
 call_user_func($molTestActivationCallback);
 call_user_func($molTestActions['plugins_loaded'][0]);
+
+molTestAssert(isset($molTestPostTypes[WorkContent::POST_TYPE]), 'Activation did not register mol_work.');
+molTestAssert(true === $molTestPostTypes[WorkContent::POST_TYPE]['public'], 'mol_work is not public.');
+molTestAssert('library' === $molTestPostTypes[WorkContent::POST_TYPE]['has_archive'], 'Work archive slug drifted.');
+molTestAssert('series' === $molTestPostTypes[WorkContent::POST_TYPE]['rewrite']['slug'], 'Work single slug drifted.');
+molTestAssert(
+    array('title', 'editor', 'thumbnail', 'custom-fields') === $molTestPostTypes[WorkContent::POST_TYPE]['supports'],
+    'mol_work supports drifted.'
+);
+foreach (WorkContent::taxonomyNames() as $taxonomyName) {
+    molTestAssert(isset($molTestTaxonomies[$taxonomyName]), sprintf('%s was not registered.', $taxonomyName));
+}
+molTestAssert(
+    6 === count($molTestTerms[WorkContent::WORK_TYPE_TAXONOMY] ?? array()),
+    'Activation did not synchronize six canonical work types.'
+);
+foreach (array(WorkMeta::ALT_TITLES, WorkMeta::DEFAULT_READER_MODE, WorkMeta::READING_DIRECTION) as $metaKey) {
+    molTestAssert(isset($molTestPostMeta[WorkContent::POST_TYPE][$metaKey]), sprintf('%s was not registered.', $metaKey));
+}
+molTestAssert(isset($molTestRewriteRules['^series/([^/]+)/chapter/([^/]+)/edit/?$']), 'Editor rewrite is missing.');
+molTestAssert(isset($molTestRewriteRules['^series/([^/]+)/chapter/([^/]+)/?$']), 'Reader rewrite is missing.');
+molTestAssert(isset($molTestRewriteRules['^u/([^/]+)/?$']), 'Profile rewrite is missing.');
+molTestAssert(1 === $molTestRewriteFlushes, 'Activation did not flush rewrites exactly once.');
+molTestAssert(RewriteManager::VERSION === get_option(RewriteManager::VERSION_OPTION), 'Rewrite version was not stored.');
+molTestAssert(false === $molTestAutoload[RewriteManager::VERSION_OPTION], 'Rewrite version must not autoload.');
+molTestAssert(isset($molTestActions['init']), 'Content init hooks were not registered.');
+molTestAssert(isset($molTestFilters['query_vars'][0]), 'Rewrite query variables were not registered.');
+
+$rewrites = new RewriteManager();
+$rewrites->maybeFlush();
+molTestAssert(1 === $molTestRewriteFlushes, 'Current rewrite version flushed again.');
+$molTestOptions[RewriteManager::VERSION_OPTION] = '0';
+$rewrites->maybeFlush();
+molTestAssert(2 === $molTestRewriteFlushes, 'Stale rewrite version did not flush.');
+molTestAssert(RewriteManager::VERSION === get_option(RewriteManager::VERSION_OPTION), 'Rewrite version did not recover.');
 
 echo "Manga Overlay bootstrap smoke test passed.\n";
