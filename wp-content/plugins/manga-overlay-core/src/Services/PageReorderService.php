@@ -31,7 +31,10 @@ final class PageReorderService
             $submitted = $orderedPageIds;
             sort($expected, SORT_NUMERIC);
             sort($submitted, SORT_NUMERIC);
-            if ($expected !== $submitted || count($orderedPageIds) !== count(array_unique($orderedPageIds))) {
+            if (array() === $current
+                || $expected !== $submitted
+                || count($orderedPageIds) !== count(array_unique($orderedPageIds))
+            ) {
                 throw $this->invalidOrder();
             }
 

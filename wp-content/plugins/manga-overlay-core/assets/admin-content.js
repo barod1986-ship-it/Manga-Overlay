@@ -132,7 +132,7 @@
 
   const addFiles = (files) => {
     [...files]
-      .filter((file) => file.type.startsWith('image/'))
+      .filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'}))
       .forEach((file) => {
         const item = document.createElement('li');

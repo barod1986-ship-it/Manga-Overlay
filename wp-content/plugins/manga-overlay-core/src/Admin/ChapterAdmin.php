@@ -201,7 +201,7 @@ final class ChapterAdmin
                 <div class="mol-drop-zone" tabindex="0">
                     <strong><?php esc_html_e('Drop JPEG, PNG, or WebP files here', 'manga-overlay-core'); ?></strong>
                     <span><?php esc_html_e('or choose multiple images; filenames are naturally sorted.', 'manga-overlay-core'); ?></span>
-                    <input class="mol-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden>
+                    <input class="mol-file-input" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
                 </div>
                 <ol class="mol-page-queue">
                     <?php foreach ($pages as $page) :

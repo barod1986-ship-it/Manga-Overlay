@@ -5,6 +5,7 @@
 
 use MOL\Content\WorkContent;
 use MOL\Database\TableNames;
+use MOL\Database\TransactionManager;
 use MOL\Repositories\ChapterRepository;
 use MOL\Repositories\ContributionRepository;
 use MOL\Repositories\ElementLockRepository;
@@ -45,7 +46,7 @@ function molManagementUploadRequest(int $chapterId, string $key, array $file): W
 }
 
 /** @return array<string, mixed> */
-function molManagementImageFile(string $bytes, string $name): array
+function molManagementImageFile(string $bytes, string $name, string $mime = 'image/png'): array
 {
     $temporaryPath = tempnam(sys_get_temp_dir(), 'mol-page-');
     molManagementIntegrationAssert(is_string($temporaryPath), 'Could not create a temporary upload file.');
@@ -53,7 +54,7 @@ function molManagementImageFile(string $bytes, string $name): array
 
     return array(
         'name' => $name,
-        'type' => 'image/png',
+        'type' => $mime,
         'tmp_name' => $temporaryPath,
         'error' => UPLOAD_ERR_OK,
         'size' => strlen($bytes),
@@ -175,6 +176,10 @@ $reviewed = molManagementJsonRequest('PATCH', '/mol/v1/chapters/' . $chapterId .
 molManagementIntegrationAssert(200 === $reviewed->get_status(), 'Moderator could not review a chapter.');
 $reviewedBody = $reviewed->get_data();
 molManagementIntegrationAssert('needs_review' === $reviewedBody['data']['translation_status'], 'Review status did not persist.');
+$completedReview = molManagementJsonRequest('PATCH', '/mol/v1/chapters/' . $chapterId . '/review', array(
+    'translation_status' => 'completed',
+));
+molManagementIntegrationAssert(200 === $completedReview->get_status(), 'Moderator could not complete a reviewed chapter.');
 $invalidReview = molManagementJsonRequest('PATCH', '/mol/v1/chapters/' . $chapterId . '/review', array(
     'translation_status' => 'in_progress',
 ));
@@ -203,6 +208,17 @@ imagedestroy($imageResource);
 $imageBytes = file_get_contents($imagePath);
 molManagementIntegrationAssert(is_string($imageBytes) && '' !== $imageBytes, 'Could not read the PNG fixture.');
 unlink($imagePath);
+$jpegPath = tempnam(sys_get_temp_dir(), 'mol-source-jpeg-');
+molManagementIntegrationAssert(is_string($jpegPath), 'Could not create the JPEG fixture.');
+$jpegResource = imagecreatetruecolor(8, 8);
+molManagementIntegrationAssert(false !== $jpegResource, 'GD could not create the JPEG image.');
+$jpegBackground = imagecolorallocate($jpegResource, 180, 80, 32);
+imagefill($jpegResource, 0, 0, $jpegBackground);
+molManagementIntegrationAssert(imagejpeg($jpegResource, $jpegPath, 90), 'GD could not encode the JPEG fixture.');
+imagedestroy($jpegResource);
+$jpegBytes = file_get_contents($jpegPath);
+molManagementIntegrationAssert(is_string($jpegBytes) && '' !== $jpegBytes, 'Could not read the JPEG fixture.');
+unlink($jpegPath);
 
 wp_set_current_user($managerOnlyId);
 $managerUpload = molManagementUploadRequest(
@@ -217,6 +233,11 @@ molManagementIntegrationAssert(200 === $managerPatch->get_status(), 'Manage-only
 wp_set_current_user($uploaderId);
 $uploaderPatch = molManagementJsonRequest('PATCH', '/mol/v1/chapters/' . $chapterId, array('sort_order' => 2));
 molManagementIntegrationAssert(403 === $uploaderPatch->get_status(), 'mol_upload_content unexpectedly granted chapter management.');
+$missingImageRequest = new WP_REST_Request('POST', '/mol/v1/chapters/' . $chapterId . '/pages');
+$missingImageRequest->set_header('MOL-Idempotency-Key', 'missing-image');
+$missingImage = rest_do_request($missingImageRequest);
+molManagementIntegrationAssert(400 === $missingImage->get_status(), 'Upload without an image did not return 400.');
+molManagementIntegrationAssert('mol_invalid_params' === molManagementErrorCode($missingImage), 'Missing-image error code drifted.');
 $uploaded = molManagementUploadRequest(
     $chapterId,
     'upload-page-one',
@@ -269,9 +290,21 @@ if (is_file($tooLargeFile['tmp_name'])) {
     unlink($tooLargeFile['tmp_name']);
 }
 
+$jpegUpload = molManagementUploadRequest(
+    $chapterId,
+    'webp-source-jpeg',
+    molManagementImageFile($jpegBytes, 'webp-source.jpg', 'image/jpeg')
+);
+molManagementIntegrationAssert(201 === $jpegUpload->get_status(), 'JPEG source upload failed.');
+$jpegUploadBody = $jpegUpload->get_data();
+$jpegAttachmentId = (int) $jpegUploadBody['data']['image']['attachment_id'];
+$webpStatus = get_post_meta($jpegAttachmentId, MediaService::WEBP_STATUS_META_KEY, true);
 if (wp_image_editor_supports(array('mime_type' => 'image/webp'))) {
-    $webp = get_post_meta($uploadedAttachmentId, MediaService::WEBP_META_KEY, true);
-    molManagementIntegrationAssert(is_array($webp) && 'image/webp' === $webp['mime_type'], 'Supported WebP derivative was not generated.');
+    $webp = get_post_meta($jpegAttachmentId, MediaService::WEBP_META_KEY, true);
+    molManagementIntegrationAssert(is_array($webp) && 'image/webp' === $webp['mime_type'], 'Supported JPEG-to-WebP derivative was not generated.');
+    molManagementIntegrationAssert('generated' === $webpStatus, 'Generated WebP derivative status was not recorded.');
+} else {
+    molManagementIntegrationAssert('unsupported' === $webpStatus, 'Unavailable WebP fallback status was not recorded.');
 }
 $disableWebp = static fn (bool $enabled): bool => false;
 add_filter('mol_generate_webp_derivative', $disableWebp);
@@ -285,6 +318,11 @@ molManagementIntegrationAssert(201 === $fallbackUpload->get_status(), 'WebP-disa
 $fallbackBody = $fallbackUpload->get_data();
 $fallbackAttachmentId = (int) $fallbackBody['data']['image']['attachment_id'];
 molManagementIntegrationAssert('' === get_post_meta($fallbackAttachmentId, MediaService::WEBP_META_KEY, true), 'Disabled WebP derivative was generated.');
+molManagementIntegrationAssert('disabled' === get_post_meta(
+    $fallbackAttachmentId,
+    MediaService::WEBP_STATUS_META_KEY,
+    true
+), 'Disabled WebP fallback status was not recorded.');
 
 $rateUserId = molManagementCreateUser('mol_t06_rate_user', 'mol_t06_upload_only');
 wp_set_current_user($rateUserId);
@@ -308,6 +346,11 @@ if (is_file($rateSecondFile['tmp_name'])) {
 
 $currentPages = $pages->forChapter($chapterId);
 $reversedIds = array_reverse(array_column($currentPages, 'id'));
+wp_set_current_user($moderatorId);
+$moderatorReorder = molManagementJsonRequest('PATCH', '/mol/v1/chapters/' . $chapterId . '/pages/reorder', array(
+    'page_ids' => $reversedIds,
+));
+molManagementIntegrationAssert(403 === $moderatorReorder->get_status(), 'Review capability granted page reorder.');
 wp_set_current_user($administratorId);
 $reordered = molManagementJsonRequest('PATCH', '/mol/v1/chapters/' . $chapterId . '/pages/reorder', array(
     'page_ids' => $reversedIds,
@@ -321,6 +364,23 @@ $invalidOrder = molManagementJsonRequest('PATCH', '/mol/v1/chapters/' . $chapter
 molManagementIntegrationAssert(400 === $invalidOrder->get_status(), 'Incomplete page permutation did not return 400.');
 molManagementIntegrationAssert('mol_invalid_reorder' === molManagementErrorCode($invalidOrder), 'Invalid reorder code drifted.');
 molManagementIntegrationAssert($beforeInvalidOrder === array_column($pages->forChapter($chapterId), 'id'), 'Invalid reorder partially changed page indices.');
+$indicesBeforeRollback = array_column($pages->forChapter($chapterId), 'page_index');
+$rollbackTransactions = new TransactionManager($wpdb);
+try {
+    $rollbackTransactions->run(static function () use ($pages, $chapterId): void {
+        $locked = $pages->lockForChapter($chapterId);
+        $maxIndex = max(array_column($locked, 'page_index'));
+        $pages->moveToTemporaryRange($chapterId, $maxIndex + count($locked) + 2);
+        throw new RuntimeException('Intentional page-order rollback');
+    });
+    throw new RuntimeException('Temporary page-order transaction did not throw.');
+} catch (RuntimeException $error) {
+    molManagementIntegrationAssert('Intentional page-order rollback' === $error->getMessage(), 'Page-order rollback replaced its cause.');
+}
+molManagementIntegrationAssert(
+    $indicesBeforeRollback === array_column($pages->forChapter($chapterId), 'page_index'),
+    'Page-order rollback left temporary indices behind.'
+);
 
 $protectedRequests = array(
     new WP_REST_Request('POST', '/mol/v1/chapters'),
@@ -373,6 +433,10 @@ molManagementIntegrationAssert(0 === (int) $wpdb->get_var($wpdb->prepare("SELECT
 molManagementIntegrationAssert(0 === (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$tables->elementLocks} WHERE element_id = %d", $elementId)), 'Page delete left a lock.');
 molManagementIntegrationAssert(0 === (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$tables->contributions} WHERE element_id = %d", $elementId)), 'Page delete left a contribution.');
 molManagementIntegrationAssert(0 === (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$tables->reports} WHERE page_id = %d", $uploadedPageId)), 'Page delete left a report.');
+molManagementIntegrationAssert(0 === (int) $wpdb->get_var($wpdb->prepare(
+    "SELECT COUNT(*) FROM {$tables->idempotencyKeys} WHERE resource_type = 'page' AND resource_id = %d",
+    $uploadedPageId
+)), 'Page delete left an idempotency record.');
 $remainingPages = $pages->forChapter($chapterId);
 molManagementIntegrationAssert(range(0, count($remainingPages) - 1) === array_column($remainingPages, 'page_index'), 'Page delete did not compact indices.');
 

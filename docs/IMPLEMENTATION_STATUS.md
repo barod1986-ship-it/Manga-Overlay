@@ -62,7 +62,7 @@ T-02 remains incomplete until its physical iOS and Android checks pass. Owner-di
 
 ## Owner-directed parallel work
 
-The owner repeatedly directed implementation to continue after the open hardware gate was reported. T-03 through T-05 therefore continue on the same draft PR without marking T-02 complete and without treating the branch as release-ready.
+The owner repeatedly directed implementation to continue after the open hardware gate was reported. T-03 through T-06 therefore continue on the same draft PR without marking T-02 complete and without treating the branch as release-ready.
 
 ## T-03 — Plugin bootstrap
 
@@ -115,4 +115,23 @@ Implemented and verified:
 - [Database Matrix run #6](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33788214237) passed the database and content suites on WordPress 7.1 with MySQL 8.4.11 and MariaDB 10.11.19.
 - [PHP Bootstrap run #10](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33788214114) passed PHP 8.4 lint, unit/smoke checks, and installable packaging.
 
-T-05 is complete at the implementation/CI level. T-06 (chapter/page administration, upload queue, collision-safe page reorder, and review policy) is next.
+T-05 is complete at the implementation/CI level.
+
+## T-06 — Chapter and page management
+
+Implemented and verified:
+
+- Protected MOL REST routes cover chapter create/update/delete, page upload/delete/reorder, and the narrow translation-review transition.
+- Every permission callback distinguishes unauthenticated `401 mol_not_authenticated` from authenticated `403 mol_forbidden`; body validation rejects unknown properties and returns the frozen error codes.
+- `mol_manage_content`, `mol_upload_content`, and `mol_review_translations` remain independent. Integration fixtures prove upload-only cannot manage chapters and manage-only cannot upload; a moderator can mark `needs_review`/`completed` but cannot create, delete, or reorder.
+- Chapter slugs are generated from title or chapter label, receive bounded `-2`, `-3`, … suffixes, and retain the unique database index as the race guard.
+- Page upload validates the real extension/MIME pair and successfully decodes the image through the active WordPress image editor. JPEG/PNG/WebP are the admin-client baseline; AVIF remains server-conditional and is not exposed by the client before the future capabilities route advertises it.
+- Uploads enforce configurable byte/dimension/pixel limits, a per-user soft limiter with `Retry-After`, one required application idempotency key, and attachment cleanup when the database transaction fails.
+- Optional WebP derivatives are created explicitly when enabled and supported; the original remains a safe fallback when generation is disabled or unavailable.
+- Page reorder locks the chapter and its complete page set, validates an exact permutation, shifts indices into a disjoint temporary range, and assigns final `0..N-1` indices in the same transaction.
+- Page/chapter deletion owns its cascade across elements, leases, contributions, reports, reading progress, and idempotency records; page deletion also compacts the remaining indices.
+- WordPress admin screens provide chapter creation/editing/deletion and a multi-file upload queue with natural sorting, thumbnails, pre/post-upload movement, at most two concurrent requests, deletion, and order persistence.
+- [Database Matrix run #8](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33813543412) passed the complete T-06 REST/media/cascade suite on WordPress 7.1 with MySQL 8.4.11 and MariaDB 10.11.19.
+- [PHP Bootstrap run #12](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33813543388) passed PHP 8.4 lint, unit/smoke checks, authoritative autoloading, and installable packaging.
+
+T-06 is complete at the implementation/CI level. T-07 (public library/work/chapter/page APIs, visibility, DTOs, and cache behavior) is next. The draft PR and physical-device release gates remain independent.

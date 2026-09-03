@@ -10,12 +10,13 @@ use RuntimeException;
 final class MediaService
 {
     public const WEBP_META_KEY = '_mol_webp_derivative';
+    public const WEBP_STATUS_META_KEY = '_mol_webp_derivative_status';
 
     /**
      * @param array<string, mixed> $file
-     * @return array{file: array<string, mixed>, mime: string, width: int, height: int, digest: string}
+     * @return array{file: array<string, mixed>, digest: string}
      */
-    public function inspect(array $file): array
+    public function fingerprint(array $file): array
     {
         foreach (array('name', 'tmp_name', 'error', 'size') as $field) {
             if (! array_key_exists($field, $file)) {
@@ -48,6 +49,34 @@ final class MediaService
         if ('' === $name) {
             throw ApiException::invalidParams('The uploaded image filename is invalid.');
         }
+
+        $digest = hash_file('sha256', $temporaryPath);
+        if (! is_string($digest)) {
+            throw new RuntimeException('The uploaded image could not be fingerprinted.');
+        }
+
+        return array(
+            'file' => array(
+                'name' => $name,
+                'type' => is_string($file['type'] ?? null) ? $file['type'] : '',
+                'tmp_name' => $temporaryPath,
+                'error' => UPLOAD_ERR_OK,
+                'size' => $actualBytes,
+            ),
+            'digest' => $digest,
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $file
+     * @param array{file: array<string, mixed>, digest: string}|null $fingerprint
+     * @return array{file: array<string, mixed>, mime: string, width: int, height: int, digest: string}
+     */
+    public function inspect(array $file, ?array $fingerprint = null): array
+    {
+        $fingerprint ??= $this->fingerprint($file);
+        $temporaryPath = (string) $fingerprint['file']['tmp_name'];
+        $name = (string) $fingerprint['file']['name'];
         $allowedMimes = $this->allowedMimes();
         $checked = wp_check_filetype_and_ext($temporaryPath, $name, $allowedMimes);
         $imageInfo = wp_getimagesize($temporaryPath);
@@ -74,23 +103,18 @@ final class MediaService
             throw $this->payloadTooLarge();
         }
 
-        $digest = hash_file('sha256', $temporaryPath);
-        if (! is_string($digest)) {
-            throw new RuntimeException('The uploaded image could not be fingerprinted.');
-        }
-
         return array(
             'file' => array(
                 'name' => $name,
                 'type' => $decodedMime,
                 'tmp_name' => $temporaryPath,
                 'error' => UPLOAD_ERR_OK,
-                'size' => $actualBytes,
+                'size' => (int) $fingerprint['file']['size'],
             ),
             'mime' => $decodedMime,
             'width' => $width,
             'height' => $height,
-            'digest' => $digest,
+            'digest' => $fingerprint['digest'],
         );
     }
 
@@ -152,20 +176,29 @@ final class MediaService
 
     private function generateWebpDerivative(int $attachmentId, string $sourceMime): void
     {
-        if ('image/webp' === $sourceMime
-            || ! apply_filters('mol_generate_webp_derivative', true, $attachmentId)
-            || ! function_exists('wp_image_editor_supports')
+        if ('image/webp' === $sourceMime) {
+            update_post_meta($attachmentId, self::WEBP_STATUS_META_KEY, 'not_required');
+            return;
+        }
+        if (! apply_filters('mol_generate_webp_derivative', true, $attachmentId)) {
+            update_post_meta($attachmentId, self::WEBP_STATUS_META_KEY, 'disabled');
+            return;
+        }
+        if (! function_exists('wp_image_editor_supports')
             || ! wp_image_editor_supports(array('mime_type' => 'image/webp'))
         ) {
+            update_post_meta($attachmentId, self::WEBP_STATUS_META_KEY, 'unsupported');
             return;
         }
 
         $sourcePath = get_attached_file($attachmentId);
         if (! is_string($sourcePath) || ! is_file($sourcePath)) {
+            update_post_meta($attachmentId, self::WEBP_STATUS_META_KEY, 'failed');
             return;
         }
         $editor = wp_get_image_editor($sourcePath);
         if (is_wp_error($editor)) {
+            update_post_meta($attachmentId, self::WEBP_STATUS_META_KEY, 'failed');
             return;
         }
 
@@ -177,6 +210,7 @@ final class MediaService
             if (is_file($destination)) {
                 wp_delete_file($destination);
             }
+            update_post_meta($attachmentId, self::WEBP_STATUS_META_KEY, 'failed');
             return;
         }
 
@@ -186,6 +220,7 @@ final class MediaService
             'width' => (int) ($saved['width'] ?? 0),
             'height' => (int) ($saved['height'] ?? 0),
         ));
+        update_post_meta($attachmentId, self::WEBP_STATUS_META_KEY, 'generated');
     }
 
     private function loadWordPressMediaFunctions(): void

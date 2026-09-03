@@ -47,13 +47,13 @@ final class PageUploadService
             throw ApiException::forbidden();
         }
 
-        $inspected = $this->media->inspect($file);
+        $fingerprint = $this->media->fingerprint($file);
         $requestHash = hash('sha256', implode("\0", array(
             (string) $chapterId,
-            (string) $inspected['file']['name'],
-            $inspected['mime'],
-            (string) $inspected['file']['size'],
-            $inspected['digest'],
+            (string) $fingerprint['file']['name'],
+            (string) $fingerprint['file']['type'],
+            (string) $fingerprint['file']['size'],
+            $fingerprint['digest'],
         )));
         $scope = 'page-upload:' . $chapterId;
         $this->idempotency->deleteExpired(current_time('mysql', true));
@@ -72,6 +72,7 @@ final class PageUploadService
             );
         }
 
+        $inspected = $this->media->inspect($file, $fingerprint);
         $stored = $this->media->store($inspected);
         try {
             return $this->transactions->run(function () use (
