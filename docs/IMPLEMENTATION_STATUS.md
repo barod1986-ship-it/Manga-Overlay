@@ -6,7 +6,8 @@ Last updated: 2026-09-03
 
 - Node.js target fixed to major 24 via `.nvmrc` and `engines`.
 - Frontend PoC CI runs on Node 24.
-- PHP 8.4, WordPress 7.1.x, MySQL 8.4, and MariaDB 10.11 gates remain pending until the plugin/database phases exist.
+- PHP 8.4 and Composer are now exercised by the plugin-bootstrap CI job.
+- WordPress 7.1.x, MySQL 8.4, and MariaDB 10.11 runtime gates remain pending; the database matrix belongs to T-04.
 - The local bootstrap environment used for this change has Node 24 but does not expose PHP, Composer, or a database client; no backend compatibility claim is made yet.
 
 ## T-01 — PoC renderer
@@ -26,8 +27,6 @@ Still required before T-01 is marked complete:
 - Final visual approval in real Chrome, Firefox, and Safari (WebKit automation is not a substitute for physical Safari).
 - Confirm Arabic shaping and SFX stroke behavior with the final self-hosted fonts.
 - Capture reference screenshots at mobile, tablet, and desktop widths.
-
-## Next gate
 
 ## T-02 — PoC editor input
 
@@ -76,8 +75,8 @@ Implemented candidate:
 - Versioned canonical roles/capabilities from `USER_ROLES_PERMISSIONS.md`, including administrator access without role-name authorization checks.
 - No data removal on deactivation; uninstall cleanup requires the explicit `mol_delete_data_on_uninstall=1` option.
 - PHP 8.4 lint, bootstrap smoke tests, Composer validation, and an authoritative production-autoloader check in CI.
+- `PHP Bootstrap` run #1 passed all steps for commit `9e0c9e5`: <https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33766290181>.
 
 Pending before T-03 is marked complete:
 
-- GitHub Actions `PHP Bootstrap` must pass on the branch.
 - Activation must be smoke-tested in a real WordPress 7.1.x installation; the isolated CI harness is not a substitute for WordPress runtime validation.
