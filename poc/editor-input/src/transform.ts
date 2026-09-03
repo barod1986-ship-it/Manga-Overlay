@@ -14,8 +14,37 @@ export interface ResizeDraft {
 
 export type PercentGeometryField = 'x_unit' | 'y_unit' | 'w_unit' | 'h_unit';
 
+export const MIN_STAGE_ZOOM = 0.65;
+export const MAX_STAGE_ZOOM = 2.25;
+
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
+}
+
+export function clampStageZoom(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 1;
+  }
+  return clamp(value, MIN_STAGE_ZOOM, MAX_STAGE_ZOOM);
+}
+
+export function scaleStageZoom(startZoom: number, startDistance: number, currentDistance: number): number {
+  if (!Number.isFinite(startDistance) || !Number.isFinite(currentDistance) || startDistance <= 0) {
+    return clampStageZoom(startZoom);
+  }
+  return clampStageZoom(startZoom * (currentDistance / startDistance));
+}
+
+export function panStageScroll(
+  startLeft: number,
+  startTop: number,
+  pointerDeltaX: number,
+  pointerDeltaY: number,
+): { readonly left: number; readonly top: number } {
+  return {
+    left: Math.max(0, startLeft - pointerDeltaX),
+    top: Math.max(0, startTop - pointerDeltaY),
+  };
 }
 
 function requireStageSize(stage: StageSize): void {

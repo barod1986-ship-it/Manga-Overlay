@@ -54,7 +54,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-rows: 68px 54px minmax(0, 1fr);
   height: 100vh;
-  height: 100dvh;
+  height: var(--mol-visual-height, 100dvh);
   overflow: hidden;
   background: var(--ink);
 }
@@ -270,6 +270,22 @@ textarea:focus-visible {
   font-size: 1.5rem;
 }
 
+.mol-sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mol-sheet-size-toggle {
+  display: none;
+  min-width: 64px;
+  min-height: 44px;
+  padding-inline: 10px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--ink-raised);
+}
+
 .mol-properties-content {
   padding: 16px;
 }
@@ -478,6 +494,12 @@ textarea:focus-visible {
   padding: 58px 36px 80px;
   touch-action: none;
   overscroll-behavior: contain;
+  direction: ltr;
+  cursor: default;
+}
+
+.mol-stage-viewport[data-panning='true'] {
+  cursor: grabbing;
 }
 
 .mol-stage-canvas {
@@ -759,7 +781,7 @@ textarea:focus-visible {
     inset-inline: 0;
     inset-block-end: calc(70px + env(safe-area-inset-bottom));
     display: block;
-    max-height: 45vh;
+    max-height: var(--mol-sheet-compact-height, 45vh);
     overflow: auto;
     border: 1px solid var(--line);
     border-block-end: 0;
@@ -776,12 +798,20 @@ textarea:focus-visible {
     transition: transform 160ms ease;
   }
 
-  .mol-properties-panel {
-    max-height: 85vh;
+  .mol-mobile-sheet[data-mobile-size='expanded'] {
+    max-height: var(--mol-sheet-expanded-height, 85vh);
   }
 
-  .mol-sheet-close {
+  .mol-sheet-close,
+  .mol-sheet-size-toggle {
     display: block;
+  }
+
+  .moveable-control {
+    width: 22px !important;
+    height: 22px !important;
+    margin-top: -11px !important;
+    margin-left: -11px !important;
   }
 
   .mol-properties-content {

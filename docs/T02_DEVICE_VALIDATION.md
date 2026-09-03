@@ -13,6 +13,14 @@ npm run dev:editor-poc
 
 Open the `Network` URL printed by Vite from each device. This PoC holds fixture data in memory, makes no editor REST calls, and must not be exposed as a production service.
 
+Alternatively, download the `t02-device-preview` artifact from the latest successful `Frontend PoC` GitHub Actions run. Extract it on a computer connected to the same trusted network, then serve the extracted directory:
+
+```bash
+python3 -m http.server 4174 --bind 0.0.0.0
+```
+
+Open `http://<computer-lan-ip>:4174/` on the physical devices. The artifact is retained for 14 days and contains the exact candidate verified by that workflow run.
+
 ## Device record
 
 Fill one row per physical device. Use exact OS and browser versions.
@@ -36,6 +44,7 @@ Run every item in portrait and repeat items 1–8 in landscape.
 - [ ] 6. Pinch/transform a selected element without activating stage zoom.
 - [ ] 7. Open the properties sheet and enter mixed Arabic, punctuation, and numerals in the textarea.
 - [ ] 8. Open and close the software keyboard; the active textarea and close control remain reachable.
+- [ ] 8a. Switch the properties sheet between 45% and 85% while the keyboard is open.
 - [ ] 9. Change X/Y/W/H/rotation numerically and use every nudge/width/rotation step button.
 - [ ] 10. Open and close the layers sheet and select every layer.
 - [ ] 11. Add every element type and confirm the correct initial appearance.

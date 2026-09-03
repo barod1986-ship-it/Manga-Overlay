@@ -130,6 +130,14 @@ test('uses the mobile toolbar and properties bottom sheet on touch viewports', a
   await expect(properties).toHaveAttribute('data-mobile-open', 'false');
   await toolbar.getByRole('button', { name: 'تحديد' }).click();
   await expect(properties).toHaveAttribute('data-mobile-open', 'true');
+  await expect(properties).toHaveAttribute('data-mobile-size', 'compact');
+  const compactBox = await properties.boundingBox();
+  await page.getByRole('button', { name: 'توسيع' }).click();
+  await expect(properties).toHaveAttribute('data-mobile-size', 'expanded');
+  const expandedBox = await properties.boundingBox();
+  expect(compactBox).not.toBeNull();
+  expect(expandedBox).not.toBeNull();
+  expect(expandedBox?.height ?? 0).toBeGreaterThan(compactBox?.height ?? 0);
   await expect(page.getByTestId('content-input')).toBeVisible();
 
   await page.getByRole('button', { name: 'إغلاق الخصائص' }).click();

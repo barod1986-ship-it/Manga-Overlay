@@ -16,9 +16,12 @@ import Moveable, {
 } from 'react-moveable';
 import { OverlayRenderer, type OverlayElement } from '@mol/poc-renderer';
 import {
+  clampStageZoom,
   moveElementByPixels,
+  panStageScroll,
   resizeElementFromPixels,
   rotateElementToDegrees,
+  scaleStageZoom,
   type ResizeDraft,
   type StageSize,
 } from './transform';
@@ -53,12 +56,15 @@ interface Point {
   readonly y: number;
 }
 
-function pointDistance(first: Point, second: Point): number {
-  return Math.hypot(second.x - first.x, second.y - first.y);
+interface PanDraft {
+  readonly pointerId: number;
+  readonly point: Point;
+  readonly scrollLeft: number;
+  readonly scrollTop: number;
 }
 
-function clampZoom(value: number): number {
-  return Math.min(Math.max(value, 0.65), 2.25);
+function pointDistance(first: Point, second: Point): number {
+  return Math.hypot(second.x - first.x, second.y - first.y);
 }
 
 export function EditorStage({
@@ -80,10 +86,12 @@ export function EditorStage({
   const rotateDraftRef = useRef<RotateDraft | null>(null);
   const touchPointsRef = useRef(new Map<number, Point>());
   const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null);
+  const panStartRef = useRef<PanDraft | null>(null);
   const [target, setTarget] = useState<HTMLElement | null>(null);
   const [elementGuidelines, setElementGuidelines] = useState<HTMLElement[]>([]);
   const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
   const [snappingEnabled, setSnappingEnabled] = useState(true);
+  const [isPanning, setIsPanning] = useState(false);
   const selectedElement = elements.find((element) => element.id === selectedId) ?? null;
 
   const refreshMoveableTargets = useCallback(() => {
@@ -294,10 +302,24 @@ export function EditorStage({
     }
 
     touchPointsRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    event.currentTarget.setPointerCapture(event.pointerId);
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic pointers and a few older engines can reject capture; the
+      // gesture still works while the pointer remains inside the viewport.
+    }
     const points = Array.from(touchPointsRef.current.values());
     if (points.length === 2 && points[0] !== undefined && points[1] !== undefined) {
       pinchStartRef.current = { distance: pointDistance(points[0], points[1]), zoom };
+      panStartRef.current = null;
+      setIsPanning(false);
+    } else if (points.length === 1 && zoom > 1) {
+      panStartRef.current = {
+        pointerId: event.pointerId,
+        point: points[0] ?? { x: event.clientX, y: event.clientY },
+        scrollLeft: event.currentTarget.scrollLeft,
+        scrollTop: event.currentTarget.scrollTop,
+      };
     }
   };
 
@@ -308,19 +330,49 @@ export function EditorStage({
     touchPointsRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     const points = Array.from(touchPointsRef.current.values());
     const pinchStart = pinchStartRef.current;
-    if (points.length !== 2 || points[0] === undefined || points[1] === undefined || pinchStart === null) {
+    if (points.length === 2 && points[0] !== undefined && points[1] !== undefined && pinchStart !== null) {
+      event.preventDefault();
+      onZoomChange(scaleStageZoom(
+        pinchStart.zoom,
+        pinchStart.distance,
+        pointDistance(points[0], points[1]),
+      ));
       return;
     }
-    event.preventDefault();
-    const distance = pointDistance(points[0], points[1]);
-    if (pinchStart.distance > 0) {
-      onZoomChange(clampZoom(pinchStart.zoom * (distance / pinchStart.distance)));
+
+    const panStart = panStartRef.current;
+    const viewport = viewportRef.current;
+    if (points.length === 1 && panStart !== null && viewport !== null && panStart.pointerId === event.pointerId) {
+      event.preventDefault();
+      const scroll = panStageScroll(
+        panStart.scrollLeft,
+        panStart.scrollTop,
+        event.clientX - panStart.point.x,
+        event.clientY - panStart.point.y,
+      );
+      viewport.scrollLeft = scroll.left;
+      viewport.scrollTop = scroll.top;
+      setIsPanning(true);
     }
   };
 
   const handleStagePointerEnd = (event: ReactPointerEvent<HTMLDivElement>): void => {
     touchPointsRef.current.delete(event.pointerId);
     pinchStartRef.current = null;
+    const remaining = Array.from(touchPointsRef.current.entries());
+    const nextPointer = remaining[0];
+    const viewport = viewportRef.current;
+    if (remaining.length === 1 && nextPointer !== undefined && viewport !== null && zoom > 1) {
+      panStartRef.current = {
+        pointerId: nextPointer[0],
+        point: nextPointer[1],
+        scrollLeft: viewport.scrollLeft,
+        scrollTop: viewport.scrollTop,
+      };
+    } else {
+      panStartRef.current = null;
+      setIsPanning(false);
+    }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -337,15 +389,15 @@ export function EditorStage({
     const horizontalPadding = Number.parseFloat(style.paddingInlineStart)
       + Number.parseFloat(style.paddingInlineEnd);
     const availableWidth = Math.max(viewport.clientWidth - horizontalPadding, 1);
-    onZoomChange(clampZoom(availableWidth / frame.offsetWidth));
+    onZoomChange(clampStageZoom(availableWidth / frame.offsetWidth));
   };
 
   return (
     <section className="mol-stage-section" aria-label="مساحة تحرير صفحة المانجا">
       <div className="mol-stage-zoom-controls" aria-label="تكبير مساحة العمل">
-        <button type="button" data-zoom-action="out" onClick={() => onZoomChange(clampZoom(zoom - 0.1))} aria-label="تصغير">−</button>
+        <button type="button" data-zoom-action="out" onClick={() => onZoomChange(clampStageZoom(zoom - 0.1))} aria-label="تصغير">−</button>
         <output data-testid="stage-zoom">{Math.round(zoom * 100)}%</output>
-        <button type="button" data-zoom-action="in" onClick={() => onZoomChange(clampZoom(zoom + 0.1))} aria-label="تكبير">+</button>
+        <button type="button" data-zoom-action="in" onClick={() => onZoomChange(clampStageZoom(zoom + 0.1))} aria-label="تكبير">+</button>
         <button type="button" data-zoom-action="reset" onClick={() => onZoomChange(1)}>100%</button>
         <button type="button" data-zoom-action="fit" onClick={fitStageWidth}>ملاءمة</button>
       </div>
@@ -354,6 +406,7 @@ export function EditorStage({
         ref={viewportRef}
         className="mol-stage-viewport"
         data-zoom={zoom.toFixed(2)}
+        data-panning={isPanning}
         onPointerDown={handleStagePointerDown}
         onPointerMove={handleStagePointerMove}
         onPointerUp={handleStagePointerEnd}
@@ -391,8 +444,8 @@ export function EditorStage({
                 origin={false}
                 keepRatio={false}
                 useResizeObserver
-                linePadding={8}
-                controlPadding={10}
+                linePadding={12}
+                controlPadding={14}
                 onDragStart={handleDragStart}
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}

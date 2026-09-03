@@ -42,8 +42,12 @@ Candidate implemented:
 - Touch targets of at least 44px for primary mobile controls.
 - Stage zoom buttons and a two-pointer pinch handler outside selected elements.
 - Explicit 100% and fit-width zoom actions; holding `Alt` temporarily disables snapping on desktop.
-- Five unit tests for normalized transform state and Playwright coverage for Chromium, Firefox, and mobile WebKit.
+- One-finger stage pan while zoomed, with physical-axis scrolling kept independent from RTL.
+- Properties bottom sheet supports 45%/85% states and follows `visualViewport` height when the software keyboard changes the usable viewport.
+- Moveable control padding is enlarged for the physical-device touch-target check.
+- Eight unit tests for normalized transform/zoom/pan state and Playwright coverage for Chromium, Firefox, and mobile WebKit.
 - A repeatable physical-device evidence sheet in `docs/T02_DEVICE_VALIDATION.md`.
+- CI publishes a 14-day `t02-device-preview` artifact for same-network testing without a full repository checkout.
 
 Still required before T-02 is marked complete:
 

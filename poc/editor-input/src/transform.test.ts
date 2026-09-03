@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { OverlayElement } from '@mol/poc-renderer';
 import {
+  clampStageZoom,
   moveElementByPixels,
   nudgeElementByUnits,
+  panStageScroll,
   resizeElementFromPixels,
   rotateElementToDegrees,
+  scaleStageZoom,
   setPercentGeometry,
   unitsToPercent,
 } from './transform';
@@ -77,5 +80,22 @@ describe('editor transform commits', () => {
     expect(nudged.x_unit).toBe(360_000);
     expect(nudged.y_unit).toBe(95_000);
     expect(unitsToPercent(nudged.x_unit)).toBe(36);
+  });
+
+  it('clamps explicit and pinch zoom to the supported stage range', () => {
+    expect(clampStageZoom(0.2)).toBe(0.65);
+    expect(clampStageZoom(4)).toBe(2.25);
+    expect(scaleStageZoom(1, 100, 160)).toBe(1.6);
+    expect(scaleStageZoom(2, 100, 200)).toBe(2.25);
+  });
+
+  it('keeps an invalid pinch distance at a safe zoom', () => {
+    expect(scaleStageZoom(1.4, 0, 120)).toBe(1.4);
+    expect(clampStageZoom(Number.NaN)).toBe(1);
+  });
+
+  it('turns a physical drag into non-negative stage scroll offsets', () => {
+    expect(panStageScroll(120, 80, -35, -20)).toEqual({ left: 155, top: 100 });
+    expect(panStageScroll(10, 5, 40, 20)).toEqual({ left: 0, top: 0 });
   });
 });

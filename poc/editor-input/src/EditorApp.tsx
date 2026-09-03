@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type ElementType, type OverlayElement } from '@mol/poc-renderer';
 import { EditorStage } from './EditorStage';
 import { createLocalElement, ELEMENT_TYPE_LABELS, INITIAL_ELEMENTS } from './fixtures';
@@ -11,6 +11,7 @@ import {
 } from './transform';
 
 type MobileSheet = 'layers' | 'properties' | null;
+type MobileSheetSize = 'compact' | 'expanded';
 
 interface AddTool {
   readonly type: ElementType;
@@ -57,12 +58,36 @@ export function EditorApp() {
   const [preview, setPreview] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
+  const [mobileSheetSize, setMobileSheetSize] = useState<MobileSheetSize>('compact');
   const nextId = useRef(300);
 
   const selectedElement = useMemo(
     () => elements.find((element) => element.id === selectedId) ?? null,
     [elements, selectedId],
   );
+
+  useEffect(() => {
+    const visualViewport = window.visualViewport;
+    const syncVisualHeight = (): void => {
+      const height = visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty('--mol-visual-height', `${Math.round(height)}px`);
+      document.documentElement.style.setProperty('--mol-sheet-compact-height', `${Math.round(height * 0.45)}px`);
+      document.documentElement.style.setProperty('--mol-sheet-expanded-height', `${Math.round(height * 0.85)}px`);
+    };
+
+    syncVisualHeight();
+    visualViewport?.addEventListener('resize', syncVisualHeight);
+    visualViewport?.addEventListener('scroll', syncVisualHeight);
+    window.addEventListener('resize', syncVisualHeight);
+    return () => {
+      visualViewport?.removeEventListener('resize', syncVisualHeight);
+      visualViewport?.removeEventListener('scroll', syncVisualHeight);
+      window.removeEventListener('resize', syncVisualHeight);
+      document.documentElement.style.removeProperty('--mol-visual-height');
+      document.documentElement.style.removeProperty('--mol-sheet-compact-height');
+      document.documentElement.style.removeProperty('--mol-sheet-expanded-height');
+    };
+  }, []);
 
   const updateElement = useCallback(
     (id: number, update: (element: OverlayElement) => OverlayElement) => {
@@ -81,6 +106,11 @@ export function EditorApp() {
     setSelectedId(id);
   }, []);
 
+  const openMobileSheet = (sheet: Exclude<MobileSheet, null>): void => {
+    setMobileSheetSize('compact');
+    setMobileSheet(sheet);
+  };
+
   const addElement = (type: ElementType): void => {
     const id = nextId.current;
     nextId.current += 1;
@@ -88,7 +118,7 @@ export function EditorApp() {
     setElements((current) => [...current, created]);
     setSelectedId(id);
     setPreview(false);
-    setMobileSheet(null);
+    openMobileSheet('properties');
   };
 
   const resetDemo = (): void => {
@@ -96,7 +126,8 @@ export function EditorApp() {
     setSelectedId(INITIAL_ELEMENTS[0]?.id ?? null);
     setPreview(false);
     setZoom(1);
-    setMobileSheet('properties');
+    setMobileSheet(null);
+    setMobileSheetSize('compact');
     nextId.current = 300;
   };
 
@@ -150,6 +181,7 @@ export function EditorApp() {
         <aside
           className="mol-properties-panel mol-mobile-sheet"
           data-mobile-open={mobileSheet === 'properties'}
+          data-mobile-size={mobileSheetSize}
           data-testid="properties-panel"
           aria-label="خصائص العنصر"
         >
@@ -158,12 +190,20 @@ export function EditorApp() {
               <p>الخصائص</p>
               <h2>{selectedElement === null ? 'لا يوجد تحديد' : ELEMENT_TYPE_LABELS[selectedElement.element_type]}</h2>
             </div>
-            <button
-              type="button"
-              className="mol-sheet-close"
-              aria-label="إغلاق الخصائص"
-              onClick={() => setMobileSheet(null)}
-            >×</button>
+            <div className="mol-sheet-actions">
+              <button
+                type="button"
+                className="mol-sheet-size-toggle"
+                aria-expanded={mobileSheetSize === 'expanded'}
+                onClick={() => setMobileSheetSize((size) => size === 'compact' ? 'expanded' : 'compact')}
+              >{mobileSheetSize === 'compact' ? 'توسيع' : 'تصغير'}</button>
+              <button
+                type="button"
+                className="mol-sheet-close"
+                aria-label="إغلاق الخصائص"
+                onClick={() => setMobileSheet(null)}
+              >×</button>
+            </div>
           </div>
 
           {selectedElement === null ? (
@@ -262,6 +302,7 @@ export function EditorApp() {
         <aside
           className="mol-layers-panel mol-mobile-sheet"
           data-mobile-open={mobileSheet === 'layers'}
+          data-mobile-size="compact"
           data-testid="layers-panel"
           aria-label="طبقات الصفحة"
         >
@@ -306,7 +347,7 @@ export function EditorApp() {
         <button
           type="button"
           aria-pressed={mobileSheet === 'properties'}
-          onClick={() => setMobileSheet('properties')}
+          onClick={() => openMobileSheet('properties')}
         >
           <FieldIcon glyph="↖" />
           تحديد
@@ -320,7 +361,7 @@ export function EditorApp() {
         <button
           type="button"
           aria-pressed={mobileSheet === 'layers'}
-          onClick={() => setMobileSheet('layers')}
+          onClick={() => openMobileSheet('layers')}
         >
           <FieldIcon glyph="☷" />
           الطبقات
