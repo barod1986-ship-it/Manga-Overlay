@@ -14,6 +14,8 @@ function molContentIntegrationAssert(bool $condition, string $message): void
     }
 }
 
+global $wpdb;
+molContentIntegrationAssert($wpdb instanceof wpdb, 'WordPress did not expose wpdb.');
 molContentIntegrationAssert(defined('ABSPATH'), 'WordPress was not loaded.');
 molContentIntegrationAssert('7.1' === get_bloginfo('version'), 'Unexpected WordPress version.');
 
