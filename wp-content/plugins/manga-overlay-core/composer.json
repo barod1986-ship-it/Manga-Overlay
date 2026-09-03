@@ -1,0 +1,27 @@
+{
+  "name": "manga-overlay/core",
+  "description": "Core domain plugin for the Manga Overlay platform.",
+  "type": "wordpress-plugin",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "MOL\\": "src/"
+    }
+  },
+  "config": {
+    "allow-plugins": false,
+    "optimize-autoloader": true,
+    "sort-packages": true
+  },
+  "scripts": {
+    "lint": "@php tests/lint.php",
+    "test": "@php tests/bootstrap-smoke.php",
+    "check": [
+      "@lint",
+      "@test"
+    ]
+  }
+}

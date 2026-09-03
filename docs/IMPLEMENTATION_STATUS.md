@@ -60,3 +60,24 @@ Still required before T-02 is marked complete:
 ## Next gate
 
 Do not begin T-03 WordPress/API scaffolding until the physical iOS and Android T-02 checks pass or the Master Spec is amended through its decision process.
+
+## Owner-directed parallel work
+
+The owner repeatedly directed implementation to continue after the open hardware gate was reported. T-03 bootstrap work is therefore developed on the same draft PR without marking T-02 complete and without treating the branch as release-ready.
+
+## T-03 — Plugin bootstrap
+
+Implemented candidate:
+
+- Real `manga-overlay-core` WordPress plugin entry point with direct-access guard and missing-autoloader admin notice.
+- Composer PSR-4 mapping from `MOL\\` to `src/`, requiring PHP 8.4.
+- Idempotent activation/runtime version manager.
+- Non-autoloaded `mol_db_version=0` baseline; T-03 creates no schema and never downgrades a later migration version.
+- Versioned canonical roles/capabilities from `USER_ROLES_PERMISSIONS.md`, including administrator access without role-name authorization checks.
+- No data removal on deactivation; uninstall cleanup requires the explicit `mol_delete_data_on_uninstall=1` option.
+- PHP 8.4 lint, bootstrap smoke tests, Composer validation, and an authoritative production-autoloader check in CI.
+
+Pending before T-03 is marked complete:
+
+- GitHub Actions `PHP Bootstrap` must pass on the branch.
+- Activation must be smoke-tested in a real WordPress 7.1.x installation; the isolated CI harness is not a substitute for WordPress runtime validation.

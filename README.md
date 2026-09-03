@@ -11,7 +11,8 @@
 | T-00 — تثبيت بيئة التطوير | بدأ: Node 24 مضبوط، والتحقق من PHP/DB ينتظر CI/بيئة WordPress |
 | T-01 — PoC renderer | منفذ ومختبر آليًا في `poc/renderer`؛ الاعتماد البصري النهائي معلّق |
 | T-02 — PoC React + Moveable | مرشح اختبار منفذ في `poc/editor-input`؛ أجهزة iOS/Android الفعلية معلّقة |
-| T-03 وما بعده | لم يبدأ |
+| T-03 — Plugin bootstrap | بدأ بالتوازي بتوجيه المالك؛ لا يغيّر بقاء بوابة T-02 مفتوحة |
+| T-04 وما بعده | لم يبدأ |
 
 ## بنية المستودع
 
@@ -21,7 +22,7 @@
 - `poc/renderer/`: نموذج T-01 المستقل لعرض DOM/SVG بإحداثيات normalized.
 - `poc/editor-input/`: نموذج T-02 بـReact وMoveable للسحب والتحجيم والدوران وإدخال العربية.
 - `scripts/check-environment.sh`: فحص متطلبات بيئة T-00.
-- `wp-content/`: سيُضاف عند الوصول إلى T-03؛ لن تُنشأ إضافة شكلية قبل اجتياز PoCs.
+- `wp-content/plugins/manga-overlay-core/`: أساس إضافة T-03؛ لا جداول أو REST قبل مهامها المحددة.
 
 ## تشغيل نموذج العرض
 
