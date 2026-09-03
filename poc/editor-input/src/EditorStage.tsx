@@ -73,6 +73,7 @@ export function EditorStage({
   const frameRef = useRef<HTMLElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<OverlayRenderer | null>(null);
   const dragDraftRef = useRef<DragDraft | null>(null);
   const resizeDraftRef = useRef<ActiveResizeDraft | null>(null);
@@ -82,6 +83,7 @@ export function EditorStage({
   const [target, setTarget] = useState<HTMLElement | null>(null);
   const [elementGuidelines, setElementGuidelines] = useState<HTMLElement[]>([]);
   const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
+  const [snappingEnabled, setSnappingEnabled] = useState(true);
   const selectedElement = elements.find((element) => element.id === selectedId) ?? null;
 
   const refreshMoveableTargets = useCallback(() => {
@@ -158,6 +160,24 @@ export function EditorStage({
     layer.addEventListener('pointerdown', handlePointerDown);
     return () => layer.removeEventListener('pointerdown', handlePointerDown);
   }, [onSelect]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Alt') {
+        setSnappingEnabled(false);
+      }
+    };
+    const restoreSnapping = (): void => setSnappingEnabled(true);
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', restoreSnapping);
+    window.addEventListener('blur', restoreSnapping);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', restoreSnapping);
+      window.removeEventListener('blur', restoreSnapping);
+    };
+  }, []);
 
   const currentStageSize = (): StageSize => {
     const layer = layerRef.current;
@@ -306,16 +326,32 @@ export function EditorStage({
     }
   };
 
+  const fitStageWidth = (): void => {
+    const viewport = viewportRef.current;
+    const frame = frameRef.current;
+    if (viewport === null || frame === null || frame.offsetWidth <= 0) {
+      return;
+    }
+
+    const style = window.getComputedStyle(viewport);
+    const horizontalPadding = Number.parseFloat(style.paddingInlineStart)
+      + Number.parseFloat(style.paddingInlineEnd);
+    const availableWidth = Math.max(viewport.clientWidth - horizontalPadding, 1);
+    onZoomChange(clampZoom(availableWidth / frame.offsetWidth));
+  };
+
   return (
     <section className="mol-stage-section" aria-label="مساحة تحرير صفحة المانجا">
       <div className="mol-stage-zoom-controls" aria-label="تكبير مساحة العمل">
-        <button type="button" onClick={() => onZoomChange(clampZoom(zoom - 0.1))} aria-label="تصغير">−</button>
-        <output>{Math.round(zoom * 100)}%</output>
-        <button type="button" onClick={() => onZoomChange(clampZoom(zoom + 0.1))} aria-label="تكبير">+</button>
-        <button type="button" onClick={() => onZoomChange(1)}>100%</button>
+        <button type="button" data-zoom-action="out" onClick={() => onZoomChange(clampZoom(zoom - 0.1))} aria-label="تصغير">−</button>
+        <output data-testid="stage-zoom">{Math.round(zoom * 100)}%</output>
+        <button type="button" data-zoom-action="in" onClick={() => onZoomChange(clampZoom(zoom + 0.1))} aria-label="تكبير">+</button>
+        <button type="button" data-zoom-action="reset" onClick={() => onZoomChange(1)}>100%</button>
+        <button type="button" data-zoom-action="fit" onClick={fitStageWidth}>ملاءمة</button>
       </div>
 
       <div
+        ref={viewportRef}
         className="mol-stage-viewport"
         data-zoom={zoom.toFixed(2)}
         onPointerDown={handleStagePointerDown}
@@ -341,14 +377,14 @@ export function EditorStage({
                 resizable
                 rotatable
                 pinchable
-                snappable
+                snappable={snappingEnabled}
                 snapContainer={frameRef.current}
                 snapDirections={{ left: true, top: true, right: true, bottom: true, center: true, middle: true }}
                 elementSnapDirections={{ left: true, top: true, right: true, bottom: true, center: true, middle: true }}
                 elementGuidelines={elementGuidelines}
                 verticalGuidelines={[0, stageSize.width / 2, stageSize.width]}
                 horizontalGuidelines={[0, stageSize.height / 2, stageSize.height]}
-                snapThreshold={6}
+                snapThreshold={Math.max(3, 6 / zoom)}
                 isDisplaySnapDigit={false}
                 renderDirections={['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']}
                 rotationPosition="top"

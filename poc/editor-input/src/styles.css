@@ -566,6 +566,10 @@ textarea:focus-visible {
   border-inline-end: 1px solid var(--line);
 }
 
+.mol-stage-zoom-controls button[data-zoom-action='fit'] {
+  min-width: 66px;
+}
+
 .mol-stage-zoom-controls output {
   display: grid;
   min-width: 54px;
@@ -707,7 +711,7 @@ textarea:focus-visible {
     inset-block-start: 8px;
   }
 
-  .mol-stage-zoom-controls button:nth-of-type(2) {
+  .mol-stage-zoom-controls button[data-zoom-action='reset'] {
     display: none;
   }
 

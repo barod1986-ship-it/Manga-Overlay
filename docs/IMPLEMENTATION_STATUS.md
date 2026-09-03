@@ -41,7 +41,9 @@ Candidate implemented:
 - Desktop properties/layers layout and a mobile bottom toolbar with bottom sheets.
 - Touch targets of at least 44px for primary mobile controls.
 - Stage zoom buttons and a two-pointer pinch handler outside selected elements.
+- Explicit 100% and fit-width zoom actions; holding `Alt` temporarily disables snapping on desktop.
 - Five unit tests for normalized transform state and Playwright coverage for Chromium, Firefox, and mobile WebKit.
+- A repeatable physical-device evidence sheet in `docs/T02_DEVICE_VALIDATION.md`.
 
 Still required before T-02 is marked complete:
 
@@ -49,6 +51,7 @@ Still required before T-02 is marked complete:
 - Run the same checks on a physical Android device.
 - Record browser/device/OS versions and any Moveable quirks in this status file.
 - Review the candidate visually at desktop and narrow mobile widths.
+- Persisted preset, REST autosave, lease-renewal, and lock-conflict scenarios remain integration gates for their backend/editor tasks; the local interaction PoC does not simulate them.
 
 ## Next gate
 

@@ -21,3 +21,5 @@ npm run test:e2e:editor-poc
 ```
 
 Automated WebKit emulation does not satisfy the actual-device gate. T-02 remains incomplete until the checklist in `docs/IMPLEMENTATION_STATUS.md` passes on physical iOS and Android devices.
+
+Use `docs/T02_DEVICE_VALIDATION.md` to record the required physical-device evidence. Hold `Alt` during a desktop transform to temporarily disable snapping.

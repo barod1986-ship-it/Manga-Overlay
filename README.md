@@ -17,6 +17,7 @@
 
 - `docs/master-spec/v1.1.3/`: النسخة المجمدة من المواصفات والعقود والتقارير.
 - `docs/IMPLEMENTATION_STATUS.md`: سجل التنفيذ والبوابات المتبقية.
+- `docs/T02_DEVICE_VALIDATION.md`: قائمة إثبات T-02 على أجهزة iOS وAndroid الفعلية.
 - `poc/renderer/`: نموذج T-01 المستقل لعرض DOM/SVG بإحداثيات normalized.
 - `poc/editor-input/`: نموذج T-02 بـReact وMoveable للسحب والتحجيم والدوران وإدخال العربية.
 - `scripts/check-environment.sh`: فحص متطلبات بيئة T-00.
