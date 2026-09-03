@@ -84,6 +84,7 @@ final class WorkContent
                 'labels' => array(
                     'name' => __('Works', 'manga-overlay-core'),
                     'singular_name' => __('Work', 'manga-overlay-core'),
+                    'menu_name' => __('Manga Overlay', 'manga-overlay-core'),
                     'add_new_item' => __('Add Work', 'manga-overlay-core'),
                     'edit_item' => __('Edit Work', 'manga-overlay-core'),
                     'view_item' => __('View Work', 'manga-overlay-core'),

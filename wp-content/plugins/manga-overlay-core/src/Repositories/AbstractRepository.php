@@ -45,6 +45,27 @@ abstract class AbstractRepository
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $where
+     * @param list<string> $formats
+     * @param list<string> $whereFormats
+     */
+    protected function updateRecord(
+        string $table,
+        array $data,
+        array $where,
+        array $formats,
+        array $whereFormats
+    ): int {
+        $result = $this->database->update($table, $data, $where, $formats, $whereFormats);
+        if (false === $result) {
+            throw DatabaseException::fromWpdb($this->database, sprintf('Update %s', $table));
+        }
+
+        return (int) $result;
+    }
+
     /** @return array<string, mixed>|null */
     protected function fetchOne(string $query): ?array
     {

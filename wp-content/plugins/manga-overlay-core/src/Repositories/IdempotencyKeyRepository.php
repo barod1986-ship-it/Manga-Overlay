@@ -84,4 +84,23 @@ final class IdempotencyKeyRepository extends AbstractRepository
             'Deleting expired idempotency keys'
         );
     }
+
+    /** @param mixed $response */
+    public function complete(int $recordId, string $resourceType, int $resourceId, int $responseCode, mixed $response): void
+    {
+        $this->positiveId($recordId, 'idempotency_record_id');
+        $this->positiveId($resourceId, 'resource_id');
+        $this->updateRecord(
+            $this->tables->idempotencyKeys,
+            array(
+                'resource_type' => $resourceType,
+                'resource_id' => $resourceId,
+                'response_code' => $responseCode,
+                'response_json' => JsonDocument::encode($response),
+            ),
+            array('id' => $recordId),
+            array('%s', '%d', '%d', '%s'),
+            array('%d')
+        );
+    }
 }

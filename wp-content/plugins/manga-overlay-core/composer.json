@@ -20,10 +20,12 @@
     "lint": "@php tests/lint.php",
     "test:bootstrap": "@php tests/bootstrap-smoke.php",
     "test:content-unit": "@php tests/content-unit.php",
+    "test:content-management-unit": "@php tests/content-management-unit.php",
     "test:database-unit": "@php tests/database-unit.php",
     "test": [
       "@test:bootstrap",
       "@test:content-unit",
+      "@test:content-management-unit",
       "@test:database-unit"
     ],
     "check": [

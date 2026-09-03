@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace MOL;
 
+use MOL\Admin\ChapterAdmin;
 use MOL\Activation\VersionManager;
 use MOL\Content\RewriteManager;
 use MOL\Content\WorkContent;
+use MOL\REST\Routes;
 
 final class Plugin
 {
@@ -20,6 +22,8 @@ final class Plugin
 
         (new WorkContent())->registerHooks();
         (new RewriteManager())->registerHooks();
+        (new Routes())->registerHooks();
+        (new ChapterAdmin())->registerHooks();
         (new VersionManager())->maybeUpgrade();
         self::$booted = true;
     }

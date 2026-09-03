@@ -57,7 +57,7 @@ jobs:
         with:
           php-version: '8.4'
           coverage: none
-          extensions: mysqli, mbstring, zip
+          extensions: gd, mysqli, mbstring, zip
           tools: composer:v2, wp-cli
 
       - name: Install plugin autoloader
@@ -81,3 +81,4 @@ jobs:
           wp plugin activate manga-overlay-core --path="$WP_PATH"
           wp eval-file "$WP_PATH/wp-content/plugins/manga-overlay-core/tests/database-integration.php" --path="$WP_PATH" --user=1
           wp eval-file "$WP_PATH/wp-content/plugins/manga-overlay-core/tests/content-integration.php" --path="$WP_PATH" --user=1
+          wp eval-file "$WP_PATH/wp-content/plugins/manga-overlay-core/tests/content-management-integration.php" --path="$WP_PATH" --user=1
