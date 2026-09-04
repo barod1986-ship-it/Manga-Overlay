@@ -9,13 +9,19 @@ use MOL\Domain\Policy\ChapterVisibilityPolicy;
 use MOL\Repositories\ChapterRepository;
 use MOL\Repositories\ContributionRepository;
 use MOL\Repositories\ElementRepository;
+use MOL\Repositories\ElementLockRepository;
 use MOL\Repositories\IdempotencyKeyRepository;
 use MOL\Repositories\PageRepository;
 use MOL\Repositories\ReadingProgressRepository;
+use MOL\Repositories\ReportRepository;
+use MOL\Repositories\StylePresetRepository;
 use MOL\Repositories\WorkRepository;
 use MOL\Services\ChapterService;
 use MOL\Services\ContentDeletionService;
 use MOL\Services\MediaService;
+use MOL\Services\ElementLockService;
+use MOL\Services\ElementStyleResolver;
+use MOL\Services\ElementWriteService;
 use MOL\Services\PageReorderService;
 use MOL\Services\PageUploadService;
 use MOL\Services\PublicReadService;
@@ -40,9 +46,28 @@ final class Routes
         $chapters = new ChapterRepository($wpdb);
         $pages = new PageRepository($wpdb);
         $elements = new ElementRepository($wpdb);
+        $elementLocks = new ElementLockRepository($wpdb);
         $contributions = new ContributionRepository($wpdb);
         $works = new WorkRepository($wpdb);
         $transactions = new TransactionManager($wpdb);
+        $elementController = new ElementController(new ElementWriteService(
+            $chapters,
+            $pages,
+            $elements,
+            $elementLocks,
+            $contributions,
+            new ReportRepository($wpdb),
+            new IdempotencyKeyRepository($wpdb),
+            new ElementStyleResolver(new StylePresetRepository($wpdb)),
+            $transactions
+        ));
+        $elementLockController = new ElementLockController(new ElementLockService(
+            $chapters,
+            $pages,
+            $elements,
+            $elementLocks,
+            $transactions
+        ));
         $deletions = new ContentDeletionService($wpdb, $transactions);
         $chapterController = new ChapterController(new ChapterService($chapters), $deletions);
         $pageController = new PageController(
@@ -161,6 +186,32 @@ final class Routes
                 'methods' => 'GET',
                 'callback' => array($publicReadController, 'listPageElements'),
                 'permission_callback' => '__return_true',
+            ),
+        ));
+        register_rest_route(self::API_NAMESPACE, '/elements', array(
+            array(
+                'methods' => 'POST',
+                'callback' => array($elementController, 'create'),
+                'permission_callback' => array(Permissions::class, 'editTranslations'),
+            ),
+        ));
+        register_rest_route(self::API_NAMESPACE, '/elements/(?P<id>\d+)', array(
+            array(
+                'methods' => 'PATCH',
+                'callback' => array($elementController, 'update'),
+                'permission_callback' => array(Permissions::class, 'editTranslations'),
+            ),
+            array(
+                'methods' => 'DELETE',
+                'callback' => array($elementController, 'delete'),
+                'permission_callback' => array(Permissions::class, 'deleteTranslationElements'),
+            ),
+        ));
+        register_rest_route(self::API_NAMESPACE, '/elements/(?P<id>\d+)/lock', array(
+            array(
+                'methods' => 'POST',
+                'callback' => array($elementLockController, 'acquire'),
+                'permission_callback' => array(Permissions::class, 'editTranslations'),
             ),
         ));
         register_rest_route(self::API_NAMESPACE, '/chapters/(?P<id>\d+)/elements', array(

@@ -8,14 +8,42 @@ final class RateLimiter
 {
     public function consumeUpload(int $userId): ?int
     {
-        $limit = max(0, (int) apply_filters('mol_upload_rate_limit', 20, $userId));
-        $window = max(1, (int) apply_filters('mol_upload_rate_window', 60, $userId));
+        return $this->consume(
+            'upload',
+            $userId,
+            max(0, (int) apply_filters('mol_upload_rate_limit', 20, $userId)),
+            max(1, (int) apply_filters('mol_upload_rate_window', 60, $userId))
+        );
+    }
+
+    public function consumeElementWrite(int $userId): ?int
+    {
+        return $this->consume(
+            'element_write',
+            $userId,
+            max(0, (int) apply_filters('mol_element_write_rate_limit', 120, $userId)),
+            max(1, (int) apply_filters('mol_element_write_rate_window', 60, $userId))
+        );
+    }
+
+    public function consumeLockAcquire(int $userId): ?int
+    {
+        return $this->consume(
+            'lock_acquire',
+            $userId,
+            max(0, (int) apply_filters('mol_lock_acquire_rate_limit', 60, $userId)),
+            max(1, (int) apply_filters('mol_lock_acquire_rate_window', 60, $userId))
+        );
+    }
+
+    private function consume(string $scope, int $userId, int $limit, int $window): ?int
+    {
         if (0 === $limit) {
             return null;
         }
 
         $now = time();
-        $key = 'mol_upload_rate_' . md5((string) $userId);
+        $key = 'mol_' . $scope . '_rate_' . md5((string) $userId);
         $record = get_transient($key);
         if (! is_array($record)
             || ! isset($record['count'], $record['reset'])

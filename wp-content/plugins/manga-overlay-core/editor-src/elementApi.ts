@@ -1,0 +1,175 @@
+import type { EditorBootstrap, EditorElement, LockLease } from './types';
+
+interface ElementResponse {
+  readonly data: EditorElement;
+  readonly meta: Readonly<Record<string, unknown>>;
+}
+
+interface LockResponse {
+  readonly data: LockLease;
+  readonly meta: Readonly<Record<string, unknown>>;
+}
+
+interface ErrorResponse {
+  readonly code?: unknown;
+  readonly message?: unknown;
+  readonly data?: unknown;
+}
+
+export class ElementApiError extends Error {
+  public constructor(
+    public readonly status: number,
+    public readonly code: string,
+    message: string,
+    public readonly retryAfter: number | null = null,
+  ) {
+    super(message);
+    this.name = 'ElementApiError';
+  }
+}
+
+export function createBody(element: EditorElement): Readonly<Record<string, unknown>> {
+  return {
+    page_id: element.page_id,
+    target_lang: element.target_lang,
+    element_type: element.element_type,
+    x_unit: element.x_unit,
+    y_unit: element.y_unit,
+    w_unit: element.w_unit,
+    h_unit: element.h_unit,
+    rotation_mdeg: element.rotation_mdeg,
+    z_index: element.z_index,
+    content: element.content,
+    style: element.style,
+  };
+}
+
+export function patchBody(element: EditorElement): Readonly<Record<string, unknown>> {
+  return {
+    element_type: element.element_type,
+    x_unit: element.x_unit,
+    y_unit: element.y_unit,
+    w_unit: element.w_unit,
+    h_unit: element.h_unit,
+    rotation_mdeg: element.rotation_mdeg,
+    z_index: element.z_index,
+    content: element.content,
+    style: element.style,
+  };
+}
+
+export class ElementApi {
+  private readonly root: URL;
+
+  public constructor(private readonly config: EditorBootstrap['api']) {
+    this.root = new URL(config.root, window.location.origin);
+  }
+
+  public async create(element: EditorElement, idempotencyKey: string): Promise<EditorElement> {
+    const response = await this.request<ElementResponse>('elements', {
+      method: 'POST',
+      headers: { 'MOL-Idempotency-Key': idempotencyKey },
+      body: createBody(element),
+    });
+
+    return response.data;
+  }
+
+  public async acquireLock(elementId: number): Promise<LockLease> {
+    const response = await this.request<LockResponse>(`elements/${elementId}/lock`, { method: 'POST' });
+
+    return response.data;
+  }
+
+  public async update(element: EditorElement, lockToken: string): Promise<EditorElement> {
+    const response = await this.request<ElementResponse>(`elements/${element.id}`, {
+      method: 'PATCH',
+      headers: {
+        'If-Match': `"${element.version}"`,
+        'X-MOL-Lock-Token': lockToken,
+      },
+      body: patchBody(element),
+    });
+
+    return response.data;
+  }
+
+  public async delete(element: EditorElement, lockToken: string): Promise<void> {
+    await this.request<null>(`elements/${element.id}`, {
+      method: 'DELETE',
+      headers: {
+        'If-Match': `"${element.version}"`,
+        'X-MOL-Lock-Token': lockToken,
+      },
+    });
+  }
+
+  private async request<T>(
+    path: string,
+    options: {
+      readonly method: 'POST' | 'PATCH' | 'DELETE';
+      readonly headers?: Readonly<Record<string, string>>;
+      readonly body?: Readonly<Record<string, unknown>>;
+    },
+  ): Promise<T> {
+    let response: Response;
+    try {
+      response = await fetch(endpointUrl(this.root.toString(), path, window.location.origin), {
+        method: options.method,
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+          'X-WP-Nonce': this.config.nonce,
+          ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...options.headers,
+        },
+        ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
+      });
+    } catch (error) {
+      throw new ElementApiError(
+        0,
+        'mol_network_error',
+        error instanceof Error ? error.message : 'Network request failed.',
+      );
+    }
+
+    if (response.status === 204) return null as T;
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+    if (!response.ok) {
+      const error = body !== null && typeof body === 'object' ? body as ErrorResponse : {};
+      const retryAfter = Number.parseInt(response.headers.get('Retry-After') ?? '', 10);
+      throw new ElementApiError(
+        response.status,
+        typeof error.code === 'string' ? error.code : 'mol_request_failed',
+        typeof error.message === 'string' ? error.message : 'The save request failed.',
+        Number.isFinite(retryAfter) ? retryAfter : null,
+      );
+    }
+
+    return body as T;
+  }
+}
+
+export function endpointUrl(root: string, path: string, origin: string): URL {
+  const base = new URL(root, origin);
+  const restRoute = base.searchParams.get('rest_route');
+  if (restRoute !== null) {
+    base.searchParams.set('rest_route', `${restRoute.replace(/\/?$/, '/')}${path}`);
+    return base;
+  }
+
+  return new URL(path, base);
+}
+
+export function idempotencyKey(localId: number): string {
+  const random = typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `element-${Math.abs(localId)}-${random}`.slice(0, 100);
+}

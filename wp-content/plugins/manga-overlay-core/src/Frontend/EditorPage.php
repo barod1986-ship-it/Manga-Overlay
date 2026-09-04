@@ -93,6 +93,7 @@ final class EditorPage
      *   chapter: array<string, mixed>,
      *   pages: list<array<string, mixed>>,
      *   targetLanguage: string,
+     *   api: array{root: string, nonce: string},
      *   links: array{work: string, reader: string|null},
      *   release: array{core: string}
      * }
@@ -152,6 +153,10 @@ final class EditorPage
             'chapter' => $chapter,
             'pages' => $pageGroups,
             'targetLanguage' => self::TARGET_LANGUAGE,
+            'api' => array(
+                'root' => esc_url_raw(rest_url('mol/v1/')),
+                'nonce' => wp_create_nonce('wp_rest'),
+            ),
             'links' => array(
                 'work' => $workUrl,
                 'reader' => $readerUrl,

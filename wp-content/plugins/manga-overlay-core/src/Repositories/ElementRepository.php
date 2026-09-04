@@ -78,6 +78,70 @@ final class ElementRepository extends AbstractRepository
         return null === $row ? null : $this->normalize($row);
     }
 
+    /** @return array<string, mixed>|null */
+    public function lockForUpdate(int $elementId): ?array
+    {
+        $this->positiveId($elementId, 'element_id');
+        $row = $this->fetchOne($this->prepare(
+            "SELECT * FROM {$this->tables->elements} WHERE id = %d FOR UPDATE",
+            $elementId
+        ));
+
+        return null === $row ? null : $this->normalize($row);
+    }
+
+    /** @param array<string, mixed> $changes */
+    public function update(int $elementId, array $changes): void
+    {
+        $this->positiveId($elementId, 'element_id');
+        $formatsByField = array(
+            'x_unit' => '%d',
+            'y_unit' => '%d',
+            'w_unit' => '%d',
+            'h_unit' => '%d',
+            'rotation_mdeg' => '%d',
+            'z_index' => '%d',
+            'content' => '%s',
+            'style' => '%s',
+            'version' => '%d',
+            'updated_by' => '%d',
+            'updated_at' => '%s',
+        );
+        $data = array();
+        $formats = array();
+        foreach ($formatsByField as $field => $format) {
+            if (! array_key_exists($field, $changes)) {
+                continue;
+            }
+            $databaseField = 'style' === $field ? 'style_json' : $field;
+            $data[$databaseField] = 'style' === $field
+                ? JsonDocument::encodeObject($changes[$field])
+                : $changes[$field];
+            $formats[] = $format;
+        }
+        if (array() === $data) {
+            throw new \InvalidArgumentException('At least one element field is required.');
+        }
+
+        $this->updateRecord(
+            $this->tables->elements,
+            $data,
+            array('id' => $elementId),
+            $formats,
+            array('%d')
+        );
+    }
+
+    public function delete(int $elementId): bool
+    {
+        $this->positiveId($elementId, 'element_id');
+
+        return 0 < $this->execute(
+            $this->prepare("DELETE FROM {$this->tables->elements} WHERE id = %d", $elementId),
+            'Deleting an element'
+        );
+    }
+
     /** @return list<array<string, mixed>> */
     public function forPage(int $pageId, string $targetLang = 'ar'): array
     {

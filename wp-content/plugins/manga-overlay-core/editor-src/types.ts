@@ -108,6 +108,10 @@ export interface EditorBootstrap {
   };
   readonly pages: readonly EditorPageData[];
   readonly targetLanguage: string;
+  readonly api: {
+    readonly root: string;
+    readonly nonce: string;
+  };
   readonly links: {
     readonly work: string;
     readonly reader: string | null;
@@ -115,6 +119,21 @@ export interface EditorBootstrap {
   readonly release: {
     readonly core: string;
   };
+}
+
+export type SaveStateKind = 'saved' | 'dirty' | 'saving' | 'offline' | 'locked' | 'conflict' | 'error';
+
+export interface SaveState {
+  readonly kind: SaveStateKind;
+  readonly message: string;
+  readonly canRetry: boolean;
+}
+
+export interface LockLease {
+  readonly element_id: number;
+  readonly user_id: number;
+  readonly lock_token: string;
+  readonly expires_at: string;
 }
 
 export interface EditorState {

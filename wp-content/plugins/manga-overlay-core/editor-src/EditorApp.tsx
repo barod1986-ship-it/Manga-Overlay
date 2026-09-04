@@ -32,6 +32,7 @@ import {
   unitsToPercent,
   type PercentGeometryField,
 } from './transform';
+import { useElementAutosave } from './useElementAutosave';
 import type {
   BurstStyle,
   EditorBootstrap,
@@ -294,7 +295,7 @@ function PropertiesPanel({
 }) {
   return (
     <aside className="mol-editor-properties" aria-label="الخصائص" data-testid="properties-panel">
-      <div className="mol-editor-panel-heading"><h2>الخصائص</h2><span>تحرير محلي</span></div>
+      <div className="mol-editor-panel-heading"><h2>الخصائص</h2><span>حفظ تلقائي</span></div>
       {element === null ? (
         <p className="mol-editor-empty-panel">اختر عنصرًا من الصفحة أو من قائمة الطبقات.</p>
       ) : (
@@ -343,7 +344,7 @@ function PropertiesPanel({
             <button type="button" onClick={onDuplicate}>نسخ العنصر</button>
             <button type="button" className="is-danger" onClick={onDelete}>حذف العنصر</button>
           </div>
-          <p className="mol-editor-readonly-note">التغييرات محفوظة في ذاكرة هذه الجلسة فقط. يضيف T‑12 الحفظ الشبكي وAutosave.</p>
+          <p className="mol-editor-readonly-note">تُرسل التغييرات تلقائيًا بعد توقف قصير. عند انقطاع الشبكة تبقى في ذاكرة هذا التبويب فقط.</p>
         </div>
       )}
     </aside>
@@ -353,7 +354,7 @@ function PropertiesPanel({
 export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
   const [state, dispatch] = useReducer(editorReducer, initialEditorState(window.location.search, data.pages.length));
   const [elementsByPage, setElementsByPage] = useState<ElementsByPage>(() => initialElements(data));
-  const [dirtyPages, setDirtyPages] = useState<ReadonlySet<number>>(() => new Set());
+  const elementsByPageRef = useRef(elementsByPage);
   const nextLocalId = useRef(-1);
   const page = data.pages[state.pagePosition] ?? null;
   const elements = page === null ? [] : elementsByPage[page.id] ?? [];
@@ -362,15 +363,57 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
     [elements, state.selectedElementId],
   );
 
-  const mutatePage = useCallback((pageId: number, mutation: (elements: readonly EditorElement[]) => readonly EditorElement[]): void => {
-    setElementsByPage((current) => ({ ...current, [pageId]: mutation(current[pageId] ?? []) }));
-    setDirtyPages((current) => new Set(current).add(pageId));
+  const setPageElements = useCallback((pageId: number, nextElements: readonly EditorElement[]): void => {
+    const next = { ...elementsByPageRef.current, [pageId]: nextElements };
+    elementsByPageRef.current = next;
+    setElementsByPage(next);
   }, []);
 
-  const updateElement = useCallback((id: number, update: (element: EditorElement) => EditorElement): void => {
+  const getElement = useCallback((id: number): EditorElement | null => {
+    for (const pageElements of Object.values(elementsByPageRef.current)) {
+      const found = pageElements.find((element) => element.id === id);
+      if (found !== undefined) return found;
+    }
+    return null;
+  }, []);
+
+  const replaceElement = useCallback((oldId: number, nextElement: EditorElement): void => {
+    for (const [pageIdText, pageElements] of Object.entries(elementsByPageRef.current)) {
+      if (!pageElements.some((element) => element.id === oldId)) continue;
+      const pageId = Number(pageIdText);
+      setPageElements(pageId, pageElements.map((element) => element.id === oldId ? nextElement : element));
+      return;
+    }
+  }, [setPageElements]);
+
+  const removeElement = useCallback((id: number): void => {
+    for (const [pageIdText, pageElements] of Object.entries(elementsByPageRef.current)) {
+      if (!pageElements.some((element) => element.id === id)) continue;
+      setPageElements(Number(pageIdText), pageElements.filter((element) => element.id !== id));
+      return;
+    }
+  }, [setPageElements]);
+
+  const autosave = useElementAutosave(data.api, {
+    getElement,
+    replaceElement,
+    removeElement,
+    onIdChange: (oldId, nextId) => {
+      if (state.selectedElementId === oldId) dispatch({ type: 'select-element', id: nextId });
+    },
+  });
+
+  const updateElement = useCallback((
+    id: number,
+    update: (element: EditorElement) => EditorElement,
+    saveDelay = 1_200,
+  ): void => {
     if (page === null) return;
-    mutatePage(page.id, (current) => current.map((element) => element.id === id ? update(element) : element));
-  }, [mutatePage, page]);
+    const current = elementsByPageRef.current[page.id] ?? [];
+    if (!current.some((element) => element.id === id)) return;
+    setPageElements(page.id, current.map((element) => element.id === id ? update(element) : element));
+    autosave.markDirty(id, saveDelay);
+  }, [autosave, page, setPageElements]);
 
   const selectElement = useCallback((id: number): void => dispatch({ type: 'select-element', id }), []);
   const focusElementText = useCallback((id: number): void => {
@@ -383,29 +426,38 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
     const id = nextLocalId.current;
     nextLocalId.current -= 1;
     const created = createLocalElement(page.id, data.targetLanguage, type, id, highestZIndex(elements) + 1);
-    mutatePage(page.id, (current) => [...current, created]);
+    setPageElements(page.id, [...elements, created]);
+    autosave.markDirty(id);
     selectElement(id);
-  }, [data.targetLanguage, elements, mutatePage, page, selectElement]);
+  }, [autosave, data.targetLanguage, elements, page, selectElement, setPageElements]);
 
   const duplicateSelected = useCallback((): void => {
     if (page === null || selectedElement === null) return;
     const id = nextLocalId.current;
     nextLocalId.current -= 1;
     const duplicate = duplicateLocalElement(selectedElement, id, highestZIndex(elements) + 1);
-    mutatePage(page.id, (current) => [...current, duplicate]);
+    setPageElements(page.id, [...elements, duplicate]);
+    autosave.markDirty(id);
     selectElement(id);
-  }, [elements, mutatePage, page, selectElement, selectedElement]);
+  }, [autosave, elements, page, selectElement, selectedElement, setPageElements]);
 
   const deleteSelected = useCallback((): void => {
     if (page === null || selectedElement === null) return;
-    mutatePage(page.id, (current) => current.filter((element) => element.id !== selectedElement.id));
-    dispatch({ type: 'select-element', id: null });
-  }, [mutatePage, page, selectedElement]);
+    void autosave.deleteElement(selectedElement).then((deleted) => {
+      if (deleted) dispatch({ type: 'select-element', id: null });
+    });
+  }, [autosave, page, selectedElement]);
 
   const moveSelectedLayer = useCallback((direction: 'up' | 'down'): void => {
     if (page === null || selectedElement === null) return;
-    mutatePage(page.id, (current) => moveElementLayer(current, selectedElement.id, direction));
-  }, [mutatePage, page, selectedElement]);
+    const current = elementsByPageRef.current[page.id] ?? [];
+    const next = moveElementLayer(current, selectedElement.id, direction);
+    setPageElements(page.id, next);
+    for (const element of next) {
+      const previous = current.find((candidate) => candidate.id === element.id);
+      if (previous?.z_index !== element.z_index) autosave.markDirty(element.id, 0);
+    }
+  }, [autosave, page, selectedElement, setPageElements]);
 
   const goToPage = useCallback((requestedPosition: number, updateHistory = true): void => {
     const position = clampPagePosition(requestedPosition, data.pages.length);
@@ -448,21 +500,25 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
               : null;
       if (delta !== null) {
         event.preventDefault();
-        updateElement(selectedElement.id, (element) => nudgeElementByUnits(element, delta[0], delta[1]));
+        updateElement(selectedElement.id, (element) => nudgeElementByUnits(element, delta[0], delta[1]), 0);
       }
     };
     window.addEventListener('keydown', handleKeyboard);
     return () => window.removeEventListener('keydown', handleKeyboard);
   }, [deleteSelected, duplicateSelected, selectedElement, state.preview, updateElement]);
 
-  const status = dirtyPages.size > 0 ? 'تغييرات محلية · الحفظ في T‑12' : 'جاهز للتحرير محليًا · الحفظ في T‑12';
-
   return (
     <div className={`mol-editor-shell${state.preview ? ' is-preview' : ''}`} data-testid="editor-shell">
       <header className="mol-editor-header">
         <a className="mol-editor-back" href={data.links.work} aria-label="العودة إلى صفحة العمل">→</a>
         <div className="mol-editor-identity"><span dir="auto">{data.work.title}</span><strong dir="auto">{chapterTitle(data)}</strong></div>
-        <div className="mol-editor-page-state" aria-live="polite"><span>{page === null ? 'لا صفحات' : `صفحة ${state.pagePosition + 1} من ${data.pages.length}`}</span><span className="mol-editor-save-state">{status}</span></div>
+        <div className="mol-editor-page-state" aria-live="polite">
+          <span>{page === null ? 'لا صفحات' : `صفحة ${state.pagePosition + 1} من ${data.pages.length}`}</span>
+          <span className="mol-editor-save-state" data-testid="save-state" data-state={autosave.state.kind}>
+            {autosave.state.message}
+            {autosave.state.canRetry && <button type="button" onClick={autosave.retry}>إعادة المحاولة</button>}
+          </span>
+        </div>
         <button type="button" className="mol-editor-preview-button" aria-pressed={state.preview} onClick={() => dispatch({ type: 'toggle-preview' })}>{state.preview ? 'العودة إلى المحرر' : 'معاينة'}</button>
       </header>
 
@@ -470,7 +526,7 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
         <nav className="mol-editor-toolbar" aria-label="أدوات المحرر">
           <button type="button" aria-pressed={state.selectedElementId === null} onClick={() => dispatch({ type: 'select-element', id: null })}><span aria-hidden="true">↖</span>تحديد</button>
           {ADD_TOOLS.map((tool) => <button key={tool.type} type="button" data-testid={`add-${tool.type}`} aria-label={tool.label} onClick={() => addElement(tool.type)}><span aria-hidden="true">{tool.glyph}</span>{tool.shortLabel}</button>)}
-          <span className="mol-editor-toolbar-note">T‑11 · تحرير محلي بلا طلبات شبكة</span>
+          <span className="mol-editor-toolbar-note">T‑12 · حفظ تلقائي آمن</span>
         </nav>
       )}
 
@@ -480,7 +536,7 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
         <div className={`mol-editor-layout${state.layersCollapsed ? ' has-collapsed-layers' : ''}`}>
           {!state.preview && <LayersPanel elements={elements} selectedId={state.selectedElementId} collapsed={state.layersCollapsed} onSelect={selectElement} onToggle={() => dispatch({ type: 'toggle-layers' })} />}
           <main className="mol-editor-main">
-            <EditorStage page={page as EditorPageData} elements={elements} zoom={state.zoom} selectedId={state.selectedElementId} preview={state.preview} onSelect={selectElement} onDeselect={() => dispatch({ type: 'select-element', id: null })} onEditText={focusElementText} onCommit={updateElement} />
+            <EditorStage page={page as EditorPageData} elements={elements} zoom={state.zoom} selectedId={state.selectedElementId} preview={state.preview} onSelect={selectElement} onDeselect={() => dispatch({ type: 'select-element', id: null })} onEditText={focusElementText} onCommit={(id, update) => updateElement(id, update, 0)} />
             <div className="mol-editor-stage-controls">
               <div role="group" aria-label="التنقل بين الصفحات"><button type="button" data-testid="previous-page" disabled={state.pagePosition <= 0} onClick={() => goToPage(state.pagePosition - 1)}>السابق</button><span>{state.pagePosition + 1} / {data.pages.length}</span><button type="button" data-testid="next-page" disabled={state.pagePosition >= data.pages.length - 1} onClick={() => goToPage(state.pagePosition + 1)}>التالي</button></div>
               {!state.preview && <div role="group" aria-label="تكبير مساحة العمل"><button type="button" aria-label="تصغير" onClick={() => dispatch({ type: 'set-zoom', zoom: state.zoom - 0.25 })}>−</button><output>{Math.round(state.zoom * 100)}%</output><button type="button" aria-label="تكبير" onClick={() => dispatch({ type: 'set-zoom', zoom: state.zoom + 0.25 })}>＋</button><button type="button" onClick={() => dispatch({ type: 'set-zoom', zoom: 1 })}>ملاءمة</button></div>}

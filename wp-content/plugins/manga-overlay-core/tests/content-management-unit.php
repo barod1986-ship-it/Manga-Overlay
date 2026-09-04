@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use MOL\REST\ApiException;
 use MOL\REST\RequestValidator;
+use MOL\Domain\ElementStyles;
 
 if (! function_exists('sanitize_text_field')) {
     function sanitize_text_field(string $value): string
@@ -79,6 +80,60 @@ molManagementExpectError(
 molManagementExpectError(
     static fn (): array => RequestValidator::pageOrder(array('page_ids' => array())),
     'mol_invalid_reorder'
+);
+
+$elementCreate = RequestValidator::elementCreate(array(
+    'page_id' => 7,
+    'target_lang' => 'ar',
+    'element_type' => 'bubble',
+    'x_unit' => 100_000,
+    'y_unit' => 120_000,
+    'w_unit' => 300_000,
+    'h_unit' => 180_000,
+    'content' => "</script>\nنص آمن",
+    'style' => array('tail' => array('enabled' => false)),
+));
+molManagementAssert('</script>' === substr($elementCreate['content'], 0, 9), 'Element content was treated as HTML.');
+molManagementAssert(0 === $elementCreate['rotation_mdeg'], 'Element rotation default drifted.');
+molManagementAssert(null === $elementCreate['preset_id'], 'Element preset default drifted.');
+
+$resolvedBubble = ElementStyles::resolve('bubble', $elementCreate['style']);
+molManagementAssert('cairo' === $resolvedBubble['fontId'], 'Bubble Base Style font drifted.');
+molManagementAssert(false === $resolvedBubble['tail']['enabled'], 'Nested style override was not applied.');
+molManagementAssert(80_000 === $resolvedBubble['tail']['lengthUnit'], 'Nested style override discarded Base Style siblings.');
+
+$elementPatch = RequestValidator::elementPatch(array(
+    'element_type' => 'sfx',
+    'style' => array('strokeColor' => '#CC0000'),
+    'content' => 'طَقّ!',
+));
+molManagementAssert('#CC0000' === $elementPatch['style']['strokeColor'], 'Valid typed style patch changed.');
+
+foreach (array(
+    array(),
+    array('element_type' => 'bubble'),
+    array('style' => array('shape' => 'ellipse')),
+    array('element_type' => 'bubble', 'style' => array()),
+    array('element_type' => 'bubble', 'style' => array('shape' => 'impact')),
+    array('x_unit' => 1_000_001),
+    array('unknown' => true),
+) as $invalidElementPatch) {
+    molManagementExpectError(
+        static fn (): array => RequestValidator::elementPatch($invalidElementPatch),
+        'mol_invalid_params'
+    );
+}
+molManagementExpectError(
+    static fn (): array => RequestValidator::elementCreate(array(
+        'page_id' => 7,
+        'element_type' => 'bubble',
+        'x_unit' => 900_000,
+        'y_unit' => 0,
+        'w_unit' => 200_000,
+        'h_unit' => 100_000,
+        'content' => 'invalid geometry',
+    )),
+    'mol_invalid_params'
 );
 
 echo "Manga Overlay content-management unit tests passed.\n";

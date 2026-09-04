@@ -8,6 +8,16 @@ use MOL\Domain\Validation\AllowedValues;
 
 final class ReportRepository extends AbstractRepository
 {
+    public function deleteForElement(int $elementId): int
+    {
+        $this->positiveId($elementId, 'element_id');
+
+        return $this->execute(
+            $this->prepare("DELETE FROM {$this->tables->reports} WHERE element_id = %d", $elementId),
+            'Deleting element reports'
+        );
+    }
+
     /**
      * @param array{
      *   chapter_id: int,

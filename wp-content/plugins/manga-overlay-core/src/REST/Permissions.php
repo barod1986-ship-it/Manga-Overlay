@@ -34,6 +34,16 @@ final class Permissions
         return self::requireCapability('mol_review_translations');
     }
 
+    public static function editTranslations(): bool|\WP_Error
+    {
+        return self::requireCapability('mol_edit_translations');
+    }
+
+    public static function deleteTranslationElements(): bool|\WP_Error
+    {
+        return self::requireCapability('mol_delete_translation_elements');
+    }
+
     private static function requireCapability(string $capability): bool|\WP_Error
     {
         $authenticated = self::authenticatedUser();

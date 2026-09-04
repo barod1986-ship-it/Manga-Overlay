@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MOL\REST;
 
+use MOL\Domain\ElementStyles;
+
 final class ElementPresenter
 {
     /** @param array<string, mixed> $element @return array<string, mixed> */
@@ -21,7 +23,10 @@ final class ElementPresenter
             'rotation_mdeg' => (int) $element['rotation_mdeg'],
             'z_index' => (int) $element['z_index'],
             'content' => (string) $element['content'],
-            'style' => is_array($element['style']) ? $element['style'] : array(),
+            'style' => ElementStyles::resolve(
+                (string) $element['element_type'],
+                is_array($element['style']) ? $element['style'] : array()
+            ),
             'version' => (int) $element['version'],
             'created_by' => (int) $element['created_by'],
             'updated_by' => (int) $element['updated_by'],

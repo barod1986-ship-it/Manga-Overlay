@@ -46,6 +46,18 @@ final class PageRepository extends AbstractRepository
         return null === $row ? null : $this->normalize($row);
     }
 
+    /** @return array<string, mixed>|null */
+    public function lockForUpdate(int $pageId): ?array
+    {
+        $this->positiveId($pageId, 'page_id');
+        $row = $this->fetchOne($this->prepare(
+            "SELECT * FROM {$this->tables->pages} WHERE id = %d FOR UPDATE",
+            $pageId
+        ));
+
+        return null === $row ? null : $this->normalize($row);
+    }
+
     /** @return list<array<string, mixed>> */
     public function forChapter(int $chapterId): array
     {

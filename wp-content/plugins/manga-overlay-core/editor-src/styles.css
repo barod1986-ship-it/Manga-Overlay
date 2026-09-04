@@ -154,11 +154,46 @@ body.mol-editor-document {
 }
 
 .mol-editor-save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 5px 9px;
   border: 1px solid #74574f;
   border-radius: 999px;
   color: #f0b5aa;
   background: #2c201e;
+}
+
+.mol-editor-save-state[data-state="saved"] {
+  border-color: #3f7255;
+  color: #b8e6c7;
+  background: #17261c;
+}
+
+.mol-editor-save-state[data-state="saving"] {
+  border-color: #87703a;
+  color: #f5dfa0;
+  background: #2b2516;
+}
+
+.mol-editor-save-state[data-state="offline"],
+.mol-editor-save-state[data-state="locked"],
+.mol-editor-save-state[data-state="conflict"],
+.mol-editor-save-state[data-state="error"] {
+  border-color: #9b544a;
+  color: #ffd0c8;
+  background: #351d1a;
+}
+
+.mol-editor-save-state button {
+  min-height: 26px;
+  padding: 2px 7px;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
 }
 
 .mol-editor-preview-button {

@@ -167,7 +167,9 @@ molEditorIntegrationAssert($registeredScript instanceof _WP_Dependency, 'Editor 
 molEditorIntegrationAssert(MOL_PLUGIN_VERSION === $registeredScript->ver, 'Editor asset version drifted.');
 
 $bootstrap = EditorPage::bootstrap();
-molEditorIntegrationAssert('0.8.0' === $bootstrap['release']['core'], 'Editor bootstrap release drifted.');
+molEditorIntegrationAssert('0.9.0' === $bootstrap['release']['core'], 'Editor bootstrap release drifted.');
+molEditorIntegrationAssert(str_ends_with($bootstrap['api']['root'], '/wp-json/mol/v1/'), 'Editor REST root drifted.');
+molEditorIntegrationAssert('' !== $bootstrap['api']['nonce'], 'Editor REST nonce is missing.');
 molEditorIntegrationAssert(false === $bootstrap['chapter']['is_published'], 'Draft publication state drifted.');
 molEditorIntegrationAssert(null === $bootstrap['links']['reader'], 'Draft chapter exposed a public reader link.');
 molEditorIntegrationAssert(2 === count($bootstrap['pages']), 'Presented editor page count drifted.');

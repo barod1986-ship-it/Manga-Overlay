@@ -6,6 +6,16 @@ namespace MOL\Repositories;
 
 final class ContributionRepository extends AbstractRepository
 {
+    public function deleteForElement(int $elementId): int
+    {
+        $this->positiveId($elementId, 'element_id');
+
+        return $this->execute(
+            $this->prepare("DELETE FROM {$this->tables->contributions} WHERE element_id = %d", $elementId),
+            'Deleting element contributions'
+        );
+    }
+
     public function upsert(
         int $elementId,
         int $userId,
