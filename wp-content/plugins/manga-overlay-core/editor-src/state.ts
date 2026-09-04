@@ -3,6 +3,7 @@ import type { EditorAction, EditorElement, EditorState } from './types';
 export const MIN_ZOOM = 0.5;
 export const MAX_ZOOM = 2;
 export const GEOMETRY_UNIT = 1_000_000;
+export const PAGE_QUERY_PARAMETER = 'mol_page';
 
 export function clampPagePosition(position: number, pageCount: number): number {
   if (pageCount < 1) {
@@ -15,7 +16,7 @@ export function clampPagePosition(position: number, pageCount: number): number {
 }
 
 export function pagePositionFromSearch(search: string, pageCount: number): number {
-  const source = new URLSearchParams(search).get('page');
+  const source = new URLSearchParams(search).get(PAGE_QUERY_PARAMETER);
   if (source === null || !/^\d+$/.test(source)) {
     return 0;
   }
@@ -24,7 +25,10 @@ export function pagePositionFromSearch(search: string, pageCount: number): numbe
 
 export function searchForPage(search: string, pagePosition: number): string {
   const parameters = new URLSearchParams(search);
-  parameters.set('page', String(pagePosition + 1));
+  // `page` is a reserved WordPress query variable and can trigger a canonical
+  // redirect away from the editor when a deep link is reloaded.
+  parameters.delete('page');
+  parameters.set(PAGE_QUERY_PARAMETER, String(pagePosition + 1));
   const serialized = parameters.toString();
   return serialized === '' ? '' : `?${serialized}`;
 }

@@ -3,7 +3,7 @@
  * Plugin Name:       Manga Overlay Core
  * Plugin URI:        https://github.com/barod1986-ship-it/Manga-Overlay
  * Description:       Core domain, persistence, and editor services for Manga Overlay.
- * Version:           0.7.0
+ * Version:           0.7.1
  * Requires at least: 7.1
  * Requires PHP:      8.4
  * Author:            Manga Overlay
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
 }
 
 if (! defined('MOL_PLUGIN_VERSION')) {
-    define('MOL_PLUGIN_VERSION', '0.7.0');
+    define('MOL_PLUGIN_VERSION', '0.7.1');
 }
 
 if (! defined('MOL_PLUGIN_FILE')) {

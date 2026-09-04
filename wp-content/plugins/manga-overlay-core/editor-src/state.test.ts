@@ -12,11 +12,12 @@ import type { EditorElement } from './types';
 
 describe('editor shell state', () => {
   it('maps the one-based page query to a safe zero-based position', () => {
-    expect(pagePositionFromSearch('?page=2', 3)).toBe(1);
-    expect(pagePositionFromSearch('?page=99', 3)).toBe(2);
-    expect(pagePositionFromSearch('?page=-1', 3)).toBe(0);
+    expect(pagePositionFromSearch('?mol_page=2', 3)).toBe(1);
+    expect(pagePositionFromSearch('?mol_page=99', 3)).toBe(2);
+    expect(pagePositionFromSearch('?mol_page=-1', 3)).toBe(0);
+    expect(pagePositionFromSearch('?page=2', 3)).toBe(0);
     expect(clampPagePosition(Number.NaN, 3)).toBe(0);
-    expect(searchForPage('?mode=review', 1)).toBe('?mode=review&page=2');
+    expect(searchForPage('?mode=review&page=9', 1)).toBe('?mode=review&mol_page=2');
   });
 
   it('keeps zoom and page transitions within shell limits', () => {

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('loads the authorized editor shell, routes pages, and keeps content safe', async ({ page }) => {
-  await page.goto('/tests/editor-shell-fixture.html?page=1');
+  await page.goto('/tests/editor-shell-fixture.html?mol_page=1');
 
   await expect(page.getByTestId('editor-shell')).toBeVisible();
   await expect(page.locator('#mol-editor-root')).toHaveAttribute('dir', 'rtl');
@@ -24,7 +24,7 @@ test('loads the authorized editor shell, routes pages, and keeps content safe', 
   await expect(page.locator('img[src="x"]')).toHaveCount(0);
 
   await page.getByTestId('next-page').click();
-  await expect(page).toHaveURL(/\?page=2$/);
+  await expect(page).toHaveURL(/\?mol_page=2$/);
   await expect(page.getByText('صفحة 2 من 2')).toBeVisible();
   await expect(page.getByText('لا توجد عناصر ترجمة في هذه الصفحة.')).toBeVisible();
 
