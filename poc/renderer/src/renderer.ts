@@ -157,7 +157,7 @@ export function normalizeElementStyle(elementType: ElementType, candidate: unkno
     } : {}),
     shadow: normalizeShadow(value.shadow),
     ...(elementType === 'bubble' ? { tail: normalizeTail(value.tail, base.tail ?? null) } : {}),
-    autoFit: typeof value.autoFit === 'boolean' ? value.autoFit : base.autoFit,
+    autoFit: typeof value.autoFit === 'boolean' ? value.autoFit : base.autoFit ?? false,
     ...(value.minFontSizeUnit !== undefined || base.minFontSizeUnit !== undefined
       ? { minFontSizeUnit: integer(value.minFontSizeUnit, base.minFontSizeUnit ?? 1_000, 1_000, 100_000) }
       : {}),
