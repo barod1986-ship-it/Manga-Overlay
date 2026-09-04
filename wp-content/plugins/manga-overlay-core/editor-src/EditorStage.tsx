@@ -98,6 +98,14 @@ export function EditorStage({
   useEffect(() => {
     const layer = layerRef.current;
     if (layer === null) return undefined;
+    const observer = new MutationObserver(refreshTarget);
+    observer.observe(layer, { childList: true });
+    return () => observer.disconnect();
+  }, [refreshTarget]);
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    if (layer === null) return undefined;
     const selectFromEvent = (event: Event): number | null => {
       const origin = event.target;
       if (!(origin instanceof Element)) return null;
