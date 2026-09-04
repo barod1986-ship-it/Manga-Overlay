@@ -220,6 +220,18 @@ export function createOverlayNode(element: OverlayElement, imageWidth: number, s
   return node;
 }
 
+function updateOverlayNode(current: HTMLElement, next: HTMLElement): void {
+  const nextAttributeNames = new Set(next.getAttributeNames());
+  for (const name of current.getAttributeNames()) {
+    if (!nextAttributeNames.has(name)) current.removeAttribute(name);
+  }
+  for (const name of nextAttributeNames) {
+    const value = next.getAttribute(name);
+    if (value !== null) current.setAttribute(name, value);
+  }
+  current.replaceChildren(...next.childNodes);
+}
+
 export class OverlayRenderer {
   readonly #layer: HTMLElement;
   readonly #frame: HTMLElement;
@@ -267,10 +279,31 @@ export class OverlayRenderer {
   readonly render = (): void => {
     const imageWidth = this.#image.clientWidth || this.#frame.clientWidth;
     if (imageWidth <= 0) return;
-    const fragment = document.createDocumentFragment();
-    for (const element of this.#elements) {
-      fragment.append(createOverlayNode(element, imageWidth, element.id === this.#selectedId));
+
+    // Moveable keeps a live reference to the selected outer element. Preserve
+    // that node while refreshing its safe DOM/SVG contents so a selection does
+    // not become detached whenever its data or selected state changes.
+    const existingById = new Map<string, HTMLElement>();
+    for (const child of Array.from(this.#layer.children)) {
+      if (child instanceof HTMLElement && child.dataset.elementId !== undefined) {
+        existingById.set(child.dataset.elementId, child);
+      }
     }
-    this.#layer.replaceChildren(fragment);
+
+    const retained = new Set<HTMLElement>();
+    this.#elements.forEach((element, index) => {
+      const next = createOverlayNode(element, imageWidth, element.id === this.#selectedId);
+      const current = existingById.get(String(element.id));
+      const node = current ?? next;
+      if (current !== undefined) updateOverlayNode(current, next);
+
+      const nodeAtIndex = this.#layer.children.item(index);
+      if (nodeAtIndex !== node) this.#layer.insertBefore(node, nodeAtIndex);
+      retained.add(node);
+    });
+
+    for (const child of Array.from(this.#layer.children)) {
+      if (child instanceof HTMLElement && !retained.has(child)) child.remove();
+    }
   };
 }

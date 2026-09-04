@@ -74,7 +74,11 @@ test('creates, edits, duplicates, reorders, and deletes all four local element t
 
 test('commits Moveable drag/resize and supports numeric and keyboard alternatives', async ({ page }) => {
   await page.goto('/tests/editor-shell-fixture.html?mol_page=1');
-  await page.getByTestId('stage-element-101').click();
+  const originalElement = await page.getByTestId('stage-element-101').elementHandle();
+  if (originalElement === null) throw new Error('Element handle is missing.');
+  await originalElement.click();
+  await expect.poll(async () => originalElement.evaluate((node) => node.isConnected)).toBe(true);
+  await expect.poll(async () => originalElement.getAttribute('data-selected')).toBe('true');
   await expect(page.locator('.moveable-control-box')).toBeVisible();
   await expect(page.locator('.moveable-rotation-control')).toBeVisible();
 
