@@ -17,7 +17,7 @@
 | T-06 — Chapter/page management | مكتمل: CRUD + upload queue + MIME/decoder checks + idempotency + reorder ثنائي المرحلة + review policy |
 | T-07 — Public data APIs | مكتمل: library/work/chapter/page/element/contributor/profile reads مع visibility وcache contracts |
 | T-08 — Public library theme | مكتمل ومختبر على موقع التجارب: الرئيسية والمكتبة وصفحة العمل العربية RTL |
-| T-09 — Chapter reader | مكتمل في CI: Webtoon/Paged وRTL/LTR وطبقات DOM/SVG والتكبير وحفظ التقدم؛ اختبار موقع التجارب معلق |
+| T-09 — Chapter reader | مكتمل في CI ومثبّت على staging: Webtoon/Paged وRTL/LTR والتكبير وحفظ التقدم؛ فصل الديمو الحالي بلا عناصر ترجمة |
 
 ## بنية المستودع
 

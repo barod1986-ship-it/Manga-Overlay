@@ -221,4 +221,19 @@ Implemented and verified:
 - [Public Theme run #7](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33889868268) passed PHP lint, reader JavaScript checks, and installable theme 0.2.0 packaging.
 - [PHP Bootstrap run #23](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33889868264) passed PHP 8.4 lint, Composer/autoload checks, and installable core 0.6.0 packaging.
 
-T-09 is complete at the implementation/CI level. Installation and smoke testing of Core 0.6.0 and theme 0.2.0 on the project staging site require the owner's explicit confirmation. The draft PR and physical-device release gates remain independent.
+T-09 is complete at the implementation/CI level. Core 0.6.0 and theme 0.2.0 are installed on staging as recorded below. The draft PR and physical-device release gates remain independent.
+
+### T-09 staging smoke test
+
+On 2026-09-04, the exact artifacts produced for PR head `a005b25` were installed on the project staging site after verifying the GitHub artifact SHA-256 digests.
+
+- Manga Overlay Core was replaced from 0.5.0 to 0.6.0, remained active, and WordPress reported the new version.
+- The active Manga Overlay theme was replaced from 0.1.0 to 0.2.0 and its theme-details dialog reported the new version.
+- The existing published smoke chapter resolved through the canonical reader URL with two 800×1200 pages and a focused reader shell.
+- Webtoon displayed both pages continuously. Paged displayed one page at a time, reported `rtl`, and advanced from page 1 to page 2 with the desktop `ArrowLeft` key.
+- Zoom advanced from 100% to 125% and reset to 100% when the paged reader moved to the next page.
+- Authenticated progress reported a successful save; a full reload restored paged mode and page 2.
+- The first image remained eager/high-priority, the nearby second image was promoted with low fetch priority, and both retained explicit width/height attributes.
+- No JavaScript error originated from the staging site or reader. Messages emitted only by the controlled browser extension were excluded from the application result.
+- The smoke chapter currently contains zero Arabic translation elements, so WordPress correctly rendered the translation toggle disabled. CI verifies safe DOM/SVG rendering, instant hide/show without image reload, and normalized placement at 360/768/1440; a visual staging overlay check remains pending until demo data includes at least one translation element.
+- Physical iOS/Android and final Safari/Arabic-font evidence remain release gates and are not waived by this staging smoke test.
