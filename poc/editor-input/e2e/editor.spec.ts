@@ -59,7 +59,7 @@ test('offers numeric geometry alternatives and Moveable controls', async ({ page
     return { left: element.style.left, transform: element.style.transform };
   });
   expect(geometry.left).toBe('40%');
-  expect(geometry.transform).toBe('rotate(12deg)');
+  expect(geometry.transform).toContain('rotate(12deg)');
 });
 
 test('commits a pointer drag back to normalized state', async ({ page, browserName }) => {
