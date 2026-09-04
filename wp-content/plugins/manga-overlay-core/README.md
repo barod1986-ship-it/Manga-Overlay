@@ -1,6 +1,6 @@
 # Manga Overlay Core
 
-WordPress domain, persistence, content-management, public-read, reading-progress, and editor-shell services through T-10 for Master Spec v1.1.3.
+WordPress domain, persistence, content-management, public-read, reading-progress, and element-editor services through T-11 for Master Spec v1.1.3.
 
 ## Scope
 
@@ -21,7 +21,8 @@ WordPress domain, persistence, content-management, public-read, reading-progress
 - Public library/work/chapter/page/overlay/contributor/profile reads with published/draft visibility and cache policy.
 - Authenticated `PUT /mol/v1/reading-progress` persistence plus a narrow server-rendered PHP API for the current user.
 - Canonical `/series/{work}/chapter/{chapter}/edit/` template ownership with login redirect, server-side `mol_use_editor|mol_manage_content` enforcement, and draft-safe context loading.
-- A production React editor shell with URL-backed page state, physical image geometry, zoom, Preview, collapsible layers, and read-only properties. Element mutation and persistence remain deliberately reserved for T-11/T-12.
+- A production React editor with URL-backed page state, physical image geometry, zoom, Preview, and local creation/editing for bubble, narration, free-text, and SFX elements.
+- Shared safe DOM/SVG rendering, Moveable drag/resize/rotate controls, numeric and keyboard alternatives, type-aware style controls, duplication, deletion, and layer ordering. Network persistence remains deliberately reserved for T-12.
 - Hex-safe JSON bootstrapping and committed production `assets/dist/editor.{js,css}` files, so the installable PHP artifact needs no Node runtime.
 - Opt-in-only uninstall cleanup through `mol_delete_data_on_uninstall=1`.
 

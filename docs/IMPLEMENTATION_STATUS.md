@@ -268,3 +268,35 @@ On 2026-09-04, the exact Core 0.7.1 artifact from PHP Bootstrap run #30 at PR he
 - Preview hid the editor chrome and “Return to editor” restored the layers and read-only properties panels without changing the deep link.
 - The smoke chapter still contains zero translation elements, so the layers panel correctly displayed its empty state; element editing remains assigned to T-11.
 - Browser logs contained no warning or error from the staging origin.
+
+## T-11 — Element editing and shared renderer
+
+Implemented and verified:
+
+- The production editor locally creates all four canonical element types: `bubble`, `narration`, `free_text`, and `sfx`.
+- Editor and reader use the shared safe renderer. Arabic content is assigned through DOM `textContent`, and ellipse/rectangle/cloud/burst/impact visuals are parameter-generated SVG rather than stored markup.
+- Selection is synchronized between the image stage and layer list. Moveable supplies drag, eight-direction resize, and rotation, while normalized X/Y/W/H/rotation fields, nudge buttons, and keyboard arrows remain available alternatives.
+- Local commits update normalized geometry only at the end of a gesture. The renderer preserves each outer element node across data refreshes so Moveable never retains a detached target.
+- Type-aware properties cover Arabic content, font, size, weight, line height, alignment, safe colors, background/opacity, borders, padding, bubble tail controls, SFX stroke/scale/burst controls, and safe shadows.
+- Elements can be duplicated, deleted, and moved through the layer stack. Preview reuses the same renderer while removing editor chrome and Moveable controls.
+- Persistence is intentionally absent: the status identifies changes as local, page navigation retains them for the current React session, and a full reload restores server data. REST writes and autosave remain owned by T-12.
+- [Frontend PoC run #41](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33928162983) passed unit, TypeScript/build, and Playwright across Chromium, Firefox, and WebKit, including live Moveable drag/resize and retained-target regression coverage.
+- [Database Matrix run #33](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33928162961) passed on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #37](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33928162960) passed PHP 8.4 checks and produced the installable Core 0.8.0 artifact.
+- [Public Theme run #21](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33928162968) remained green.
+
+T-11 is complete at the implementation, CI, and staging levels. T-12 is the next development task. Physical iOS/Android and final Safari/Arabic-font evidence remain independent release gates.
+
+### T-11 staging smoke test
+
+On 2026-09-04, the exact Core 0.8.0 artifact from PHP Bootstrap run #37 at PR head `22bb66b` was installed over Core 0.7.1 on the project staging site. The published GitHub artifact digest `a760e64f5b3914cf092df84e875ad09a1602dd620f827d0c1187fd8121e8fea2` matched the downloaded archive; the inner installable ZIP SHA-256 was `1928a29263e0b0cbca09d8c473948a8f0da389d4ef59f8f7824bb95e5c3c209f`.
+
+- WordPress completed the replacement successfully; Manga Overlay Core remained active and reported version 0.8.0.
+- The authorized editor opened the existing two-page smoke chapter. Page 1 initially contained zero persisted translation elements, then locally created exactly one element of each canonical type and selected the newest SFX element.
+- Arabic SFX content, burst SVG, and 18-degree rotation rendered immediately. Numeric X positioning, the right-nudge control, pointer drag, and east-handle resize all updated normalized fields while the Moveable box and its rotation/resize controls remained visible after renderer refreshes.
+- Bubble cloud rendering and tail enable/disable worked; disabling the tail removed only its generated SVG path. Narration and free-text content/style changes rendered immediately.
+- An HTML-like free-text payload remained literal text and created no nested or page-level image node.
+- Moving the SFX down changed its layer from z-index 4 to 3. Duplicate raised the local element count from four to five, delete restored it to four, with one element of each canonical type remaining.
+- Preview hid the toolbar, properties, and Moveable controls while retaining all four overlays. Returning restored the editor.
+- `?mol_page=2` showed the empty second page; returning to `?mol_page=1` retained the four local edits during the session. A full reload kept the editor route but correctly restored zero server-backed elements and the ready state because network persistence belongs to T-12.
+- Browser logs contained no warning or error from the staging origin. Repeated metadata messages emitted only by the controlled browser extension were excluded from the application result.
