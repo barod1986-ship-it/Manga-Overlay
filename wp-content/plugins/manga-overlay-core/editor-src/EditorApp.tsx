@@ -285,12 +285,14 @@ function PropertiesPanel({
   onUpdate,
   onDuplicate,
   onDelete,
+  deleteDisabled,
   onLayer,
 }: {
   readonly element: EditorElement | null;
   readonly onUpdate: (update: (element: EditorElement) => EditorElement) => void;
   readonly onDuplicate: () => void;
   readonly onDelete: () => void;
+  readonly deleteDisabled: boolean;
   readonly onLayer: (direction: 'up' | 'down') => void;
 }) {
   return (
@@ -342,7 +344,7 @@ function PropertiesPanel({
           <StyleFields element={element} onUpdate={onUpdate} />
           <div className="mol-editor-element-actions">
             <button type="button" onClick={onDuplicate}>نسخ العنصر</button>
-            <button type="button" className="is-danger" onClick={onDelete}>حذف العنصر</button>
+            <button type="button" className="is-danger" disabled={deleteDisabled} onClick={onDelete}>حذف العنصر</button>
           </div>
           <p className="mol-editor-readonly-note">تُرسل التغييرات تلقائيًا بعد توقف قصير. عند انقطاع الشبكة تبقى في ذاكرة هذا التبويب فقط.</p>
         </div>
@@ -443,6 +445,7 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
 
   const deleteSelected = useCallback((): void => {
     if (page === null || selectedElement === null) return;
+    if (autosave.isSaving(selectedElement.id)) return;
     void autosave.deleteElement(selectedElement).then((deleted) => {
       if (deleted) dispatch({ type: 'select-element', id: null });
     });
@@ -542,7 +545,7 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
               {!state.preview && <div role="group" aria-label="تكبير مساحة العمل"><button type="button" aria-label="تصغير" onClick={() => dispatch({ type: 'set-zoom', zoom: state.zoom - 0.25 })}>−</button><output>{Math.round(state.zoom * 100)}%</output><button type="button" aria-label="تكبير" onClick={() => dispatch({ type: 'set-zoom', zoom: state.zoom + 0.25 })}>＋</button><button type="button" onClick={() => dispatch({ type: 'set-zoom', zoom: 1 })}>ملاءمة</button></div>}
             </div>
           </main>
-          {!state.preview && <PropertiesPanel element={selectedElement} onUpdate={(update) => selectedElement !== null && updateElement(selectedElement.id, update)} onDuplicate={duplicateSelected} onDelete={deleteSelected} onLayer={moveSelectedLayer} />}
+          {!state.preview && <PropertiesPanel element={selectedElement} onUpdate={(update) => selectedElement !== null && updateElement(selectedElement.id, update)} onDuplicate={duplicateSelected} onDelete={deleteSelected} deleteDisabled={selectedElement !== null && autosave.isSaving(selectedElement.id)} onLayer={moveSelectedLayer} />}
         </div>
       )}
       <span className="mol-editor-release" aria-hidden="true">Core {data.release.core}</span>

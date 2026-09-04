@@ -17,6 +17,7 @@ interface AutosaveController {
   readonly markDirty: (elementId: number, delay?: number) => void;
   readonly cancelLocal: (elementId: number) => void;
   readonly deleteElement: (element: EditorElement) => Promise<boolean>;
+  readonly isSaving: (elementId: number) => boolean;
   readonly retry: () => void;
 }
 
@@ -240,6 +241,8 @@ export function useElementAutosave(
     refreshState();
   }, [deleteElement, refreshState, schedule]);
 
+  const isSaving = useCallback((elementId: number): boolean => savingRef.current.has(elementId), []);
+
   useEffect(() => {
     const handleOffline = (): void => refreshState();
     const handleOnline = (): void => retry();
@@ -260,5 +263,5 @@ export function useElementAutosave(
     };
   }, [refreshState, retry]);
 
-  return { state, markDirty, cancelLocal, deleteElement, retry };
+  return { state, markDirty, cancelLocal, deleteElement, isSaving, retry };
 }
