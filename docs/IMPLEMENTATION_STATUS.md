@@ -240,7 +240,7 @@ On 2026-09-04, the exact artifacts produced for PR head `a005b25` were installed
 
 ## T-10 — React editor shell
 
-Implementation candidate:
+Implemented and verified:
 
 - The canonical `/series/{work}/chapter/{chapter}/edit/` query now resolves to a plugin-owned document instead of falling through to the public reader template.
 - Guests are redirected through WordPress authentication. Logged-in users without `mol_use_editor` or `mol_manage_content` receive `403`, while authorized editors can load published or draft chapter context without exposing drafts publicly.
@@ -249,6 +249,9 @@ Implementation candidate:
 - React owns URL-backed page routing (`?page=N`), local selection/zoom/Preview state, a centered image stage, physical non-mirrored element outlines, a collapsible layers panel, and a read-only properties panel.
 - Save status and Preview remain visible. Creation controls are intentionally disabled and the UI says that no changes are saved; T-11 owns element editing/renderer integration and T-12 owns REST writes/autosave.
 - Unit tests cover route bounds, reducer transitions, zoom limits, and physical geometry. Playwright covers Chromium/Firefox/WebKit routing, safe malicious text handling, layer/property selection, Preview chrome removal, and page restoration. The WordPress DB integration covers draft authorization, target-language grouping, template resolution, asset loading, `403`, and JSON script-boundary escaping.
-- Local Node unit/build checks pass. The local workspace does not provide PHP/Composer or Playwright browser binaries; the pinned GitHub Actions PHP 8.4, WordPress 7.1 database matrix, and browser jobs remain the authoritative pending checks.
+- [Frontend PoC run #31](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33903748875) passed unit, TypeScript/build, and all Playwright suites on Chromium, Firefox, and WebKit. The first run exposed only an ambiguous test locator; it was narrowed to the toolbar and the product bundle was unchanged.
+- [Database Matrix run #23](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33903748817) passed the editor integration suite on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #27](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33903748830) passed PHP 8.4 lint, Composer/autoload checks, and produced the installable Core 0.7.0 artifact with both editor assets.
+- [Public Theme run #11](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33903748871) remained green.
 
-T-10 remains a candidate until its GitHub Actions runs pass and Core 0.7.0 is verified on staging. Existing physical iOS/Android release gates remain independent.
+T-10 is complete at the implementation/CI level. Core 0.7.0 staging installation and browser verification remain pending; existing physical iOS/Android release gates remain independent.
