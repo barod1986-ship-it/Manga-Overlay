@@ -7,7 +7,9 @@ test('loads the authorized editor shell, routes pages, and keeps content safe', 
   await expect(page.locator('#mol-editor-root')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByText('بداية الحكاية', { exact: true })).toBeVisible();
   await expect(page.getByText('عرض فقط · الحفظ غير مفعّل بعد')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'فقاعة' })).toBeDisabled();
+  await expect(
+    page.locator('.mol-editor-toolbar').getByRole('button', { name: 'فقاعة', exact: true }),
+  ).toBeDisabled();
 
   const firstOutline = page.getByTestId('stage-element-101');
   await expect(firstOutline).toBeVisible();
