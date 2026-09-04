@@ -29,10 +29,15 @@ jobs:
           php-version: '8.4'
           coverage: none
 
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24
+
       - name: Validate theme metadata and JSON
         run: |
           grep -F 'Theme Name: Manga Overlay' wp-content/themes/manga-overlay-theme/style.css
-          grep -F 'Version: 0.1.0' wp-content/themes/manga-overlay-theme/style.css
+          grep -F 'Version: 0.2.0' wp-content/themes/manga-overlay-theme/style.css
           php -r "json_decode(file_get_contents('wp-content/themes/manga-overlay-theme/theme.json'), true, 512, JSON_THROW_ON_ERROR);"
 
       - name: Lint PHP
@@ -40,6 +45,11 @@ jobs:
 
       - name: Run theme unit checks
         run: php wp-content/themes/manga-overlay-theme/tests/theme-unit.php
+
+      - name: Run reader JavaScript checks
+        run: |
+          node --check wp-content/themes/manga-overlay-theme/assets/js/reader.js
+          node --test wp-content/themes/manga-overlay-theme/tests/reader-core.test.cjs
 
       - name: Package installable theme
         run: |

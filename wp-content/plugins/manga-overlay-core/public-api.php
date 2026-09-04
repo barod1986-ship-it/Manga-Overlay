@@ -54,6 +54,14 @@ if (! function_exists('mol_get_chapter_contributors')) {
     }
 }
 
+if (! function_exists('mol_get_reading_progress')) {
+    /** @return array<string, mixed>|null */
+    function mol_get_reading_progress(int $user_id, int $chapter_id): ?array
+    {
+        return MOL\PublicApi::readingProgress($user_id, $chapter_id);
+    }
+}
+
 if (! function_exists('mol_user_can_edit_chapter')) {
     function mol_user_can_edit_chapter(int $user_id, int $chapter_id): bool
     {

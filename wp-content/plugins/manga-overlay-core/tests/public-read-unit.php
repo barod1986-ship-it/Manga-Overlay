@@ -7,6 +7,8 @@ use MOL\REST\ApiException;
 use MOL\REST\ChapterPresenter;
 use MOL\REST\ElementPresenter;
 use MOL\REST\PublicRequestValidator;
+use MOL\REST\ReadingProgressPresenter;
+use MOL\REST\RequestValidator;
 
 if (! function_exists('sanitize_text_field')) {
     function sanitize_text_field(string $value): string
@@ -107,6 +109,35 @@ molPublicUnitExpectError(
 );
 molPublicUnitAssert('ar' === PublicRequestValidator::language(null), 'Default target language drifted.');
 
+$progress = RequestValidator::readingProgress(array(
+    'reader_mode' => 'paged',
+    'progress_unit' => 750000,
+    'page_index' => 3,
+    'chapter_id' => 7,
+));
+molPublicUnitAssert(7 === $progress['chapter_id'], 'Reading-progress chapter ID drifted.');
+molPublicUnitAssert(3 === $progress['page_index'], 'Reading-progress page index drifted.');
+molPublicUnitAssert(750000 === $progress['progress_unit'], 'Reading progress unit drifted.');
+molPublicUnitAssert('paged' === $progress['reader_mode'], 'Reading mode drifted.');
+molPublicUnitExpectError(
+    static fn (): array => RequestValidator::readingProgress(array(
+        'chapter_id' => 7,
+        'page_index' => 0,
+        'progress_unit' => 1000001,
+        'reader_mode' => 'webtoon',
+    )),
+    'mol_invalid_params'
+);
+molPublicUnitExpectError(
+    static fn (): array => RequestValidator::readingProgress(array(
+        'chapter_id' => 7,
+        'page_index' => 0,
+        'progress_unit' => 0,
+        'reader_mode' => 'spread',
+    )),
+    'mol_invalid_params'
+);
+
 $chapter = array(
     'id' => 7,
     'work_id' => 3,
@@ -148,6 +179,20 @@ $elementDto = ElementPresenter::one(array(
 ));
 molPublicUnitAssert(2 === $elementDto['version'], 'Element version drifted.');
 molPublicUnitAssert('ellipse' === $elementDto['style']['shape'], 'Element style was not preserved.');
+
+$progressDto = ReadingProgressPresenter::one(array(
+    'user_id' => 99,
+    'chapter_id' => 7,
+    'page_index' => 3,
+    'progress_unit' => 750000,
+    'reader_mode' => 'paged',
+    'updated_at' => '2026-09-04 12:30:00',
+));
+molPublicUnitAssert(! isset($progressDto['user_id']), 'Reading-progress DTO leaked the user ID.');
+molPublicUnitAssert(
+    '2026-09-04T12:30:00+00:00' === $progressDto['updated_at'],
+    'Reading-progress UTC datetime drifted.'
+);
 
 $visibility = new ChapterVisibilityPolicy();
 molPublicUnitAssert($visibility->assertVisible($chapter), 'Published chapter was not public.');

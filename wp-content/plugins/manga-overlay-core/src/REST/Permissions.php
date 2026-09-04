@@ -6,6 +6,19 @@ namespace MOL\REST;
 
 final class Permissions
 {
+    public static function authenticatedUser(): bool|\WP_Error
+    {
+        if (get_current_user_id() < 1) {
+            return new \WP_Error(
+                'mol_not_authenticated',
+                'Authentication is required.',
+                array('status' => 401)
+            );
+        }
+
+        return true;
+    }
+
     public static function manageContent(): bool|\WP_Error
     {
         return self::requireCapability('mol_manage_content');
@@ -23,12 +36,9 @@ final class Permissions
 
     private static function requireCapability(string $capability): bool|\WP_Error
     {
-        if (get_current_user_id() < 1) {
-            return new \WP_Error(
-                'mol_not_authenticated',
-                'Authentication is required.',
-                array('status' => 401)
-            );
+        $authenticated = self::authenticatedUser();
+        if (is_wp_error($authenticated)) {
+            return $authenticated;
         }
         if (! current_user_can($capability)) {
             return new \WP_Error(

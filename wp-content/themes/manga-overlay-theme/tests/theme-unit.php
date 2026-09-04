@@ -144,6 +144,7 @@ molThemeUnitAssert(50 === mol_theme_translation_percent(array('total' => 4, 'com
 molThemeUnitAssert(0 === mol_theme_translation_percent(array('total' => 0)), 'Empty translation percent drifted.');
 molThemeUnitAssert('مانجا' === mol_theme_work_type_label('manga'), 'Arabic work-type label drifted.');
 molThemeUnitAssert('يحتاج مراجعة' === mol_theme_translation_status_label('needs_review'), 'Arabic status label drifted.');
+molThemeUnitAssert('م' === mol_theme_initial('مانجا'), 'Arabic initial drifted.');
 
 $chapterUrl = mol_theme_chapter_url(42, 'chapter-one');
 molThemeUnitAssert('https://example.test/series/work-42/chapter/chapter-one/' === $chapterUrl, 'Chapter URL drifted.');
@@ -172,6 +173,26 @@ $cover = mol_theme_cover_markup(array(
 molThemeUnitAssert(str_contains($cover, 'width="800" height="1200"'), 'Cover dimensions are missing.');
 molThemeUnitAssert(str_contains($cover, 'loading="eager" fetchpriority="high"'), 'Priority cover attributes drifted.');
 molThemeUnitAssert(! str_contains($cover, 'alt=""Cover""'), 'Cover alt text was not escaped.');
+
+$readerImage = mol_theme_reader_image_markup(array(
+    'page_index' => 0,
+    'natural_width' => 800,
+    'natural_height' => 1200,
+    'image' => array(
+        'url' => 'https://example.test/page.png',
+        'width' => 800,
+        'height' => 1200,
+        'alt' => null,
+        'srcset' => null,
+    ),
+), true);
+molThemeUnitAssert(str_contains($readerImage, 'width="800" height="1200"'), 'Reader image dimensions are missing.');
+molThemeUnitAssert(str_contains($readerImage, 'loading="eager"'), 'First reader image was not prioritized.');
+molThemeUnitAssert(str_contains($readerImage, 'alt="صفحة 1"'), 'Reader image fallback alt drifted.');
+molThemeUnitAssert(
+    'https://example.test/u/reader-name/' === mol_theme_profile_url('reader-name'),
+    'Reader contributor profile URL drifted.'
+);
 
 $languageAttributes = mol_theme_language_attributes();
 molThemeUnitAssert(str_contains($languageAttributes, 'lang="en-US"'), 'Language attribute was removed.');

@@ -9,13 +9,16 @@ use MOL\Repositories\ChapterRepository;
 use MOL\Repositories\ContributionRepository;
 use MOL\Repositories\ElementRepository;
 use MOL\Repositories\PageRepository;
+use MOL\Repositories\ReadingProgressRepository;
 use MOL\Repositories\WorkRepository;
 use MOL\REST\ApiException;
 use MOL\REST\ChapterPresenter;
 use MOL\REST\ContributorPresenter;
 use MOL\REST\ElementPresenter;
 use MOL\REST\PagePresenter;
+use MOL\REST\ReadingProgressPresenter;
 use MOL\Services\PublicReadService;
+use MOL\Services\ReadingProgressService;
 
 final class PublicApi
 {
@@ -123,6 +126,30 @@ final class PublicApi
         }
     }
 
+    /** @return array<string, mixed>|null */
+    public static function readingProgress(int $userId, int $chapterId): ?array
+    {
+        $repositories = self::repositories();
+        $reads = self::readService();
+        if (null === $repositories
+            || null === $reads
+            || $userId < 1
+            || $userId !== get_current_user_id()
+            || $chapterId < 1
+        ) {
+            return null;
+        }
+
+        try {
+            $progress = (new ReadingProgressService($repositories['reading_progress'], $reads))
+                ->find($userId, $chapterId);
+
+            return null === $progress ? null : ReadingProgressPresenter::one($progress);
+        } catch (ApiException) {
+            return null;
+        }
+    }
+
     public static function userCanEditChapter(int $userId, int $chapterId): bool
     {
         $service = self::readService();
@@ -156,7 +183,8 @@ final class PublicApi
      *   chapters: ChapterRepository,
      *   pages: PageRepository,
      *   elements: ElementRepository,
-     *   contributions: ContributionRepository
+     *   contributions: ContributionRepository,
+     *   reading_progress: ReadingProgressRepository
      * }|null
      */
     private static function repositories(): ?array
@@ -172,6 +200,7 @@ final class PublicApi
             'pages' => new PageRepository($wpdb),
             'elements' => new ElementRepository($wpdb),
             'contributions' => new ContributionRepository($wpdb),
+            'reading_progress' => new ReadingProgressRepository($wpdb),
         );
     }
 }

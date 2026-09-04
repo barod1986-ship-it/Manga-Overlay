@@ -6,6 +6,9 @@
 use MOL\Content\WorkContent;
 use MOL\Content\WorkMeta;
 use MOL\Repositories\ChapterRepository;
+use MOL\Repositories\ContributionRepository;
+use MOL\Repositories\ElementRepository;
+use MOL\Repositories\PageRepository;
 
 function molThemeIntegrationAssert(bool $condition, string $message): void
 {
@@ -41,6 +44,11 @@ foreach (array(
     'front-page.php',
     'archive-mol_work.php',
     'single-mol_work.php',
+    'chapter-reader.php',
+    'header-reader.php',
+    'footer-reader.php',
+    'assets/css/reader.css',
+    'assets/js/reader.js',
     'header.php',
     'footer.php',
     'theme.json',
@@ -94,6 +102,50 @@ $chapters->insert(array(
     'created_by' => get_current_user_id(),
 ));
 
+$attachmentId = wp_insert_attachment(array(
+    'post_title' => 'T09 Reader Page',
+    'post_status' => 'inherit',
+    'post_mime_type' => 'image/png',
+), '', 0, true);
+molThemeIntegrationAssert(is_int($attachmentId) && $attachmentId > 0, 'Could not create the reader attachment.');
+update_post_meta($attachmentId, '_wp_attached_file', '2026/09/t09-reader-page.png');
+$pages = new PageRepository($wpdb);
+$pageId = $pages->insert($publishedChapter, 0, $attachmentId, 800, 1200);
+$elements = new ElementRepository($wpdb);
+$elementId = $elements->insert(array(
+    'page_id' => $pageId,
+    'target_lang' => 'ar',
+    'element_type' => 'bubble',
+    'x_unit' => 250000,
+    'y_unit' => 100000,
+    'w_unit' => 500000,
+    'h_unit' => 200000,
+    'content' => 'ترجمة القارئ',
+    'style' => array(
+        'fontId' => 'cairo',
+        'fontSizeUnit' => 30000,
+        'fontWeight' => 700,
+        'lineHeight' => 1.3,
+        'textAlign' => 'center',
+        'color' => '#111111',
+        'backgroundColor' => '#FFFFFF',
+        'backgroundOpacity' => 1,
+        'borderColor' => '#111111',
+        'borderWidthUnit' => 1000,
+        'paddingUnit' => 10000,
+        'shape' => 'ellipse',
+    ),
+    'created_by' => get_current_user_id(),
+));
+$contributions = new ContributionRepository($wpdb);
+$contributions->upsert(
+    $elementId,
+    get_current_user_id(),
+    $workId,
+    $publishedChapter,
+    true
+);
+
 wp_set_current_user(0);
 $library = mol_theme_library_data(array(
     'search' => 'T08 Theme Work',
@@ -123,6 +175,16 @@ molThemeIntegrationAssert($publishedChapter === (int) ($chapterResult['data'][0]
 $chapterUrl = mol_theme_chapter_url($workId, 'theme-chapter');
 molThemeIntegrationAssert(str_ends_with($chapterUrl, '/chapter/theme-chapter/'), 'Theme chapter permalink drifted.');
 
+$reader = mol_theme_reader_context($workId, 'theme-chapter');
+molThemeIntegrationAssert(200 === $reader['status'], 'Theme reader context failed.');
+molThemeIntegrationAssert(1 === count($reader['data']['pages']), 'Reader context omitted pages.');
+molThemeIntegrationAssert(1 === (int) $reader['data']['element_count'], 'Reader context omitted overlays.');
+molThemeIntegrationAssert(1 === count($reader['data']['contributors']), 'Reader context omitted contributors.');
+molThemeIntegrationAssert('paged' === $reader['data']['reader_mode'], 'Reader mode priority drifted.');
+molThemeIntegrationAssert('rtl' === $reader['data']['direction'], 'Reader direction drifted.');
+$missingReader = mol_theme_reader_context($workId, 'missing-chapter');
+molThemeIntegrationAssert(404 === $missingReader['status'], 'Missing reader route did not resolve to 404.');
+
 do_action('wp_enqueue_scripts');
 molThemeIntegrationAssert(wp_style_is('manga-overlay-theme', 'enqueued'), 'Theme stylesheet was not enqueued.');
 molThemeIntegrationAssert(wp_script_is('manga-overlay-theme', 'enqueued'), 'Theme script was not enqueued.');
@@ -149,4 +211,3 @@ molThemeIntegrationAssert(str_contains($filterMarkup, 'name="genre[]"'), 'Genre 
 molThemeIntegrationAssert(str_contains($filterMarkup, 'name="translation_status"'), 'Translation-status filter is missing.');
 
 echo "Manga Overlay theme integration passed.\n";
-

@@ -11,6 +11,7 @@ use MOL\Repositories\ContributionRepository;
 use MOL\Repositories\ElementRepository;
 use MOL\Repositories\IdempotencyKeyRepository;
 use MOL\Repositories\PageRepository;
+use MOL\Repositories\ReadingProgressRepository;
 use MOL\Repositories\WorkRepository;
 use MOL\Services\ChapterService;
 use MOL\Services\ContentDeletionService;
@@ -18,6 +19,7 @@ use MOL\Services\MediaService;
 use MOL\Services\PageReorderService;
 use MOL\Services\PageUploadService;
 use MOL\Services\PublicReadService;
+use MOL\Services\ReadingProgressService;
 
 final class Routes
 {
@@ -63,6 +65,9 @@ final class Routes
         );
         $libraryController = new LibraryController($works, $chapters);
         $publicReadController = new PublicReadController($reads);
+        $readingProgressController = new ReadingProgressController(
+            new ReadingProgressService(new ReadingProgressRepository($wpdb), $reads)
+        );
         $profileController = new ProfileController($contributions);
 
         register_rest_route(self::API_NAMESPACE, '/library', array(
@@ -177,6 +182,13 @@ final class Routes
                 'methods' => 'GET',
                 'callback' => array($profileController, 'get'),
                 'permission_callback' => '__return_true',
+            ),
+        ));
+        register_rest_route(self::API_NAMESPACE, '/reading-progress', array(
+            array(
+                'methods' => 'PUT',
+                'callback' => array($readingProgressController, 'save'),
+                'permission_callback' => array(Permissions::class, 'authenticatedUser'),
             ),
         ));
     }

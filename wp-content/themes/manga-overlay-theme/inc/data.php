@@ -90,6 +90,160 @@ function mol_theme_work_chapters_data(int $workId, int $page = 1, int $perPage =
     );
 }
 
+/** @return array<string, mixed> */
+function mol_theme_chapter_pages_data(int $chapterId): array
+{
+    return mol_theme_rest_get('/mol/v1/chapters/' . max(0, $chapterId) . '/pages');
+}
+
+/** @return array<string, mixed> */
+function mol_theme_chapter_elements_data(int $chapterId, string $language = 'ar'): array
+{
+    return mol_theme_rest_get(
+        '/mol/v1/chapters/' . max(0, $chapterId) . '/elements',
+        array('lang' => $language)
+    );
+}
+
+/** @return array<string, mixed> */
+function mol_theme_chapter_contributors_data(int $chapterId): array
+{
+    return mol_theme_rest_get('/mol/v1/chapters/' . max(0, $chapterId) . '/contributors');
+}
+
+/** @return array<string, mixed> */
+function mol_theme_all_work_chapters_data(int $workId): array
+{
+    if (function_exists('mol_get_work_chapters')) {
+        return array(
+            'data' => mol_get_work_chapters($workId),
+            'meta' => array(),
+            'error' => null,
+            'status' => 200,
+        );
+    }
+
+    $chapters = array();
+    $page = 1;
+    do {
+        $result = mol_theme_work_chapters_data($workId, $page, 100);
+        if (is_array($result['error'] ?? null)) {
+            return $result;
+        }
+        foreach ((array) ($result['data'] ?? array()) as $chapter) {
+            if (is_array($chapter)) {
+                $chapters[] = $chapter;
+            }
+        }
+        $totalPages = max(0, (int) ($result['meta']['total_pages'] ?? 0));
+        $page++;
+    } while ($page <= $totalPages);
+
+    return array(
+        'data' => $chapters,
+        'meta' => array('total' => count($chapters)),
+        'error' => null,
+        'status' => 200,
+    );
+}
+
+/**
+ * Build the complete server-rendered context for a public reader route.
+ *
+ * @return array<string, mixed>
+ */
+function mol_theme_reader_context(int $workId, string $chapterSlug): array
+{
+    $workResult = mol_theme_work_data($workId);
+    if (is_array($workResult['error'] ?? null)) {
+        return $workResult;
+    }
+
+    $chaptersResult = mol_theme_all_work_chapters_data($workId);
+    if (is_array($chaptersResult['error'] ?? null)) {
+        return $chaptersResult;
+    }
+    $chapters = array_values(array_filter(
+        (array) ($chaptersResult['data'] ?? array()),
+        static fn (mixed $chapter): bool => is_array($chapter)
+    ));
+    $currentIndex = null;
+    foreach ($chapters as $index => $chapter) {
+        if ($chapterSlug === (string) ($chapter['slug'] ?? '')) {
+            $currentIndex = $index;
+            break;
+        }
+    }
+    if (null === $currentIndex) {
+        return array(
+            'data' => array(),
+            'meta' => array(),
+            'error' => array(
+                'code' => 'mol_not_found',
+                'message' => 'الفصل المطلوب غير موجود أو غير منشور.',
+            ),
+            'status' => 404,
+        );
+    }
+
+    $chapter = $chapters[$currentIndex];
+    $chapterId = (int) ($chapter['id'] ?? 0);
+    $pagesResult = mol_theme_chapter_pages_data($chapterId);
+    $elementsResult = mol_theme_chapter_elements_data($chapterId, 'ar');
+    $contributorsResult = mol_theme_chapter_contributors_data($chapterId);
+    foreach (array($pagesResult, $elementsResult, $contributorsResult) as $result) {
+        if (is_array($result['error'] ?? null)) {
+            return $result;
+        }
+    }
+
+    $work = is_array($workResult['data'] ?? null) ? $workResult['data'] : array();
+    $progress = null;
+    $userId = get_current_user_id();
+    if ($userId > 0 && function_exists('mol_get_reading_progress')) {
+        $progress = mol_get_reading_progress($userId, $chapterId);
+    }
+
+    $readerMode = is_array($progress) ? (string) ($progress['reader_mode'] ?? '') : '';
+    if (! in_array($readerMode, array('webtoon', 'paged'), true)) {
+        $readerMode = (string) ($chapter['reader_mode_override'] ?? '');
+    }
+    if (! in_array($readerMode, array('webtoon', 'paged'), true)) {
+        $readerMode = (string) ($work['default_reader_mode'] ?? 'webtoon');
+    }
+    if (! in_array($readerMode, array('webtoon', 'paged'), true)) {
+        $readerMode = 'webtoon';
+    }
+
+    $direction = (string) ($chapter['direction_override'] ?? '');
+    if (! in_array($direction, array('rtl', 'ltr'), true)) {
+        $direction = (string) ($work['reading_direction'] ?? 'rtl');
+    }
+    if (! in_array($direction, array('rtl', 'ltr'), true)) {
+        $direction = 'rtl';
+    }
+
+    return array(
+        'data' => array(
+            'work' => $work,
+            'chapter' => $chapter,
+            'chapters' => $chapters,
+            'pages' => array_values((array) ($pagesResult['data'] ?? array())),
+            'elements' => array_values((array) ($elementsResult['data'] ?? array())),
+            'contributors' => array_values((array) ($contributorsResult['data'] ?? array())),
+            'element_count' => max(0, (int) ($elementsResult['meta']['element_count'] ?? 0)),
+            'previous_chapter' => $currentIndex > 0 ? $chapters[$currentIndex - 1] : null,
+            'next_chapter' => $currentIndex + 1 < count($chapters) ? $chapters[$currentIndex + 1] : null,
+            'reader_mode' => $readerMode,
+            'direction' => $direction,
+            'progress' => $progress,
+        ),
+        'meta' => array(),
+        'error' => null,
+        'status' => 200,
+    );
+}
+
 /**
  * @return array{
  *   work_types: list<array{slug: string, name: string}>,
@@ -137,4 +291,3 @@ function mol_theme_term_options(string $taxonomy): array
         array_filter($terms, static fn (mixed $term): bool => $term instanceof WP_Term)
     ));
 }
-

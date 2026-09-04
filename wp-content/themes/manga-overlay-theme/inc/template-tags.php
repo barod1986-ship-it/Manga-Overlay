@@ -73,6 +73,16 @@ function mol_theme_fallback_label(string $slug): string
     return ucwords(str_replace(array('-', '_'), ' ', $slug));
 }
 
+function mol_theme_initial(string $value): string
+{
+    $value = trim($value);
+    if ('' === $value) {
+        return '؟';
+    }
+
+    return function_exists('mb_substr') ? mb_substr($value, 0, 1, 'UTF-8') : substr($value, 0, 1);
+}
+
 /** @param array<string, mixed> $summary */
 function mol_theme_translation_percent(array $summary): int
 {
@@ -116,6 +126,42 @@ function mol_theme_cover_markup(array $cover, bool $priority = false, string $cl
     return '<img ' . implode(' ', $attributes) . '>';
 }
 
+/** @param array<string, mixed> $page */
+function mol_theme_reader_image_markup(array $page, bool $priority = false): string
+{
+    $image = is_array($page['image'] ?? null) ? $page['image'] : array();
+    $url = is_string($image['url'] ?? null) ? $image['url'] : '';
+    if ('' === $url) {
+        return '';
+    }
+    $width = max(1, (int) ($image['width'] ?? $page['natural_width'] ?? 1));
+    $height = max(1, (int) ($image['height'] ?? $page['natural_height'] ?? 1));
+    $pageNumber = max(1, (int) ($page['page_index'] ?? 0) + 1);
+    $alt = is_string($image['alt'] ?? null) && '' !== trim($image['alt'])
+        ? $image['alt']
+        : sprintf(__('صفحة %d', 'manga-overlay-theme'), $pageNumber);
+    $srcset = is_string($image['srcset'] ?? null) ? trim($image['srcset']) : '';
+    $attributes = array(
+        'class="mol-reader-image"',
+        'src="' . esc_url($url) . '"',
+        'width="' . esc_attr((string) $width) . '"',
+        'height="' . esc_attr((string) $height) . '"',
+        'alt="' . esc_attr($alt) . '"',
+        'decoding="async"',
+        'draggable="false"',
+        'loading="' . ($priority ? 'eager' : 'lazy') . '"',
+        'sizes="(max-width: 900px) 100vw, 860px"',
+    );
+    if ($priority) {
+        $attributes[] = 'fetchpriority="high"';
+    }
+    if ('' !== $srcset) {
+        $attributes[] = 'srcset="' . esc_attr($srcset) . '"';
+    }
+
+    return '<img ' . implode(' ', $attributes) . '>';
+}
+
 function mol_theme_work_url(array $work): string
 {
     $workId = max(0, (int) ($work['id'] ?? 0));
@@ -133,6 +179,11 @@ function mol_theme_chapter_url(int $workId, string $chapterSlug, bool $editor = 
     $url = trailingslashit($workUrl) . 'chapter/' . rawurlencode($chapterSlug) . '/';
 
     return $editor ? trailingslashit($url) . 'edit/' : $url;
+}
+
+function mol_theme_profile_url(string $username): string
+{
+    return home_url('/u/' . rawurlencode($username) . '/');
 }
 
 /** @param array<string, mixed> $query */
@@ -260,6 +311,11 @@ function mol_theme_icon(string $name): string
         'arrow-start' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"></path></svg>',
         'arrow-end' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"></path></svg>',
         'book' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22zM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22z"></path></svg>',
+        'layers' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5"></path></svg>',
+        'chapters' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"></path></svg>',
+        'zoom-in' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M10.5 7v7M7 10.5h7m1.5 5.5 5 5"></path></svg>',
+        'zoom-out' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M7 10.5h7m2 5.5 5 5"></path></svg>',
+        'reset' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8V4m0 0h4M5 4l3 3a7 7 0 1 1-2 7"></path></svg>',
         default => '',
     };
 }

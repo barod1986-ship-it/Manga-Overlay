@@ -9,6 +9,10 @@ on:
       - 'package-lock.json'
       - 'poc/editor-input/**'
       - 'poc/renderer/**'
+      - 'wp-content/themes/manga-overlay-theme/assets/js/reader.js'
+      - 'wp-content/themes/manga-overlay-theme/assets/css/reader.css'
+      - 'wp-content/themes/manga-overlay-theme/chapter-reader.php'
+      - 'wp-content/themes/manga-overlay-theme/tests/reader*'
   push:
     branches:
       - main
@@ -19,6 +23,10 @@ on:
       - 'package-lock.json'
       - 'poc/editor-input/**'
       - 'poc/renderer/**'
+      - 'wp-content/themes/manga-overlay-theme/assets/js/reader.js'
+      - 'wp-content/themes/manga-overlay-theme/assets/css/reader.css'
+      - 'wp-content/themes/manga-overlay-theme/chapter-reader.php'
+      - 'wp-content/themes/manga-overlay-theme/tests/reader*'
 
 permissions:
   contents: read

@@ -118,6 +118,51 @@ final class RequestValidator
     }
 
     /**
+     * @param mixed $payload
+     * @return array{chapter_id: int, page_index: int, progress_unit: int, reader_mode: string}
+     */
+    public static function readingProgress(mixed $payload): array
+    {
+        $data = self::object(
+            $payload,
+            array('chapter_id', 'page_index', 'progress_unit', 'reader_mode')
+        );
+        if (4 !== count($data)
+            || ! array_key_exists('chapter_id', $data)
+            || ! array_key_exists('page_index', $data)
+            || ! array_key_exists('progress_unit', $data)
+            || ! array_key_exists('reader_mode', $data)
+        ) {
+            throw ApiException::invalidParams(
+                'chapter_id, page_index, progress_unit, and reader_mode are required.'
+            );
+        }
+
+        $chapterId = self::positiveInteger($data['chapter_id'], 'chapter_id');
+        if (! is_int($data['page_index']) || $data['page_index'] < 0) {
+            throw ApiException::invalidParams('page_index must be a non-negative integer.');
+        }
+        if (! is_int($data['progress_unit'])
+            || $data['progress_unit'] < 0
+            || $data['progress_unit'] > 1_000_000
+        ) {
+            throw ApiException::invalidParams('progress_unit must be between 0 and 1000000.');
+        }
+        if (! is_string($data['reader_mode'])
+            || ! in_array($data['reader_mode'], AllowedValues::READER_MODES, true)
+        ) {
+            throw ApiException::invalidParams('reader_mode contains an unsupported value.');
+        }
+
+        return array(
+            'chapter_id' => $chapterId,
+            'page_index' => $data['page_index'],
+            'progress_unit' => $data['progress_unit'],
+            'reader_mode' => $data['reader_mode'],
+        );
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */

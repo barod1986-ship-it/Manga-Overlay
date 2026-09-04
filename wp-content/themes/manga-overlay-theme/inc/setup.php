@@ -57,6 +57,25 @@ function mol_theme_enqueue_assets(): void
         array('in_footer' => false)
     );
     wp_script_add_data('manga-overlay-theme', 'strategy', 'defer');
+
+    if (is_singular('mol_work') && '' !== (string) get_query_var('mol_chapter')) {
+        $readerStylePath = MOL_THEME_DIRECTORY . '/assets/css/reader.css';
+        $readerScriptPath = MOL_THEME_DIRECTORY . '/assets/js/reader.js';
+        wp_enqueue_style(
+            'manga-overlay-reader',
+            MOL_THEME_URI . '/assets/css/reader.css',
+            array('manga-overlay-theme'),
+            is_file($readerStylePath) ? (string) filemtime($readerStylePath) : MOL_THEME_VERSION
+        );
+        wp_enqueue_script(
+            'manga-overlay-reader',
+            MOL_THEME_URI . '/assets/js/reader.js',
+            array(),
+            is_file($readerScriptPath) ? (string) filemtime($readerScriptPath) : MOL_THEME_VERSION,
+            array('in_footer' => true)
+        );
+        wp_script_add_data('manga-overlay-reader', 'strategy', 'defer');
+    }
 }
 add_action('wp_enqueue_scripts', 'mol_theme_enqueue_assets');
 
@@ -67,11 +86,12 @@ function mol_theme_body_classes(array $classes): array
     if (is_post_type_archive('mol_work')) {
         $classes[] = 'mol-library-page';
     }
-    if (is_singular('mol_work')) {
+    if (is_singular('mol_work') && '' !== (string) get_query_var('mol_chapter')) {
+        $classes[] = 'mol-reader-page';
+    } elseif (is_singular('mol_work')) {
         $classes[] = 'mol-work-page';
     }
 
     return array_values(array_unique($classes));
 }
 add_filter('body_class', 'mol_theme_body_classes');
-

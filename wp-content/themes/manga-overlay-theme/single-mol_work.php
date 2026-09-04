@@ -6,6 +6,12 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
+$chapterSlug = (string) get_query_var('mol_chapter');
+if ('' !== $chapterSlug) {
+    require MOL_THEME_DIRECTORY . '/chapter-reader.php';
+    return;
+}
+
 $workId = get_queried_object_id();
 $workResult = mol_theme_work_data($workId);
 $work = is_array($workResult['data'] ?? null) ? $workResult['data'] : array();
@@ -170,4 +176,3 @@ get_header();
 </main>
 <?php
 get_footer();
-

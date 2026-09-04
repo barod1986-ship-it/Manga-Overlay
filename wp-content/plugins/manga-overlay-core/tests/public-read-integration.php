@@ -9,6 +9,7 @@ use MOL\Repositories\ChapterRepository;
 use MOL\Repositories\ContributionRepository;
 use MOL\Repositories\ElementRepository;
 use MOL\Repositories\PageRepository;
+use MOL\Repositories\ReadingProgressRepository;
 
 function molPublicIntegrationAssert(bool $condition, string $message): void
 {
@@ -22,6 +23,16 @@ function molPublicIntegrationGet(string $path, array $query = array()): WP_REST_
 {
     $request = new WP_REST_Request('GET', $path);
     $request->set_query_params($query);
+
+    return rest_do_request($request);
+}
+
+/** @param array<string, mixed> $payload */
+function molPublicIntegrationPut(string $path, array $payload): WP_REST_Response
+{
+    $request = new WP_REST_Request('PUT', $path);
+    $request->set_header('Content-Type', 'application/json');
+    $request->set_body(wp_json_encode($payload));
 
     return rest_do_request($request);
 }
@@ -115,6 +126,7 @@ foreach (array(
     '/mol/v1/chapters/(?P<id>\d+)/elements',
     '/mol/v1/chapters/(?P<id>\d+)/contributors',
     '/mol/v1/profiles/(?P<username>[^/]+)',
+    '/mol/v1/reading-progress',
 ) as $route) {
     molPublicIntegrationAssert(isset($routes[$route]), sprintf('Public REST route %s is missing.', $route));
 }
@@ -430,6 +442,15 @@ molPublicIntegrationAssert(2 === count(mol_get_chapter_pages($publishedAlpha)), 
 molPublicIntegrationAssert(1 === count(mol_get_page_elements($alphaPageOne, 'ar')), 'Public PHP page-elements API drifted.');
 molPublicIntegrationAssert(2 === count(mol_get_chapter_elements($publishedAlpha, 'ar')), 'Public PHP chapter-elements API drifted.');
 molPublicIntegrationAssert(2 === count(mol_get_chapter_contributors($publishedAlpha)), 'Public PHP contributors API drifted.');
+molPublicIntegrationAssert(function_exists('mol_get_reading_progress'), 'Reading-progress PHP API is missing.');
+
+$anonymousProgress = molPublicIntegrationPut('/mol/v1/reading-progress', array(
+    'chapter_id' => $publishedAlpha,
+    'page_index' => 1,
+    'progress_unit' => 500000,
+    'reader_mode' => 'paged',
+));
+molPublicIntegrationAssert(401 === $anonymousProgress->get_status(), 'Anonymous progress save was not rejected.');
 
 $draftRoutes = array(
     '/mol/v1/chapters/' . $draftAlpha,
@@ -450,6 +471,37 @@ foreach ($draftRoutes as $route) {
 molPublicIntegrationAssert(null === mol_get_chapter($draftAlpha), 'Public PHP API leaked a draft anonymously.');
 
 wp_set_current_user($memberId);
+$savedProgress = molPublicIntegrationPut('/mol/v1/reading-progress', array(
+    'chapter_id' => $publishedAlpha,
+    'page_index' => 1,
+    'progress_unit' => 500000,
+    'reader_mode' => 'paged',
+));
+$savedProgressBody = $savedProgress->get_data();
+molPublicIntegrationAssert(200 === $savedProgress->get_status(), 'Member reading progress was not saved.');
+molPublicIntegrationAssert(1 === $savedProgressBody['data']['page_index'], 'Saved progress page index drifted.');
+molPublicIntegrationAssert(500000 === $savedProgressBody['data']['progress_unit'], 'Saved progress unit drifted.');
+molPublicIntegrationAssert('paged' === $savedProgressBody['data']['reader_mode'], 'Saved reader mode drifted.');
+$progressRepository = new ReadingProgressRepository($wpdb);
+$storedProgress = $progressRepository->find($memberId, $publishedAlpha);
+molPublicIntegrationAssert(1 === (int) ($storedProgress['page_index'] ?? -1), 'Progress repository did not persist the page.');
+$themeProgress = mol_get_reading_progress($memberId, $publishedAlpha);
+molPublicIntegrationAssert(1 === (int) ($themeProgress['page_index'] ?? -1), 'Progress PHP API drifted.');
+
+$invalidProgress = molPublicIntegrationPut('/mol/v1/reading-progress', array(
+    'chapter_id' => $publishedAlpha,
+    'page_index' => 2,
+    'progress_unit' => 0,
+    'reader_mode' => 'webtoon',
+));
+molPublicIntegrationAssert(400 === $invalidProgress->get_status(), 'Out-of-range reading progress was accepted.');
+$draftProgress = molPublicIntegrationPut('/mol/v1/reading-progress', array(
+    'chapter_id' => $draftAlpha,
+    'page_index' => 0,
+    'progress_unit' => 0,
+    'reader_mode' => 'webtoon',
+));
+molPublicIntegrationAssert(404 === $draftProgress->get_status(), 'Member saved progress for a hidden draft.');
 molPublicIntegrationAssert(
     404 === molPublicIntegrationGet('/mol/v1/chapters/' . $draftAlpha)->get_status(),
     'Member learned that a draft chapter exists.'

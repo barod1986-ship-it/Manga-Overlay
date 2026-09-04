@@ -1,6 +1,6 @@
 # Manga Overlay Core
 
-T-03 through T-06 WordPress core, persistence, work content, and chapter/page management for Master Spec v1.1.3.
+WordPress domain, persistence, content-management, public-read, and reading-progress services through T-09 for Master Spec v1.1.3.
 
 ## Scope
 
@@ -18,9 +18,11 @@ T-03 through T-06 WordPress core, persistence, work content, and chapter/page ma
 - JPEG/PNG/WebP page upload with actual MIME/decoder validation, request limits, idempotency, and optional explicit WebP derivatives.
 - Transactional two-phase page reorder and service-owned cascade cleanup for page/chapter deletion.
 - Chapter and upload admin screens with natural filename sorting, previews, a two-request queue, and page-order controls.
+- Public library/work/chapter/page/overlay/contributor/profile reads with published/draft visibility and cache policy.
+- Authenticated `PUT /mol/v1/reading-progress` persistence plus a narrow server-rendered PHP API for the current user.
 - Opt-in-only uninstall cleanup through `mol_delete_data_on_uninstall=1`.
 
-Public MOL read routes, the public theme, and editor integration deliberately belong to later tasks.
+The public theme owns presentation and guest progress storage; the plugin remains the authority for domain data and authenticated progress.
 
 ## Check
 
