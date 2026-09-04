@@ -13,7 +13,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: process.env.MOL_EXTERNAL_EDITOR_SERVER ? undefined : {
-    command: 'node ../../../../node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4176 --strictPort',
+    command: 'node ../../../../node_modules/vite/bin/vite.js .. --host 127.0.0.1 --port 4176 --strictPort',
     url: 'http://127.0.0.1:4176/tests/editor-shell-fixture.html',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
