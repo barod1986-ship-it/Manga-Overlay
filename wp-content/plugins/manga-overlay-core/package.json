@@ -1,6 +1,6 @@
 {
   "name": "@mol/editor-shell",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,8 +14,10 @@
     "test:e2e": "playwright test --config=tests/editor.playwright.config.ts"
   },
   "dependencies": {
+    "@mol/poc-renderer": "0.1.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "react-moveable": "0.56.0"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",

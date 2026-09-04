@@ -2,10 +2,13 @@ export { MOL_UNIT } from './domain';
 export type {
   ElementStyle,
   ElementType,
+  FontId,
+  BurstStyle,
   Geometry,
   OverlayElement,
   ShadowStyle,
   Shape,
+  TailStyle,
   TextAlignment,
 } from './domain';
 export {
@@ -15,4 +18,4 @@ export {
   unitToPixels,
 } from './geometry';
 export type { CssGeometry, PixelGeometry } from './geometry';
-export { createOverlayNode, OverlayRenderer } from './renderer';
+export { createOverlayNode, normalizeElementStyle, OverlayRenderer } from './renderer';

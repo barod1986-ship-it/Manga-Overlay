@@ -32,7 +32,9 @@ body.mol-editor-document {
 }
 
 .mol-editor-document button,
-.mol-editor-document textarea {
+.mol-editor-document textarea,
+.mol-editor-document input,
+.mol-editor-document select {
   font: inherit;
 }
 
@@ -43,7 +45,9 @@ body.mol-editor-document {
 
 .mol-editor-document button:focus-visible,
 .mol-editor-document a:focus-visible,
-.mol-editor-document textarea:focus-visible {
+.mol-editor-document textarea:focus-visible,
+.mol-editor-document input:focus-visible,
+.mol-editor-document select:focus-visible {
   outline: 3px solid var(--mol-editor-focus);
   outline-offset: 2px;
 }
@@ -271,6 +275,13 @@ body.mol-editor-document {
   font-size: 0.94rem;
 }
 
+.mol-editor-panel-heading h2 small {
+  margin-inline-start: 5px;
+  color: var(--mol-editor-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
 .mol-editor-panel-heading span {
   color: var(--mol-editor-muted);
   font-size: 0.68rem;
@@ -379,7 +390,8 @@ body.mol-editor-document {
   color: var(--mol-editor-paper);
 }
 
-.mol-editor-property-content label > span {
+.mol-editor-property-content label > span,
+.mol-editor-fieldset label > span {
   display: block;
   margin-block-end: 7px;
   color: var(--mol-editor-muted);
@@ -396,6 +408,118 @@ body.mol-editor-document {
   color: var(--mol-editor-paper);
   background: #151210;
   line-height: 1.7;
+}
+
+.mol-editor-property-content input,
+.mol-editor-property-content select {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 8px;
+  border: 1px solid var(--mol-editor-line);
+  border-radius: 6px;
+  color: var(--mol-editor-paper);
+  background: #151210;
+}
+
+.mol-editor-property-content input[type="color"] {
+  width: 100%;
+  padding: 3px;
+}
+
+.mol-editor-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--mol-editor-line);
+  border-radius: 7px;
+}
+
+.mol-editor-fieldset legend {
+  padding-inline: 6px;
+  color: #e6d8cb;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.mol-editor-form-grid,
+.mol-editor-number-grid {
+  direction: rtl;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mol-editor-form-grid label,
+.mol-editor-number-field {
+  min-width: 0;
+}
+
+.mol-editor-form-grid .is-wide {
+  grid-column: 1 / -1;
+}
+
+.mol-editor-number-field {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 5px;
+}
+
+.mol-editor-number-field > span {
+  align-self: center;
+  margin: 0 !important;
+  font-weight: 800;
+}
+
+.mol-editor-number-field small {
+  align-self: center;
+  color: var(--mol-editor-muted);
+  font-size: 0.64rem;
+}
+
+.mol-editor-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block: 8px;
+}
+
+.mol-editor-checkbox input {
+  min-height: auto;
+}
+
+.mol-editor-checkbox > span {
+  margin: 0 !important;
+}
+
+.mol-editor-nudge,
+.mol-editor-element-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block-start: 12px;
+}
+
+.mol-editor-nudge button,
+.mol-editor-element-actions button {
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid var(--mol-editor-line);
+  border-radius: 6px;
+  color: var(--mol-editor-paper);
+  background: var(--mol-editor-panel-raised);
+  cursor: pointer;
+}
+
+.mol-editor-element-actions button {
+  flex: 1;
+}
+
+.mol-editor-element-actions .is-danger {
+  border-color: #8c433b;
+  color: #ffb5aa;
+  background: #351b18;
 }
 
 .mol-editor-geometry {
@@ -479,36 +603,88 @@ body.mol-editor-document {
   background: #ddd3c5;
 }
 
-.mol-editor-element-outline {
+.mol-overlay-layer {
   position: absolute;
-  margin: 0;
-  padding: 0;
-  border: 2px solid #2b8fec;
-  color: #fff;
-  background: rgb(43 143 236 / 9%);
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mol-overlay-element {
+  position: absolute;
+  display: grid;
+  place-items: center;
   transform-origin: center;
-  cursor: pointer;
+  pointer-events: auto;
+  cursor: move;
 }
 
-.mol-editor-element-outline[data-selected="true"] {
-  border-color: var(--mol-editor-accent);
-  background: rgb(224 82 67 / 14%);
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 88%);
-}
-
-.mol-editor-element-outline span {
+.mol-overlay-element::after {
   position: absolute;
-  inset-block-start: -23px;
-  inset-inline-start: -2px;
-  padding: 2px 6px;
-  color: #fff;
-  background: #2278c8;
-  font-size: 10px;
-  white-space: nowrap;
+  z-index: 3;
+  inset: 0;
+  border: 1px dashed rgb(38 130 219 / 86%);
+  content: "";
+  pointer-events: none;
 }
 
-.mol-editor-element-outline[data-selected="true"] span {
-  background: var(--mol-editor-accent);
+.mol-overlay-element[data-selected="true"]::after {
+  border: 2px solid var(--mol-editor-accent);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 86%);
+}
+
+.mol-editor-overlay.is-preview .mol-overlay-element {
+  pointer-events: none;
+  cursor: default;
+}
+
+.mol-editor-overlay.is-preview .mol-overlay-element::after {
+  display: none;
+}
+
+.mol-element-shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.mol-element-text {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  place-items: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.mol-overlay-element--sfx .mol-element-text {
+  letter-spacing: 0;
+}
+
+.moveable-control-box {
+  z-index: 100 !important;
+  direction: ltr;
+}
+
+.moveable-control-box .moveable-line {
+  background: var(--mol-editor-accent) !important;
+}
+
+.moveable-control-box .moveable-control {
+  width: 12px !important;
+  height: 12px !important;
+  margin-block-start: -6px !important;
+  margin-inline-start: -6px !important;
+  border: 2px solid #fff !important;
+  background: var(--mol-editor-accent) !important;
 }
 
 .mol-editor-stage-controls {

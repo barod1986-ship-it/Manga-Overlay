@@ -1,6 +1,7 @@
 export const MOL_UNIT = 1_000_000 as const;
 
 export type ElementType = 'bubble' | 'narration' | 'free_text' | 'sfx';
+export type FontId = 'noto-sans-arabic' | 'cairo' | 'tajawal' | 'noto-kufi-arabic' | 'sfx-display-1';
 export type TextAlignment = 'start' | 'center' | 'end';
 export type Shape = 'ellipse' | 'rounded_rect' | 'rect' | 'cloud' | 'none' | 'burst' | 'impact';
 
@@ -21,8 +22,20 @@ export interface ShadowStyle {
   readonly opacity: number;
 }
 
+export interface TailStyle {
+  readonly enabled: boolean;
+  readonly angleMdeg: number;
+  readonly lengthUnit: number;
+  readonly widthUnit: number;
+}
+
+export interface BurstStyle {
+  readonly points: 8 | 12 | 16 | 24;
+  readonly depth: number;
+}
+
 export interface ElementStyle {
-  readonly fontId: 'noto-sans-arabic' | 'cairo' | 'tajawal' | 'noto-kufi-arabic' | 'sfx-display-1';
+  readonly fontId: FontId;
   readonly fontSizeUnit: number;
   readonly fontWeight: 400 | 500 | 600 | 700 | 800 | 900;
   readonly lineHeight: number;
@@ -37,7 +50,13 @@ export interface ElementStyle {
   readonly shape: Shape;
   readonly strokeColor?: string;
   readonly strokeWidthUnit?: number;
-  readonly shadow?: ShadowStyle;
+  readonly shadow?: ShadowStyle | null;
+  readonly tail?: TailStyle | null;
+  readonly burst?: BurstStyle | null;
+  readonly scaleX?: number;
+  readonly scaleY?: number;
+  readonly autoFit?: boolean;
+  readonly minFontSizeUnit?: number;
 }
 
 export interface OverlayElement extends Geometry {
@@ -46,6 +65,6 @@ export interface OverlayElement extends Geometry {
   readonly target_lang: string;
   readonly element_type: ElementType;
   readonly content: string;
-  readonly style: ElementStyle;
+  readonly style: ElementStyle | Readonly<Record<string, unknown>>;
   readonly version: number;
 }
