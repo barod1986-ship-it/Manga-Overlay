@@ -189,7 +189,7 @@ Implemented and verified:
 - [Database Matrix run #15](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33875633071) passed on MySQL 8.4 and MariaDB 10.11, [PHP Bootstrap run #15](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33875632996) passed, and [Frontend PoC run #15](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33875633188) remained green.
 - The frozen v1.1.3 contract gate remained green at `49/49` checks.
 
-T-08 is complete at the implementation/CI level. T-09 (the public chapter reader and overlay controls) is next. The draft PR and physical-device release gates remain independent.
+T-08 is complete at the implementation/CI level. The draft PR and physical-device release gates remain independent.
 
 ### T-08 staging smoke test
 
@@ -202,3 +202,23 @@ On 2026-09-04, the exact `manga-overlay-theme` 0.1.0 artifact from Public Theme 
 - `/series/manga-overlay-smoke-test/` rendered the work metadata, description, 100% translation summary, and one published chapter row.
 - The document language and direction were `lang="ar"` and `dir="rtl"`; browser logs contained no site/theme JavaScript errors. Messages emitted only by the controlled browser extension were excluded from the application result.
 - Physical iOS/Android interaction and narrow-viewport visual evidence remain part of the existing T-02 release gate; this staging smoke test does not waive that requirement.
+
+## T-09 — Public chapter reader and overlay controls
+
+Implemented and verified:
+
+- The canonical `/series/{work}/chapter/{chapter}/` route now renders a focused, server-rendered reader shell without converting the public site into an SPA.
+- Webtoon and single-page modes share the same physical image-space renderer. Paged navigation honors chapter/work `rtl|ltr` direction without mirroring image geometry, and desktop arrow keys follow that direction.
+- The chapter overlay batch is embedded once per chapter. Arabic content is written with DOM `textContent`; only parameter-generated SVG shapes are created, and renderer style values are normalized against explicit allowlists and bounds.
+- The translation toggle hides every DOM/SVG overlay immediately without changing or reloading any source image, and its preference is stored locally.
+- Authenticated progress uses the strict frozen `PUT /reading-progress` contract with throttled saves and WordPress REST nonces. Guest progress uses the exact `mol_progress_{chapterId}` localStorage key and restores page, normalized in-page progress, and reader mode.
+- Zoom buttons, wheel zoom, double-click reset, pointer pinch, and pan are supported. Paged mode resets zoom on page changes while webtoon retains vertical scrolling when unzoomed.
+- Reader navigation includes previous/next chapter, the complete published chapter list, return-to-work, translation status, page/element counts, and contributor profiles outside the image surface.
+- The first page is eager/high-priority, later images are lazy, only the nearby page is promoted, dimensions and responsive sources are explicit, and distant overlay rendering uses IntersectionObserver/content visibility.
+- Reader unit checks cover normalized geometry, allowed mode/direction values, strict progress payloads, and safe style normalization. Playwright verifies normalized placement, no HTML execution, instant translation toggle, limited nearby preload, RTL/LTR keyboard behavior, and zoom reset at 360/768/1440 widths.
+- [Frontend PoC run #27](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33889868281) passed unit, TypeScript/build, and Chromium/Firefox/WebKit Playwright checks.
+- [Database Matrix run #19](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33889868310) passed the reading-progress REST/PHP contract and theme reader context on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [Public Theme run #7](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33889868268) passed PHP lint, reader JavaScript checks, and installable theme 0.2.0 packaging.
+- [PHP Bootstrap run #23](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33889868264) passed PHP 8.4 lint, Composer/autoload checks, and installable core 0.6.0 packaging.
+
+T-09 is complete at the implementation/CI level. Installation and smoke testing of Core 0.6.0 and theme 0.2.0 on the project staging site require the owner's explicit confirmation. The draft PR and physical-device release gates remain independent.

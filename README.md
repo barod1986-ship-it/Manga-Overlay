@@ -4,7 +4,7 @@
 
 ## حالة المشروع
 
-المشروع في مرحلة تنفيذ الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات وإدارة المحتوى وواجهات القراءة العامة والقالب حتى T‑08؛ قارئ الفصول وطبقات الترجمة في T‑09 قيد التحقق في CI.
+المشروع في مرحلة تنفيذ الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات وإدارة المحتوى وواجهات القراءة العامة والقالب وقارئ الفصول حتى T‑09 على مستوى التنفيذ وCI.
 
 | المهمة | الحالة |
 |---|---|
@@ -17,7 +17,7 @@
 | T-06 — Chapter/page management | مكتمل: CRUD + upload queue + MIME/decoder checks + idempotency + reorder ثنائي المرحلة + review policy |
 | T-07 — Public data APIs | مكتمل: library/work/chapter/page/element/contributor/profile reads مع visibility وcache contracts |
 | T-08 — Public library theme | مكتمل ومختبر على موقع التجارب: الرئيسية والمكتبة وصفحة العمل العربية RTL |
-| T-09 — Chapter reader | مرشح منفذ: Webtoon/Paged وRTL/LTR وطبقات DOM/SVG والتكبير وحفظ التقدم؛ ينتظر CI ثم اختبار موقع التجارب |
+| T-09 — Chapter reader | مكتمل في CI: Webtoon/Paged وRTL/LTR وطبقات DOM/SVG والتكبير وحفظ التقدم؛ اختبار موقع التجارب معلق |
 
 ## بنية المستودع
 
