@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 ## T-00 — Environment
 
@@ -147,3 +147,31 @@ On 2026-09-03, the installable `manga-overlay-core` 0.4.0 artifact from PHP Boot
 - A `.png` file with invalid image contents was rejected as `Unsupported media type.` and created no page.
 - The `/library/` archive and `/series/{work-slug}/` single-work permalink rendered successfully.
 - Public MOL read APIs and a chapter reader remain intentionally absent until T-07 and T-09 respectively.
+
+## T-07 — Public data APIs
+
+Implemented and verified:
+
+- Public REST reads now cover runtime capabilities, the filterable/paginated library, individual works, published work chapters, individual chapters, chapter pages, page elements, chapter overlay batches grouped by page, contributors, and public profiles.
+- Every public success response is built through explicit presenters that match the frozen OpenAPI DTOs; no repository row or engine-specific representation is exposed directly.
+- Library filters cover search, genre, work type, source language, work status, translation status, sort, page, and per-page validation. The intentionally unavailable `most_read` sort returns `400 mol_sort_unavailable` instead of silently changing semantics.
+- `ChapterVisibilityPolicy` centralizes descendant visibility: published chapter resources are public; a draft is returned only in an authenticated REST context to a user with `mol_use_editor` or `mol_manage_content`; every other caller receives `404`.
+- Public responses carry cacheable headers and collection ETags. Authorized draft responses are explicitly `private, no-store`.
+- The plugin exposes the specified public PHP functions for server-rendered theme consumers, backed by the same service/presenter layer as REST.
+- Runtime capabilities advertise only image formats supported by the current WordPress installation and include the canonical reader modes, reading directions, element types, and work types.
+- The frozen v1.1.3 contract gate passed `49/49` checks before DTO implementation.
+- [Database Matrix run #14](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33817852338) passed the public-read unit and REST integration suites on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #14](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33817853246) passed PHP 8.4 lint, Composer/autoload checks, bootstrap tests, and produced the installable 0.5.0 artifact.
+- [Frontend PoC run #14](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33817848217) remained green.
+
+T-07 is complete at the implementation/CI level. T-08 (server-rendered theme, library/work UI, filters, and RTL) is next. The draft PR and physical-device release gates remain independent.
+
+### T-07 staging smoke test
+
+On 2026-09-04, the exact 0.5.0 artifact from PHP Bootstrap run #14 was verified against its published SHA-256 digest and installed over 0.4.0 on the project staging site.
+
+- WordPress recognized the update from 0.4.0 to 0.5.0 and completed the replacement successfully.
+- Manga Overlay Core remained active after replacement and reported version 0.5.0.
+- The existing `/library/` archive rendered the published smoke-test work after the update.
+- The existing `/series/manga-overlay-smoke-test/` work permalink rendered after the update with no visible PHP or WordPress error.
+- Direct JSON navigation is blocked by the controlled browser client, so endpoint behavior is established by the anonymous/authenticated WordPress REST integration suite in the database matrix rather than by treating that client-side restriction as an application failure.
