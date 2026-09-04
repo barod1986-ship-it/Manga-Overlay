@@ -245,13 +245,26 @@ Implemented and verified:
 - The canonical `/series/{work}/chapter/{chapter}/edit/` query now resolves to a plugin-owned document instead of falling through to the public reader template.
 - Guests are redirected through WordPress authentication. Logged-in users without `mol_use_editor` or `mol_manage_content` receive `403`, while authorized editors can load published or draft chapter context without exposing drafts publicly.
 - `EditorContextService` resolves the requested work/chapter, pages, and Arabic elements through the existing repositories and centralized chapter visibility policy. Data is presented through the existing DTO presenters and embedded with JSON hex escaping.
-- Core is advanced to `0.7.0`. The installable artifact includes the committed production React bundle and does not require Node on WordPress.
-- React owns URL-backed page routing (`?page=N`), local selection/zoom/Preview state, a centered image stage, physical non-mirrored element outlines, a collapsible layers panel, and a read-only properties panel.
+- Core is advanced to `0.7.1`. The installable artifact includes the committed production React bundle and does not require Node on WordPress.
+- React owns URL-backed page routing through the project-prefixed `?mol_page=N` parameter, local selection/zoom/Preview state, a centered image stage, physical non-mirrored element outlines, a collapsible layers panel, and a read-only properties panel.
+- The initial `?page=N` implementation collided with WordPress's reserved `page` query variable on direct reload. Core 0.7.1 removes that reserved parameter, uses `mol_page`, and includes a regression test for deep-link restoration.
 - Save status and Preview remain visible. Creation controls are intentionally disabled and the UI says that no changes are saved; T-11 owns element editing/renderer integration and T-12 owns REST writes/autosave.
 - Unit tests cover route bounds, reducer transitions, zoom limits, and physical geometry. Playwright covers Chromium/Firefox/WebKit routing, safe malicious text handling, layer/property selection, Preview chrome removal, and page restoration. The WordPress DB integration covers draft authorization, target-language grouping, template resolution, asset loading, `403`, and JSON script-boundary escaping.
-- [Frontend PoC run #31](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33903748875) passed unit, TypeScript/build, and all Playwright suites on Chromium, Firefox, and WebKit. The first run exposed only an ambiguous test locator; it was narrowed to the toolbar and the product bundle was unchanged.
-- [Database Matrix run #23](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33903748817) passed the editor integration suite on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
-- [PHP Bootstrap run #27](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33903748830) passed PHP 8.4 lint, Composer/autoload checks, and produced the installable Core 0.7.0 artifact with both editor assets.
-- [Public Theme run #11](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33903748871) remained green.
+- [Frontend PoC run #34](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33906988863) passed unit, TypeScript/build, and all Playwright suites on Chromium, Firefox, and WebKit.
+- [Database Matrix run #26](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33906988914) passed the editor integration suite on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #30](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33906988857) passed PHP 8.4 lint, Composer/autoload checks, and produced the installable Core 0.7.1 artifact with both editor assets.
+- [Public Theme run #14](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33906988789) remained green.
 
-T-10 is complete at the implementation/CI level. Core 0.7.0 staging installation and browser verification remain pending; existing physical iOS/Android release gates remain independent.
+T-10 is complete at the implementation, CI, and staging levels. Existing physical iOS/Android release gates remain independent.
+
+### T-10 staging smoke test
+
+On 2026-09-04, the exact Core 0.7.1 artifact from PHP Bootstrap run #30 at PR head `571f00c` was verified against the GitHub artifact SHA-256 digest and installed over Core 0.7.0 on the project staging site.
+
+- WordPress completed the replacement successfully; Manga Overlay Core remained active and reported version 0.7.1.
+- The authorized editor route opened the existing two-page smoke chapter and showed the T-10 read-only shell with `Core 0.7.1`.
+- Advancing to page 2 produced `?mol_page=2`. A full reload preserved the editor route and restored page 2 of 2 instead of redirecting to the work page.
+- Zoom advanced from 100% to 125%, and Fit reset it to 100%.
+- Preview hid the editor chrome and “Return to editor” restored the layers and read-only properties panels without changing the deep link.
+- The smoke chapter still contains zero translation elements, so the layers panel correctly displayed its empty state; element editing remains assigned to T-11.
+- Browser logs contained no warning or error from the staging origin.
