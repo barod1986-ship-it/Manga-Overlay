@@ -88,4 +88,5 @@ jobs:
           wp eval-file "$WP_PATH/wp-content/plugins/manga-overlay-core/tests/content-integration.php" --path="$WP_PATH" --user=1
           wp eval-file "$WP_PATH/wp-content/plugins/manga-overlay-core/tests/content-management-integration.php" --path="$WP_PATH" --user=1
           wp eval-file "$WP_PATH/wp-content/plugins/manga-overlay-core/tests/public-read-integration.php" --path="$WP_PATH" --user=1
+          wp eval-file "$WP_PATH/wp-content/plugins/manga-overlay-core/tests/editor-shell-integration.php" --path="$WP_PATH" --user=1
           wp eval-file "$WP_PATH/wp-content/themes/manga-overlay-theme/tests/theme-integration.php" --path="$WP_PATH" --user=1

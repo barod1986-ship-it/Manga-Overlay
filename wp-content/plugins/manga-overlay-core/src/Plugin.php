@@ -8,6 +8,7 @@ use MOL\Admin\ChapterAdmin;
 use MOL\Activation\VersionManager;
 use MOL\Content\RewriteManager;
 use MOL\Content\WorkContent;
+use MOL\Frontend\EditorPage;
 use MOL\REST\Routes;
 
 final class Plugin
@@ -24,6 +25,7 @@ final class Plugin
         (new RewriteManager())->registerHooks();
         (new Routes())->registerHooks();
         (new ChapterAdmin())->registerHooks();
+        (new EditorPage())->registerHooks();
         (new VersionManager())->maybeUpgrade();
         self::$booted = true;
     }

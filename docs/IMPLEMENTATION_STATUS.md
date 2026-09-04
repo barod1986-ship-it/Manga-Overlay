@@ -237,3 +237,18 @@ On 2026-09-04, the exact artifacts produced for PR head `a005b25` were installed
 - No JavaScript error originated from the staging site or reader. Messages emitted only by the controlled browser extension were excluded from the application result.
 - The smoke chapter currently contains zero Arabic translation elements, so WordPress correctly rendered the translation toggle disabled. CI verifies safe DOM/SVG rendering, instant hide/show without image reload, and normalized placement at 360/768/1440; a visual staging overlay check remains pending until demo data includes at least one translation element.
 - Physical iOS/Android and final Safari/Arabic-font evidence remain release gates and are not waived by this staging smoke test.
+
+## T-10 — React editor shell
+
+Implementation candidate:
+
+- The canonical `/series/{work}/chapter/{chapter}/edit/` query now resolves to a plugin-owned document instead of falling through to the public reader template.
+- Guests are redirected through WordPress authentication. Logged-in users without `mol_use_editor` or `mol_manage_content` receive `403`, while authorized editors can load published or draft chapter context without exposing drafts publicly.
+- `EditorContextService` resolves the requested work/chapter, pages, and Arabic elements through the existing repositories and centralized chapter visibility policy. Data is presented through the existing DTO presenters and embedded with JSON hex escaping.
+- Core is advanced to `0.7.0`. The installable artifact includes the committed production React bundle and does not require Node on WordPress.
+- React owns URL-backed page routing (`?page=N`), local selection/zoom/Preview state, a centered image stage, physical non-mirrored element outlines, a collapsible layers panel, and a read-only properties panel.
+- Save status and Preview remain visible. Creation controls are intentionally disabled and the UI says that no changes are saved; T-11 owns element editing/renderer integration and T-12 owns REST writes/autosave.
+- Unit tests cover route bounds, reducer transitions, zoom limits, and physical geometry. Playwright covers Chromium/Firefox/WebKit routing, safe malicious text handling, layer/property selection, Preview chrome removal, and page restoration. The WordPress DB integration covers draft authorization, target-language grouping, template resolution, asset loading, `403`, and JSON script-boundary escaping.
+- Local Node unit/build checks pass. The local workspace does not provide PHP/Composer or Playwright browser binaries; the pinned GitHub Actions PHP 8.4, WordPress 7.1 database matrix, and browser jobs remain the authoritative pending checks.
+
+T-10 remains a candidate until its GitHub Actions runs pass and Core 0.7.0 is verified on staging. Existing physical iOS/Android release gates remain independent.

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" role="img" aria-labelledby="title description">
+  <title id="title">صفحة مانجا تجريبية</title>
+  <desc id="description">صورة هندسية تستخدم لاختبار مساحة المحرر.</desc>
+  <rect width="800" height="1200" fill="#eee5d7"/>
+  <path d="M0 260 800 80v370L0 610Z" fill="#c8bbae"/>
+  <path d="M0 760 800 520v500L0 1120Z" fill="#8f8278"/>
+  <circle cx="250" cy="390" r="120" fill="#3a332e"/>
+  <rect x="460" y="650" width="210" height="310" rx="20" fill="#28231f"/>
+  <path d="M50 50h700v1100H50Z" fill="none" stroke="#5a4d44" stroke-width="8"/>
+</svg>

@@ -1,5 +1,8 @@
 node_modules/
 dist/
+!wp-content/plugins/manga-overlay-core/assets/dist/
+!wp-content/plugins/manga-overlay-core/assets/dist/editor.css
+!wp-content/plugins/manga-overlay-core/assets/dist/editor.js
 coverage/
 playwright-report/
 test-results/

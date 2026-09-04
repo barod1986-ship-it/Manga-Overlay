@@ -4,7 +4,7 @@
 
 ## حالة المشروع
 
-المشروع في مرحلة تنفيذ الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات وإدارة المحتوى وواجهات القراءة العامة والقالب وقارئ الفصول حتى T‑09 على مستوى التنفيذ وCI.
+المشروع في مرحلة تنفيذ الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات وإدارة المحتوى وواجهات القراءة العامة والقالب وقارئ الفصول حتى T‑09، ويجري التحقق من مرشح T‑10 لمحرر React.
 
 | المهمة | الحالة |
 |---|---|
@@ -18,6 +18,7 @@
 | T-07 — Public data APIs | مكتمل: library/work/chapter/page/element/contributor/profile reads مع visibility وcache contracts |
 | T-08 — Public library theme | مكتمل ومختبر على موقع التجارب: الرئيسية والمكتبة وصفحة العمل العربية RTL |
 | T-09 — Chapter reader | مكتمل في CI ومثبّت على staging: Webtoon/Paged وRTL/LTR والتكبير وحفظ التقدم؛ فصل الديمو الحالي بلا عناصر ترجمة |
+| T-10 — Editor shell | مرشح منفذ: بوابة صلاحيات وقالب مستقل وReact state/routing/stage/properties/layers؛ تحقق CI وstaging قيد الانتظار |
 
 ## بنية المستودع
 
@@ -27,7 +28,7 @@
 - `poc/renderer/`: نموذج T-01 المستقل لعرض DOM/SVG بإحداثيات normalized.
 - `poc/editor-input/`: نموذج T-02 بـReact وMoveable للسحب والتحجيم والدوران وإدخال العربية.
 - `scripts/check-environment.sh`: فحص متطلبات بيئة T-00.
-- `wp-content/plugins/manga-overlay-core/`: نواة الإضافة وطبقات البيانات والإدارة والقراءة العامة وحفظ تقدم القراءة.
+- `wp-content/plugins/manga-overlay-core/`: نواة الإضافة وطبقات البيانات والإدارة والقراءة العامة وحفظ تقدم القراءة وقالب/مصدر محرر React.
 - `wp-content/themes/manga-overlay-theme/`: القالب العام للمكتبة وصفحات الأعمال وقارئ الفصول غير المعتمد على SPA.
 
 ## تشغيل نموذج العرض

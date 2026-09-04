@@ -9,6 +9,12 @@ on:
       - 'package-lock.json'
       - 'poc/editor-input/**'
       - 'poc/renderer/**'
+      - 'wp-content/plugins/manga-overlay-core/editor-src/**'
+      - 'wp-content/plugins/manga-overlay-core/assets/dist/**'
+      - 'wp-content/plugins/manga-overlay-core/tests/editor*'
+      - 'wp-content/plugins/manga-overlay-core/package.json'
+      - 'wp-content/plugins/manga-overlay-core/tsconfig.json'
+      - 'wp-content/plugins/manga-overlay-core/vite.config.ts'
       - 'wp-content/themes/manga-overlay-theme/assets/js/reader.js'
       - 'wp-content/themes/manga-overlay-theme/assets/css/reader.css'
       - 'wp-content/themes/manga-overlay-theme/chapter-reader.php'
@@ -23,6 +29,12 @@ on:
       - 'package-lock.json'
       - 'poc/editor-input/**'
       - 'poc/renderer/**'
+      - 'wp-content/plugins/manga-overlay-core/editor-src/**'
+      - 'wp-content/plugins/manga-overlay-core/assets/dist/**'
+      - 'wp-content/plugins/manga-overlay-core/tests/editor*'
+      - 'wp-content/plugins/manga-overlay-core/package.json'
+      - 'wp-content/plugins/manga-overlay-core/tsconfig.json'
+      - 'wp-content/plugins/manga-overlay-core/vite.config.ts'
       - 'wp-content/themes/manga-overlay-theme/assets/js/reader.js'
       - 'wp-content/themes/manga-overlay-theme/assets/css/reader.css'
       - 'wp-content/themes/manga-overlay-theme/chapter-reader.php'
@@ -48,7 +60,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check renderer and editor-input PoCs
+      - name: Check renderer, editor-input PoC, reader, and editor shell
         run: npm run check
 
       - name: Prepare device preview artifact
@@ -65,5 +77,5 @@ jobs:
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Verify renderer and editor input in browsers
+      - name: Verify renderer, reader, and editor shell in browsers
         run: npm run test:e2e

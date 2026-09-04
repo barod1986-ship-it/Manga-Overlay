@@ -349,7 +349,10 @@ molTestAssert(isset($molTestActions['init']), 'Content init hooks were not regis
 molTestAssert(isset($molTestActions['rest_api_init']), 'MOL REST routes were not registered.');
 molTestAssert(isset($molTestActions['admin_menu']), 'MOL content admin menus were not registered.');
 molTestAssert(isset($molTestActions['admin_enqueue_scripts']), 'MOL content admin assets were not registered.');
+molTestAssert(isset($molTestActions['wp_enqueue_scripts']), 'Editor assets hook was not registered.');
 molTestAssert(isset($molTestFilters['query_vars'][0]), 'Rewrite query variables were not registered.');
+molTestAssert(isset($molTestFilters['template_include']), 'Editor template hook was not registered.');
+molTestAssert(isset($molTestFilters['body_class']), 'Editor body-class hook was not registered.');
 
 $rewrites = new RewriteManager();
 $rewrites->maybeFlush();
