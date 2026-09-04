@@ -134,7 +134,7 @@ Implemented and verified:
 - [Database Matrix run #8](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33813543412) passed the complete T-06 REST/media/cascade suite on WordPress 7.1 with MySQL 8.4.11 and MariaDB 10.11.19.
 - [PHP Bootstrap run #12](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33813543388) passed PHP 8.4 lint, unit/smoke checks, authoritative autoloading, and installable packaging.
 
-T-06 is complete at the implementation/CI level. T-07 (public library/work/chapter/page APIs, visibility, DTOs, and cache behavior) is next. The draft PR and physical-device release gates remain independent.
+T-06 is complete at the implementation/CI level. The draft PR and physical-device release gates remain independent.
 
 ### T-06 staging smoke test
 
@@ -164,7 +164,7 @@ Implemented and verified:
 - [PHP Bootstrap run #14](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33817853246) passed PHP 8.4 lint, Composer/autoload checks, bootstrap tests, and produced the installable 0.5.0 artifact.
 - [Frontend PoC run #14](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33817848217) remained green.
 
-T-07 is complete at the implementation/CI level. T-08 (server-rendered theme, library/work UI, filters, and RTL) is next. The draft PR and physical-device release gates remain independent.
+T-07 is complete at the implementation/CI level. The draft PR and physical-device release gates remain independent.
 
 ### T-07 staging smoke test
 
@@ -175,3 +175,30 @@ On 2026-09-04, the exact 0.5.0 artifact from PHP Bootstrap run #14 was verified 
 - The existing `/library/` archive rendered the published smoke-test work after the update.
 - The existing `/series/manga-overlay-smoke-test/` work permalink rendered after the update with no visible PHP or WordPress error.
 - Direct JSON navigation is blocked by the controlled browser client, so endpoint behavior is established by the anonymous/authenticated WordPress REST integration suite in the database matrix rather than by treating that client-side restriction as an application failure.
+
+## T-08 — Public library theme
+
+Implemented and verified:
+
+- A standalone installable classic/hybrid `manga-overlay-theme` renders the Arabic-first public experience without duplicating the plugin's data or authorization rules.
+- The home page, filterable library archive, work detail page, work cards, progress summaries, chapter rows, pagination, empty/error states, shared header/footer, and accessible skip navigation are server rendered.
+- Library filters preserve validated GET query parameters for shareable URLs and pagination. Search, taxonomy/status filters, translation status, sort order, and 12/24/48 page sizes map to the T-07 public read contract.
+- The visual system is RTL-first and uses logical CSS properties, responsive grids, a narrow-screen filter drawer, explicit media dimensions, lazy loading below the first card, and reduced-motion handling.
+- Theme JavaScript is limited to progressive UI behavior for the search dialog and mobile filter drawer; content and filtering remain usable without client-side rendering.
+- Public-theme unit/integration checks, PHP lint, CSS/JavaScript static checks, and the installable ZIP smoke test passed in [Public Theme run #1](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33875633197).
+- [Database Matrix run #15](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33875633071) passed on MySQL 8.4 and MariaDB 10.11, [PHP Bootstrap run #15](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33875632996) passed, and [Frontend PoC run #15](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33875633188) remained green.
+- The frozen v1.1.3 contract gate remained green at `49/49` checks.
+
+T-08 is complete at the implementation/CI level. T-09 (the public chapter reader and overlay controls) is next. The draft PR and physical-device release gates remain independent.
+
+### T-08 staging smoke test
+
+On 2026-09-04, the exact `manga-overlay-theme` 0.1.0 artifact from Public Theme run #1 was verified against its published SHA-256 digest, installed, and activated on the project staging site.
+
+- WordPress reported Manga Overlay as the active theme; the previously installed Twenty Twenty-Five, Twenty Twenty-Four, and Twenty Twenty-Three themes were retained.
+- The Arabic RTL home page rendered the intended masthead, hero, search entry point, latest-work card, and footer at a 1363×936 desktop viewport.
+- `/library/` rendered the published smoke-test work, filter controls, result count, translation completion, and chapter count.
+- A shareable library URL using `search=Manga Overlay Smoke Test`, `sort=latest_work`, and `per_page=12` preserved all three values and returned exactly one work card.
+- `/series/manga-overlay-smoke-test/` rendered the work metadata, description, 100% translation summary, and one published chapter row.
+- The document language and direction were `lang="ar"` and `dir="rtl"`; browser logs contained no site/theme JavaScript errors. Messages emitted only by the controlled browser extension were excluded from the application result.
+- Physical iOS/Android interaction and narrow-viewport visual evidence remain part of the existing T-02 release gate; this staging smoke test does not waive that requirement.
