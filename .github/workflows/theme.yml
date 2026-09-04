@@ -1,0 +1,58 @@
+name: Public Theme
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/theme.yml'
+      - 'wp-content/themes/manga-overlay-theme/**'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/theme.yml'
+      - 'wp-content/themes/manga-overlay-theme/**'
+
+permissions:
+  contents: read
+
+jobs:
+  theme:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Validate theme metadata and JSON
+        run: |
+          grep -F 'Theme Name: Manga Overlay' wp-content/themes/manga-overlay-theme/style.css
+          grep -F 'Version: 0.1.0' wp-content/themes/manga-overlay-theme/style.css
+          php -r "json_decode(file_get_contents('wp-content/themes/manga-overlay-theme/theme.json'), true, 512, JSON_THROW_ON_ERROR);"
+
+      - name: Lint PHP
+        run: find wp-content/themes/manga-overlay-theme -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run theme unit checks
+        run: php wp-content/themes/manga-overlay-theme/tests/theme-unit.php
+
+      - name: Package installable theme
+        run: |
+          mkdir -p build/manga-overlay-theme
+          rsync -a --exclude='tests/' wp-content/themes/manga-overlay-theme/ build/manga-overlay-theme/
+          (cd build && zip -qr manga-overlay-theme.zip manga-overlay-theme)
+          unzip -l build/manga-overlay-theme.zip | grep -F 'manga-overlay-theme/style.css'
+          unzip -l build/manga-overlay-theme.zip | grep -F 'manga-overlay-theme/theme.json'
+
+      - name: Upload installable theme
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: manga-overlay-theme-candidate
+          path: build/manga-overlay-theme.zip
+          if-no-files-found: error
+          retention-days: 14
