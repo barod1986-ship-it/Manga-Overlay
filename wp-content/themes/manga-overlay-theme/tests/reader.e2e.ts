@@ -80,13 +80,17 @@ function readerMarkup(direction: 'rtl' | 'ltr' = 'rtl'): string {
       <button data-mol-translation-toggle aria-pressed="true"><span>الترجمة ظاهرة</span></button>
       <span data-mol-progress-status></span>
       <section>${frame(101, 0)}${frame(102, 1)}</section>
-      <button data-mol-page-previous>previous</button>
-      <span data-mol-page-counter></span>
-      <button data-mol-page-next>next</button>
-      <button data-mol-zoom-out>zoom out</button>
-      <output data-mol-zoom-level>100%</output>
-      <button data-mol-zoom-in>zoom in</button>
-      <button data-mol-zoom-reset>reset</button>
+      <nav class="mol-reader-page-controls">
+        <button data-mol-page-previous>previous</button>
+        <span data-mol-page-counter></span>
+        <button data-mol-page-next>next</button>
+      </nav>
+      <div class="mol-reader-zoom">
+        <button data-mol-zoom-out>zoom out</button>
+        <output data-mol-zoom-level>100%</output>
+        <button data-mol-zoom-in>zoom in</button>
+        <button data-mol-zoom-reset>reset</button>
+      </div>
       <script type="application/json" id="mol-reader-data">${JSON.stringify(payload).replaceAll('<', '\\u003c')}</script>
     </main>
   </body></html>`;

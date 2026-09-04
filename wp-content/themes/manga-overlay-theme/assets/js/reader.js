@@ -779,7 +779,7 @@
             }
             const target = event.target;
             if (target instanceof Element
-                && null !== target.closest('a, button, summary, input, textarea, select')
+                && null !== target.closest('input, textarea, select, [contenteditable="true"]')
             ) {
                 return;
             }
