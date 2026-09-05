@@ -344,14 +344,15 @@ Implemented and verified:
 - A user with `mol_manage_content` can force-release through the same `DELETE /elements/{id}/lock` route without adding a parallel administrative endpoint.
 - Elements locked by another editor remain visible and selectable but become read-only; their property fields and Moveable controls are disabled until a lease is available.
 - `412 mol_version_conflict` opens a non-destructive comparison card showing the local and current versions. The editor can accept the server version or reapply only fields changed locally over the newest server version.
+- The conflict card is stacked above Moveable's control box, so both resolution actions remain reachable by pointer as well as keyboard. A browser regression test clicks the server-version action at its rendered coordinates.
 - Missing `If-Match` remains an explicit `428` error, while valid ETags, lock tokens, and no-store behavior stay within the strict T-12 write contract.
-- Editor unit tests report `15/15` passing. The production editor browser suite reports `27/27` passing across Chromium, Firefox, and WebKit, including renewal, read-only locks, lock-loss recovery, and 412 conflict reapplication.
-- [Frontend PoC run #50](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33964456211) passed all unit, TypeScript/build, and browser suites.
-- [Database Matrix run #42](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33964456234) passed the lock/write integration suite on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
-- [PHP Bootstrap run #46](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33964456180) passed PHP 8.4 checks and produced the installable Core 0.10.0 artifact.
-- [Public Theme run #30](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33964456200) remained green.
+- Editor unit tests report `15/15` passing. The production editor browser suite reports `28/28` passing across Chromium, Firefox, and WebKit, including renewal, read-only locks, lock-loss recovery, 412 conflict reapplication, and pointer access to the conflict actions above Moveable.
+- [Frontend PoC run #53](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33965835879) passed all unit, TypeScript/build, and browser suites.
+- [Database Matrix run #45](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33965835832) passed the lock/write integration suite on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #49](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33965835909) passed PHP 8.4 checks and produced the installable Core 0.10.1 artifact.
+- [Public Theme run #33](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33965835863) remained green.
 
-T-13 is complete at the implementation and CI levels. The staging installation and lease lifecycle smoke test passed below. The full deployment gate that sends successful, stale, and missing `If-Match` requests through the actual staging reverse proxy remains open and is not inferred from localhost integration tests.
+T-13 is complete at the implementation and CI levels. The staging installation, lease lifecycle, successful conditional update, and stale `If-Match`/412 conflict smoke tests passed below. The deliberate missing-header probe that must return `428` remains an open deployment gate.
 
 ### T-13 staging installation and lease smoke test
 
@@ -362,4 +363,15 @@ On 2026-09-05, the exact Core 0.10.0 artifact from PHP Bootstrap run #46 at PR s
 - Selecting persisted element #1 exposed enabled properties and Moveable editing, establishing successful lease acquisition through the staging hostname.
 - After more than one 15-second renewal interval, the element remained editable, the save state remained `تم الحفظ`, and no warning or error originated from the staging site.
 - Pressing Escape deselected the element and returned the properties panel to its empty state, exercising the editor's release lifecycle without changing persisted demo content.
-- The stale and missing `If-Match` reverse-proxy cases were deliberately not claimed by this non-destructive smoke test.
+- The initial non-destructive pass did not exercise stale or missing `If-Match`; the Core 0.10.1 regression retest below subsequently closed the stale-header case.
+
+### T-13 Core 0.10.1 conflict-action regression retest
+
+On 2026-09-05, the exact Core 0.10.1 artifact from PHP Bootstrap run #49 at PR source head `2116e03` was installed over Core 0.10.0 on the project staging site. The published GitHub artifact digest `d606561f17ae6f65901d181fa5aa54880e4db68589c559732f67b225b4dc3955` matched the downloaded archive; the inner installable ZIP SHA-256 was `f62457e45f25f0de3d8366574fa2f835e46cdd0bb37e616f1002a03631dc3fd6`.
+
+- WordPress completed the replacement successfully; Manga Overlay Core remained active and reported version 0.10.1.
+- Two freshly loaded authenticated editor tabs selected persisted element #1 at version 5. A temporary edit in the first tab saved successfully through the staging hostname and advanced the server version to 6.
+- A different temporary edit from the stale second tab produced `412 mol_version_conflict`. The comparison card showed local version 5 and current server version 6 without overwriting either value.
+- Clicking `استخدام الحالية` with a real pointer dismissed the card and adopted the server value. This verifies the Core 0.10.1 stacking fix that prevents Moveable controls from intercepting conflict-action clicks.
+- The original Arabic demo text `اختبار T‑12 — تعديل محفوظ عبر PATCH` was restored, autosaved, and confirmed after a fresh reload. Both editor selections were released at the end of the test.
+- Successful and stale `If-Match` behavior is therefore verified through the actual staging hostname. A direct missing-header request returning `428` remains the only open reverse-proxy header case.
