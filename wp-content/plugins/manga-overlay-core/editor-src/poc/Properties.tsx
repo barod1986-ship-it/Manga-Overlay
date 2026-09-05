@@ -13,6 +13,7 @@ interface Props {
 }
 export function Properties({ element, onChange, onDelete, onDuplicate, onClose, textRef }: Props) {
   const sheet = useRef<HTMLElement>(null);
+  const [expanded, setExpanded] = useState(false);
   if (!element) return <aside className="mol-properties mol-empty-properties"><h2>خصائص العنصر</h2><p>حدد عنصرًا على الصفحة أو أضف عنصر ترجمة من شريط الأدوات.</p></aside>;
   const style = element.style;
   const setStyle = (patch: Partial<ElementStyle>) => onChange({ style: { ...style, ...patch } });
@@ -21,12 +22,12 @@ export function Properties({ element, onChange, onDelete, onDuplicate, onClose, 
     : element.element_type === 'narration' ? ['rect', 'rounded_rect']
     : element.element_type === 'sfx' ? ['none', 'burst', 'impact'] : ['none', 'rect', 'rounded_rect'];
   const shapeNames: Record<NonNullable<ElementStyle['shape']>, string> = { ellipse: 'بيضاوي', rounded_rect: 'مستطيل مستدير', rect: 'مستطيل', cloud: 'سحابة', none: 'بلا شكل', burst: 'انفجار', impact: 'صدمة' };
-  return <aside className="mol-properties" ref={sheet} aria-label="خصائص العنصر">
-    <div className="mol-panel-heading"><h2>{ELEMENT_LABELS[element.element_type]}</h2><button className="mol-mobile-only" onClick={onClose} aria-label="إغلاق الخصائص">إغلاق</button></div>
+  return <aside className={`mol-properties${expanded ? ' mol-sheet-expanded' : ''}`} ref={sheet} aria-label="خصائص العنصر">
+    <div className="mol-panel-heading"><h2>{ELEMENT_LABELS[element.element_type]}</h2><button className="mol-mobile-only" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>{expanded ? 'تصغير' : 'توسيع'}</button><button className="mol-mobile-only" onClick={onClose} aria-label="إغلاق الخصائص">إغلاق</button></div>
     <label className="mol-field">النص العربي
       <textarea ref={textRef} value={element.content} maxLength={10000} rows={4}
         onChange={event => onChange({ content: event.target.value })} placeholder="اكتب الترجمة هنا…"
-        onFocus={() => window.setTimeout(() => textRef.current?.scrollIntoView({ block: 'nearest' }), 150)} />
+        onFocus={() => { setExpanded(true); window.setTimeout(() => textRef.current?.scrollIntoView({ block: 'nearest' }), 150); }} />
     </label>
     <p className="mol-field-note">النص فوق الصورة؛ تبقى الصفحة الأصلية كما هي.</p>
     <details open><summary>الخط والمحاذاة</summary><div className="mol-details-body">

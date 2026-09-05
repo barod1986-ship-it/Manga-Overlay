@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Moveable from 'react-moveable';
 import type { Geometry, OverlayDraft } from '../domain/types';
-import { fromPixels, toPixels, type ImageSize } from '../domain/geometry';
+import { fromPixels, toPixels, type ImageSize, type PixelBox } from '../domain/geometry';
 import { OverlayElement } from '../renderer/OverlayElement';
 
 interface Props {
@@ -23,6 +23,8 @@ export function Stage({ elements, selectedKey, onSelect, onEditText, onTransform
   const moveable = useRef<Moveable>(null);
   const [availableWidth, setAvailableWidth] = useState(600);
   const [target, setTarget] = useState<HTMLElement | null>(null);
+  const interaction = useRef<PixelBox | null>(null);
+  const interactionChanged = useRef(false);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const gesture = useRef({ distance: 0, zoom: 1, x: 0, y: 0, left: 0, top: 0 });
   const selected = elements.find(element => element.key === selectedKey);
@@ -41,11 +43,26 @@ export function Stage({ elements, selectedKey, onSelect, onEditText, onTransform
   useLayoutEffect(() => {
     setTarget(preview || !overlayVisible ? null : stage.current?.querySelector<HTMLElement>(`[data-element-key="${selectedKey}"]`) ?? null);
   }, [selectedKey, preview, overlayVisible, elements.length]);
-  useEffect(() => { moveable.current?.updateRect(); }, [size.width, selected, target]);
+  useEffect(() => { if (!interaction.current) moveable.current?.updateRect(); }, [size.width, selected, target]);
 
-  const change = (values: Partial<ReturnType<typeof toPixels>>) => {
-    if (!selected) return;
-    onTransform(selected.key, fromPixels({ ...toPixels(selected, size), ...values }, size, selected.z_index));
+  const begin = () => {
+    interactionChanged.current = false;
+    interaction.current = selected ? toPixels(selected, size) : null;
+    return interaction.current;
+  };
+  // Moveable owns transient pixels during a gesture. React receives normalized geometry once at end.
+  const draw = (values: Partial<PixelBox>) => {
+    if (!interaction.current || !target) return;
+    const box = { ...interaction.current, ...values };
+    interaction.current = box; interactionChanged.current = true;
+    Object.assign(target.style, { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px`, transform: `rotate(${box.rotation}deg)` });
+  };
+  const finish = () => {
+    if (selected && interaction.current && interactionChanged.current) {
+      onTransform(selected.key, fromPixels(interaction.current, size, selected.z_index));
+      onInteractionEnd();
+    }
+    interaction.current = null; interactionChanged.current = false;
   };
   const distance = () => { const [a, b] = [...pointers.current.values()]; return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0; };
   const endPointer = (id: number) => {
@@ -88,15 +105,15 @@ export function Stage({ elements, selectedKey, onSelect, onEditText, onTransform
           snapDirections={{ top: true, left: true, bottom: true, right: true, center: true, middle: true }}
           elementSnapDirections={{ top: true, left: true, bottom: true, right: true, center: true, middle: true }}
           snapThreshold={5} isDisplaySnapDigit={false}
-          onDragStart={event => { if (selected) { const box = toPixels(selected, size); event.set([box.x, box.y]); } }}
-          onDrag={event => change({ x: event.beforeTranslate[0], y: event.beforeTranslate[1] })}
-          onDragEnd={onInteractionEnd}
-          onResizeStart={event => { if (selected && event.dragStart) { const box = toPixels(selected, size); event.dragStart.set([box.x, box.y]); } }}
-          onResize={event => change({ width: event.width, height: event.height, x: event.drag.beforeTranslate[0], y: event.drag.beforeTranslate[1] })}
-          onResizeEnd={onInteractionEnd}
-          onRotateStart={event => { if (selected) event.set(selected.rotation_mdeg / 1000); }}
-          onRotate={event => change({ rotation: event.beforeRotate })}
-          onRotateEnd={onInteractionEnd}
+          onDragStart={event => { const box = begin(); if (box) event.set([box.x, box.y]); }}
+          onDrag={event => draw({ x: event.beforeTranslate[0], y: event.beforeTranslate[1] })}
+          onDragEnd={finish}
+          onResizeStart={event => { const box = begin(); if (box && event.dragStart) event.dragStart.set([box.x, box.y]); }}
+          onResize={event => draw({ width: event.width, height: event.height, x: event.drag.beforeTranslate[0], y: event.drag.beforeTranslate[1] })}
+          onResizeEnd={finish}
+          onRotateStart={event => { const box = begin(); if (box) event.set(box.rotation); }}
+          onRotate={event => draw({ rotation: event.beforeRotate })}
+          onRotateEnd={finish}
         />}
       </div>
     </div>

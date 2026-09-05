@@ -121,7 +121,7 @@ input[type="checkbox"] { accent-color: var(--mol-accent); width: 18px; min-heigh
     height: 45dvh; max-height: calc(85dvh - var(--mol-keyboard-inset, 0px)); z-index: 30000;
     border-block-start: 2px solid #5d656a; border-inline: none; padding: 14px 18px 24px;
   }
-  .mol-open-properties .mol-properties:has(textarea:focus) { height: 85dvh; }
+  .mol-open-properties .mol-properties.mol-sheet-expanded { height: 85dvh; }
   .mol-field-note { font-size: 11px; }
   .mol-properties .mol-field { font-size: 12px; }
   .mol-properties .mol-field input, .mol-properties .mol-field select { font-size: 16px; }

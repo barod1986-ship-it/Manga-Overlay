@@ -17,11 +17,13 @@ function validSize(size: ImageSize): void {
   }
 }
 export function normalizeGeometry(geometry: Geometry): Geometry {
+  const width = Math.round(clamp(geometry.w_unit, 1, MOL_UNIT));
+  const height = Math.round(clamp(geometry.h_unit, 1, MOL_UNIT));
   return {
-    x_unit: Math.round(clamp(geometry.x_unit, 0, MOL_UNIT)),
-    y_unit: Math.round(clamp(geometry.y_unit, 0, MOL_UNIT)),
-    w_unit: Math.round(clamp(geometry.w_unit, 1, MOL_UNIT)),
-    h_unit: Math.round(clamp(geometry.h_unit, 1, MOL_UNIT)),
+    x_unit: Math.round(clamp(geometry.x_unit, 0, MOL_UNIT - width)),
+    y_unit: Math.round(clamp(geometry.y_unit, 0, MOL_UNIT - height)),
+    w_unit: width,
+    h_unit: height,
     rotation_mdeg: Math.round(clamp(geometry.rotation_mdeg, -360_000, 360_000)),
     z_index: Math.round(clamp(geometry.z_index, -1_000, 10_000)),
   };

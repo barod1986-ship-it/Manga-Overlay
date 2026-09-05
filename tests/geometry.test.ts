@@ -18,7 +18,13 @@ test('portrait image uses height for Y and H, independent of viewport padding', 
 });
 test('end interaction rounds to integers and enforces contract bounds', () => {
   assert.deepEqual(normalizeGeometry({ x_unit: -1, y_unit: 1000001, w_unit: 0, h_unit: 1000001, rotation_mdeg: -400000, z_index: 10001 }),
-    { x_unit: 0, y_unit: 1000000, w_unit: 1, h_unit: 1000000, rotation_mdeg: -360000, z_index: 10000 });
+    { x_unit: 0, y_unit: 0, w_unit: 1, h_unit: 1000000, rotation_mdeg: -360000, z_index: 10000 });
+});
+test('boxes remain inside the image as required by DATABASE_SCHEMA section 7', () => {
+  const box = normalizeGeometry({ ...sample, x_unit: 990000, y_unit: 999999 });
+  assert.equal(box.x_unit + box.w_unit, 1000000);
+  assert.equal(box.y_unit + box.h_unit, 1000000);
+  assert.equal(box.w_unit, sample.w_unit);
 });
 test('rejects zero image dimensions and non-finite geometry', () => {
   assert.throws(() => toPixels(sample, { width: 0, height: 100 }), RangeError);
