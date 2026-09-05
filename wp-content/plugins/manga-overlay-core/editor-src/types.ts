@@ -136,6 +136,14 @@ export interface LockLease {
   readonly expires_at: string;
 }
 
+export interface ElementConflict {
+  readonly elementId: number;
+  readonly operation: 'update' | 'delete';
+  readonly baseline: EditorElement;
+  readonly yours: EditorElement;
+  readonly current: EditorElement;
+}
+
 export interface EditorState {
   readonly pagePosition: number;
   readonly selectedElementId: number | null;

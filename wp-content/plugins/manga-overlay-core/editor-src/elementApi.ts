@@ -10,6 +10,11 @@ interface LockResponse {
   readonly meta: Readonly<Record<string, unknown>>;
 }
 
+interface ElementListResponse {
+  readonly data: readonly EditorElement[];
+  readonly meta: Readonly<Record<string, unknown>>;
+}
+
 interface ErrorResponse {
   readonly code?: unknown;
   readonly message?: unknown;
@@ -22,6 +27,7 @@ export class ElementApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly retryAfter: number | null = null,
+    public readonly details: Readonly<Record<string, unknown>> = {},
   ) {
     super(message);
     this.name = 'ElementApiError';
@@ -81,6 +87,31 @@ export class ElementApi {
     return response.data;
   }
 
+  public async renewLock(elementId: number, lockToken: string): Promise<LockLease> {
+    const response = await this.request<LockResponse>(`elements/${elementId}/lock`, {
+      method: 'PUT',
+      headers: { 'X-MOL-Lock-Token': lockToken },
+    });
+
+    return response.data;
+  }
+
+  public async releaseLock(elementId: number, lockToken: string): Promise<void> {
+    await this.request<null>(`elements/${elementId}/lock`, {
+      method: 'DELETE',
+      headers: { 'X-MOL-Lock-Token': lockToken },
+    });
+  }
+
+  public async fetchPageElements(pageId: number, targetLanguage: string): Promise<readonly EditorElement[]> {
+    const response = await this.request<ElementListResponse>(`pages/${pageId}/elements`, {
+      method: 'GET',
+      query: { lang: targetLanguage },
+    });
+
+    return response.data;
+  }
+
   public async update(element: EditorElement, lockToken: string): Promise<EditorElement> {
     const response = await this.request<ElementResponse>(`elements/${element.id}`, {
       method: 'PATCH',
@@ -107,14 +138,17 @@ export class ElementApi {
   private async request<T>(
     path: string,
     options: {
-      readonly method: 'POST' | 'PATCH' | 'DELETE';
+      readonly method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
       readonly headers?: Readonly<Record<string, string>>;
       readonly body?: Readonly<Record<string, unknown>>;
+      readonly query?: Readonly<Record<string, string>>;
     },
   ): Promise<T> {
     let response: Response;
     try {
-      response = await fetch(endpointUrl(this.root.toString(), path, window.location.origin), {
+      const url = endpointUrl(this.root.toString(), path, window.location.origin);
+      for (const [name, value] of Object.entries(options.query ?? {})) url.searchParams.set(name, value);
+      response = await fetch(url, {
         method: options.method,
         credentials: 'same-origin',
         cache: 'no-store',
@@ -143,12 +177,16 @@ export class ElementApi {
     }
     if (!response.ok) {
       const error = body !== null && typeof body === 'object' ? body as ErrorResponse : {};
+      const details = error.data !== null && typeof error.data === 'object'
+        ? error.data as Readonly<Record<string, unknown>>
+        : {};
       const retryAfter = Number.parseInt(response.headers.get('Retry-After') ?? '', 10);
       throw new ElementApiError(
         response.status,
         typeof error.code === 'string' ? error.code : 'mol_request_failed',
         typeof error.message === 'string' ? error.message : 'The save request failed.',
         Number.isFinite(retryAfter) ? retryAfter : null,
+        details,
       );
     }
 

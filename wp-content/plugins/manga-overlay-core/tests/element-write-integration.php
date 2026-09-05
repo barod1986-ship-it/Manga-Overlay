@@ -111,12 +111,24 @@ $unauthenticated = molElementWriteRequest('POST', '/mol/v1/elements', molElement
     'MOL-Idempotency-Key' => 't12-unauthenticated',
 ));
 molElementWriteAssert(401 === $unauthenticated->get_status(), 'Unauthenticated element create did not return 401.');
+$unauthenticatedRenew = molElementWriteRequest('PUT', '/mol/v1/elements/999999/lock', null, array(
+    'X-MOL-Lock-Token' => str_repeat('a', 64),
+));
+molElementWriteAssert(401 === $unauthenticatedRenew->get_status(), 'Unauthenticated lock renew did not return 401.');
+$unauthenticatedRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/999999/lock');
+molElementWriteAssert(401 === $unauthenticatedRelease->get_status(), 'Unauthenticated lock release did not return 401.');
 
 wp_set_current_user($memberId);
 $forbidden = molElementWriteRequest('POST', '/mol/v1/elements', molElementCreateBody($pageId), array(
     'MOL-Idempotency-Key' => 't12-forbidden',
 ));
 molElementWriteAssert(403 === $forbidden->get_status(), 'Member element create did not return 403.');
+$forbiddenRenew = molElementWriteRequest('PUT', '/mol/v1/elements/999999/lock', null, array(
+    'X-MOL-Lock-Token' => str_repeat('a', 64),
+));
+molElementWriteAssert(403 === $forbiddenRenew->get_status(), 'Member lock renew did not return 403.');
+$forbiddenRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/999999/lock');
+molElementWriteAssert(403 === $forbiddenRelease->get_status(), 'Member lock release did not return 403.');
 
 wp_set_current_user($translatorId);
 $missingKey = molElementWriteRequest('POST', '/mol/v1/elements', molElementCreateBody($pageId));
@@ -177,8 +189,126 @@ molElementWriteAssert(is_string($lockBody['data']['expires_at'] ?? null), 'Lock 
 wp_set_current_user($otherTranslatorId);
 $blockedLock = molElementWriteRequest('POST', '/mol/v1/elements/' . $elementId . '/lock');
 molElementWriteAssert(423 === $blockedLock->get_status(), 'A second translator replaced an active lock.');
+$blockedBody = $blockedLock->get_data();
+molElementWriteAssert(
+    is_array($blockedBody) && '' !== (string) ($blockedBody['data']['locked_by'] ?? ''),
+    'Locked response did not identify the current editor.'
+);
+
+$otherCreated = molElementWriteRequest('POST', '/mol/v1/elements', molElementCreateBody($pageId, 'عنصر مستقل للمحرر الثاني'), array(
+    'MOL-Idempotency-Key' => 't13-other-element',
+));
+molElementWriteAssert(201 === $otherCreated->get_status(), 'Second translator could not create another page element.');
+$otherCreatedBody = $otherCreated->get_data();
+$otherElementId = is_array($otherCreatedBody) ? (int) ($otherCreatedBody['data']['id'] ?? 0) : 0;
+molElementWriteAssert($otherElementId > 0, 'Second translator element response is malformed.');
+$otherLock = molElementWriteRequest('POST', '/mol/v1/elements/' . $otherElementId . '/lock');
+$otherLockBody = $otherLock->get_data();
+$otherLockToken = is_array($otherLockBody) ? (string) ($otherLockBody['data']['lock_token'] ?? '') : '';
+molElementWriteAssert(200 === $otherLock->get_status() && 64 === strlen($otherLockToken), 'Second translator could not lock a different element on the same page.');
+$otherUpdated = molElementWriteRequest('PATCH', '/mol/v1/elements/' . $otherElementId, array('content' => 'تحرير متزامن مستقل'), array(
+    'If-Match' => '"1"',
+    'X-MOL-Lock-Token' => $otherLockToken,
+));
+molElementWriteAssert(200 === $otherUpdated->get_status(), 'Second translator could not edit a different element on the same page.');
+$otherReleased = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $otherElementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $otherLockToken,
+));
+molElementWriteAssert(204 === $otherReleased->get_status(), 'Second translator could not release their own lock.');
 
 wp_set_current_user($translatorId);
+$missingRenewToken = molElementWriteRequest('PUT', '/mol/v1/elements/' . $elementId . '/lock');
+molElementWriteAssert(409 === $missingRenewToken->get_status(), 'Lock renew without a token did not return 409.');
+molElementWriteAssert('mol_lock_lost' === molElementWriteCode($missingRenewToken), 'Missing renew token code drifted.');
+$wrongRenewToken = molElementWriteRequest('PUT', '/mol/v1/elements/' . $elementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => str_repeat('f', 64),
+));
+molElementWriteAssert(409 === $wrongRenewToken->get_status(), 'Lock renew accepted a wrong token.');
+$renewed = molElementWriteRequest('PUT', '/mol/v1/elements/' . $elementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $lockToken,
+));
+$renewedBody = $renewed->get_data();
+molElementWriteAssert(200 === $renewed->get_status(), 'Lock owner could not renew the lease.');
+molElementWriteAssert($lockToken === (string) ($renewedBody['data']['lock_token'] ?? ''), 'Renew changed the lease token.');
+molElementWriteAssert(
+    strtotime((string) ($renewedBody['data']['expires_at'] ?? '')) >= strtotime((string) ($lockBody['data']['expires_at'] ?? '')),
+    'Renew did not extend the lease expiration.'
+);
+
+$missingReleaseToken = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $elementId . '/lock');
+molElementWriteAssert(409 === $missingReleaseToken->get_status(), 'Owner lock release without a token did not return 409.');
+molElementWriteAssert('mol_lock_lost' === molElementWriteCode($missingReleaseToken), 'Missing release token code drifted.');
+
+$replacementToken = bin2hex(random_bytes(32));
+$lockRepository = new ElementLockRepository($wpdb);
+$lockRepository->replace(
+    $elementId,
+    $translatorId,
+    $replacementToken,
+    current_time('mysql', true),
+    gmdate('Y-m-d H:i:s', time() + 45)
+);
+$replacedRenew = molElementWriteRequest('PUT', '/mol/v1/elements/' . $elementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $lockToken,
+));
+molElementWriteAssert(409 === $replacedRenew->get_status(), 'Renew accepted a replaced token.');
+$replacedRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $elementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $lockToken,
+));
+molElementWriteAssert(409 === $replacedRelease->get_status(), 'Release accepted a replaced token.');
+$ownerRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $elementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $replacementToken,
+));
+molElementWriteAssert(204 === $ownerRelease->get_status(), 'Owner release with the current token failed.');
+$releasedRenew = molElementWriteRequest('PUT', '/mol/v1/elements/' . $elementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $replacementToken,
+));
+molElementWriteAssert(409 === $releasedRenew->get_status(), 'Renew after release did not return 409.');
+
+$expiringLock = molElementWriteRequest('POST', '/mol/v1/elements/' . $elementId . '/lock');
+$expiringBody = $expiringLock->get_data();
+$expiringToken = is_array($expiringBody) ? (string) ($expiringBody['data']['lock_token'] ?? '') : '';
+$lockRepository->replace(
+    $elementId,
+    $translatorId,
+    $expiringToken,
+    gmdate('Y-m-d H:i:s', time() - 60),
+    gmdate('Y-m-d H:i:s', time() - 1)
+);
+$expiredRenew = molElementWriteRequest('PUT', '/mol/v1/elements/' . $elementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $expiringToken,
+));
+molElementWriteAssert(409 === $expiredRenew->get_status(), 'Expired lease renew did not return 409.');
+$expiredRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $elementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $expiringToken,
+));
+molElementWriteAssert(409 === $expiredRelease->get_status(), 'Expired lease release did not return 409.');
+
+$managerCandidate = molElementWriteRequest('POST', '/mol/v1/elements/' . $elementId . '/lock');
+molElementWriteAssert(200 === $managerCandidate->get_status(), 'Could not reacquire an expired lease.');
+wp_set_current_user($administratorId);
+$managerRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $elementId . '/lock');
+molElementWriteAssert(204 === $managerRelease->get_status(), 'Manager force-release without a token failed.');
+$managerIdempotentRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $elementId . '/lock');
+molElementWriteAssert(204 === $managerIdempotentRelease->get_status(), 'Manager force-release was not idempotent.');
+
+wp_set_current_user($translatorId);
+$finalLock = molElementWriteRequest('POST', '/mol/v1/elements/' . $elementId . '/lock');
+$finalLockBody = $finalLock->get_data();
+$lockToken = is_array($finalLockBody) ? (string) ($finalLockBody['data']['lock_token'] ?? '') : '';
+molElementWriteAssert(200 === $finalLock->get_status() && 64 === strlen($lockToken), 'Could not acquire the final write lease.');
+
+$missingElementAcquire = molElementWriteRequest('POST', '/mol/v1/elements/999999/lock');
+molElementWriteAssert(404 === $missingElementAcquire->get_status(), 'Acquire for a missing element did not return 404.');
+$missingElementRenew = molElementWriteRequest('PUT', '/mol/v1/elements/999999/lock', null, array(
+    'X-MOL-Lock-Token' => $lockToken,
+));
+molElementWriteAssert(404 === $missingElementRenew->get_status(), 'Renew for a missing element did not return 404.');
+$missingElementRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/999999/lock', null, array(
+    'X-MOL-Lock-Token' => $lockToken,
+));
+molElementWriteAssert(404 === $missingElementRelease->get_status(), 'Release for a missing element did not return 404.');
+
 $wrongLock = molElementWriteRequest('PATCH', '/mol/v1/elements/' . $elementId, array('content' => 'تعديل'), array(
     'If-Match' => '"1"',
     'X-MOL-Lock-Token' => str_repeat('f', 64),

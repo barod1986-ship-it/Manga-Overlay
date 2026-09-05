@@ -213,6 +213,16 @@ final class Routes
                 'callback' => array($elementLockController, 'acquire'),
                 'permission_callback' => array(Permissions::class, 'editTranslations'),
             ),
+            array(
+                'methods' => 'PUT',
+                'callback' => array($elementLockController, 'renew'),
+                'permission_callback' => array(Permissions::class, 'editTranslations'),
+            ),
+            array(
+                'methods' => 'DELETE',
+                'callback' => array($elementLockController, 'release'),
+                'permission_callback' => array(Permissions::class, 'releaseElementLock'),
+            ),
         ));
         register_rest_route(self::API_NAMESPACE, '/chapters/(?P<id>\d+)/elements', array(
             array(

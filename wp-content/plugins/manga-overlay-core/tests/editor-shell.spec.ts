@@ -7,16 +7,41 @@ test.beforeEach(async ({ page }) => {
   const requests: string[] = [];
   requestsByPage.set(page, requests);
   let nextId = 500;
-  const stored = new Map<number, Partial<EditorElement>>([
-    [101, { id: 101, page_id: 41, target_lang: 'ar', element_type: 'bubble', version: 1 }],
-    [102, { id: 102, page_id: 41, target_lang: 'ar', element_type: 'free_text', version: 4 }],
+  let conflictTriggered = false;
+  const stored = new Map<number, EditorElement>([
+    [101, {
+      id: 101, page_id: 41, target_lang: 'ar', element_type: 'bubble', version: 1,
+      x_unit: 100_000, y_unit: 160_000, w_unit: 320_000, h_unit: 180_000,
+      rotation_mdeg: 0, z_index: 2, content: 'مرحبا من الفقاعة', style: {},
+    }],
+    [102, {
+      id: 102, page_id: 41, target_lang: 'ar', element_type: 'free_text', version: 4,
+      x_unit: 560_000, y_unit: 420_000, w_unit: 250_000, h_unit: 120_000,
+      rotation_mdeg: -5_000, z_index: 3,
+      content: '<img src=x onerror="window.__molXss=true">نص آمن', style: {},
+    }],
   ]);
 
   await page.route('**/wp-json/mol/v1/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname.replace(/^.*\/wp-json\/mol\/v1\/?/, '');
+    const scenario = new URL(page.url()).searchParams.get('mol_scenario');
     requests.push(`${request.method()} ${path}`);
+
+    const pageElementsMatch = /^pages\/(\d+)\/elements$/.exec(path);
+    if (request.method() === 'GET' && pageElementsMatch !== null) {
+      const pageId = Number(pageElementsMatch[1]);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [...stored.values()].filter((element) => element.page_id === pageId),
+          meta: { page_id: pageId, target_lang: 'ar', count: stored.size },
+        }),
+      });
+      return;
+    }
 
     if (request.method() === 'POST' && path === 'elements') {
       const body = request.postDataJSON() as Omit<EditorElement, 'id' | 'version'>;
@@ -34,6 +59,18 @@ test.beforeEach(async ({ page }) => {
     const lockMatch = /^elements\/(\d+)\/lock$/.exec(path);
     if (request.method() === 'POST' && lockMatch !== null) {
       const elementId = Number(lockMatch[1]);
+      if (scenario === 'locked' && elementId === 101) {
+        await route.fulfill({
+          status: 423,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 'mol_element_locked',
+            message: 'The element is locked by another editor.',
+            data: { status: 423, locked_by: 'سارة' },
+          }),
+        });
+        return;
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -50,13 +87,70 @@ test.beforeEach(async ({ page }) => {
       return;
     }
 
+    if (request.method() === 'PUT' && lockMatch !== null) {
+      const elementId = Number(lockMatch[1]);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            element_id: elementId,
+            user_id: 9,
+            lock_token: request.headers()['x-mol-lock-token'] ?? 'a'.repeat(64),
+            expires_at: new Date(Date.now() + 45_000).toISOString(),
+          },
+          meta: {},
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === 'DELETE' && lockMatch !== null) {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+
     const elementMatch = /^elements\/(\d+)$/.exec(path);
     if (elementMatch !== null && request.method() === 'PATCH') {
       const elementId = Number(elementMatch[1]);
-      const current = stored.get(elementId) ?? { id: elementId, page_id: 41, target_lang: 'ar', version: 1 };
+      const current = stored.get(elementId);
+      if (current === undefined) {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'mol_not_found', message: 'Not found.', data: { status: 404 } }),
+        });
+        return;
+      }
+      if (scenario === 'conflict' && elementId === 101 && !conflictTriggered) {
+        conflictTriggered = true;
+        stored.set(101, { ...current, y_unit: 210_000, content: 'النسخة الحالية من سارة', version: 2 });
+        await route.fulfill({
+          status: 412,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 'mol_version_conflict',
+            message: 'The element version is stale.',
+            data: { status: 412 },
+          }),
+        });
+        return;
+      }
+      if (scenario === 'precondition') {
+        await route.fulfill({
+          status: 428,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 'mol_precondition_required',
+            message: 'If-Match is required for this operation.',
+            data: { status: 428 },
+          }),
+        });
+        return;
+      }
       const body = request.postDataJSON() as Partial<EditorElement>;
-      const version = Number(current.version ?? 1) + 1;
-      const element = { ...current, ...body, id: elementId, version } as EditorElement;
+      const version = current.version + 1;
+      const element = { ...current, ...body, id: elementId, version } satisfies EditorElement;
       stored.set(elementId, element);
       await route.fulfill({
         status: 200,
@@ -227,4 +321,65 @@ test('commits Moveable drag/resize and supports numeric and keyboard alternative
   await element.click();
   await page.keyboard.press('ArrowRight');
   await expect.poll(async () => Number(await page.getByTestId('geometry-x_unit').inputValue())).toBeGreaterThan(beforeKeyboard);
+});
+
+test('keeps an element locked by another editor readable but read-only', async ({ page }) => {
+  await page.goto('/tests/editor-shell-fixture.html?mol_page=1&mol_scenario=locked');
+  await page.getByTestId('layer-101').click();
+
+  await expect(page.getByTestId('save-state')).toHaveAttribute('data-state', 'locked');
+  await expect(page.getByTestId('save-state')).toContainText('سارة');
+  await expect(page.getByTestId('locked-notice')).toContainText('يحرر سارة هذا العنصر الآن');
+  await expect(page.getByTestId('property-content')).toHaveValue('مرحبا من الفقاعة');
+  await expect(page.getByTestId('property-content')).toBeDisabled();
+  await expect(page.locator('.moveable-control-box')).toHaveCount(0);
+});
+
+test('shows both versions on 412 and reapplies only the local change', async ({ page }) => {
+  await page.goto('/tests/editor-shell-fixture.html?mol_page=1&mol_scenario=conflict');
+  await page.getByTestId('layer-101').click();
+  await expect(page.getByTestId('property-content')).toBeEnabled();
+  await page.getByTestId('property-content').fill('نسختي المحلية');
+
+  const conflict = page.getByTestId('conflict-card');
+  await expect(conflict).toBeVisible({ timeout: 5_000 });
+  await expect(conflict.getByRole('heading', { name: 'نسختك' })).toBeVisible();
+  await expect(conflict.getByText('نسختي المحلية', { exact: true })).toBeVisible();
+  await expect(conflict.getByRole('heading', { name: 'النسخة الحالية' })).toBeVisible();
+  await expect(conflict.getByText('النسخة الحالية من سارة', { exact: true })).toBeVisible();
+  await expect(conflict.getByRole('button', { name: 'استخدام الحالية' })).toBeVisible();
+  await conflict.getByRole('button', { name: 'إعادة تطبيق تغييري ثم الحفظ' }).click();
+
+  await expect(page.getByTestId('save-state')).toHaveAttribute('data-state', 'saved', { timeout: 5_000 });
+  await expect(page.getByTestId('property-content')).toHaveValue('نسختي المحلية');
+  await expect(page.getByTestId('geometry-y_unit')).toHaveValue('21');
+  expect(requestsByPage.get(page)).toContain('GET pages/41/elements');
+  expect(requestsByPage.get(page)?.filter((request) => request === 'PATCH elements/101')).toHaveLength(2);
+});
+
+test('surfaces a persistent 428 after refreshing the current version once', async ({ page }) => {
+  await page.goto('/tests/editor-shell-fixture.html?mol_page=1&mol_scenario=precondition');
+  await page.getByTestId('layer-101').click();
+  await expect(page.getByTestId('property-content')).toBeEnabled();
+  await page.getByTestId('property-content').fill('اختبار If-Match');
+
+  await expect(page.getByTestId('save-state')).toHaveAttribute('data-state', 'error', { timeout: 5_000 });
+  await expect(page.getByTestId('save-state')).toContainText('If‑Match');
+  expect(requestsByPage.get(page)).toContain('GET pages/41/elements');
+  expect(requestsByPage.get(page)?.filter((request) => request === 'PATCH elements/101')).toHaveLength(2);
+});
+
+test('renews the selected lease every 15 seconds and releases it on selection change', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('/tests/editor-shell-fixture.html?mol_page=1');
+  await page.getByTestId('layer-101').click();
+  await expect(page.getByTestId('property-content')).toBeEnabled();
+
+  await page.clock.fastForward(15_100);
+  await expect.poll(() => requestsByPage.get(page)).toContain('PUT elements/101/lock');
+
+  await page.getByTestId('layer-102').click();
+  await expect(page.getByTestId('property-content')).toBeEnabled();
+  await expect.poll(() => requestsByPage.get(page)).toContain('DELETE elements/101/lock');
+  expect(requestsByPage.get(page)).toContain('POST elements/102/lock');
 });

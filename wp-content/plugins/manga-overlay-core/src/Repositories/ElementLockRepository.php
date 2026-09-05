@@ -78,6 +78,18 @@ final class ElementLockRepository extends AbstractRepository
         );
     }
 
+    public function renew(int $elementId, string $expiresAt): void
+    {
+        $this->positiveId($elementId, 'element_id');
+        $this->updateRecord(
+            $this->tables->elementLocks,
+            array('expires_at' => $expiresAt),
+            array('element_id' => $elementId),
+            array('%s'),
+            array('%d')
+        );
+    }
+
     public function deleteForElement(int $elementId): bool
     {
         $this->positiveId($elementId, 'element_id');

@@ -24,6 +24,7 @@ interface EditorStageProps {
   readonly zoom: number;
   readonly selectedId: number | null;
   readonly preview: boolean;
+  readonly readOnlySelected: boolean;
   readonly onSelect: (id: number) => void;
   readonly onDeselect: () => void;
   readonly onEditText: (id: number) => void;
@@ -60,6 +61,7 @@ export function EditorStage({
   zoom,
   selectedId,
   preview,
+  readOnlySelected,
   onSelect,
   onDeselect,
   onEditText,
@@ -77,12 +79,12 @@ export function EditorStage({
 
   const refreshTarget = useCallback((): void => {
     const layer = layerRef.current;
-    if (layer === null || selectedId === null || preview) {
+    if (layer === null || selectedId === null || preview || readOnlySelected) {
       setTarget(null);
       return;
     }
     setTarget(layer.querySelector<HTMLElement>(`[data-element-id="${selectedId}"]`));
-  }, [preview, selectedId]);
+  }, [preview, readOnlySelected, selectedId]);
 
   useLayoutEffect(() => {
     const layer = layerRef.current;
@@ -127,7 +129,7 @@ export function EditorStage({
     };
     const handleDoubleClick = (event: MouseEvent): void => {
       const id = selectFromEvent(event);
-      if (id !== null) onEditText(id);
+      if (id !== null && !(readOnlySelected && id === selectedId)) onEditText(id);
     };
     layer.addEventListener('pointerdown', handlePointerDown);
     layer.addEventListener('dblclick', handleDoubleClick);
@@ -135,7 +137,7 @@ export function EditorStage({
       layer.removeEventListener('pointerdown', handlePointerDown);
       layer.removeEventListener('dblclick', handleDoubleClick);
     };
-  }, [onEditText, onSelect]);
+  }, [onEditText, onSelect, readOnlySelected, selectedId]);
 
   const currentStageSize = (): StageSize => ({
     width: stageRef.current?.clientWidth ?? 0,
@@ -288,7 +290,7 @@ export function EditorStage({
           className={`mol-overlay-layer mol-editor-overlay${preview ? ' is-preview' : ''}`}
           data-testid="overlay-layer"
         />
-        {!preview && target !== null ? (
+        {!preview && !readOnlySelected && target !== null ? (
           <Moveable
             target={target}
             container={stageRef.current}

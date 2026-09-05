@@ -37,6 +37,7 @@ import type {
   BurstStyle,
   EditorBootstrap,
   EditorElement,
+  ElementConflict,
   EditorPageData,
   ElementShape,
   ElementStyle,
@@ -286,6 +287,8 @@ function PropertiesPanel({
   onDuplicate,
   onDelete,
   deleteDisabled,
+  readOnly,
+  lockedBy,
   onLayer,
 }: {
   readonly element: EditorElement | null;
@@ -293,6 +296,8 @@ function PropertiesPanel({
   readonly onDuplicate: () => void;
   readonly onDelete: () => void;
   readonly deleteDisabled: boolean;
+  readonly readOnly: boolean;
+  readonly lockedBy: string | null;
   readonly onLayer: (direction: 'up' | 'down') => void;
 }) {
   return (
@@ -303,6 +308,12 @@ function PropertiesPanel({
       ) : (
         <div className="mol-editor-property-content">
           <div className="mol-editor-property-title"><span>{ELEMENT_LABELS[element.element_type]}</span><strong>{element.id > 0 ? `#${element.id}` : 'جديد'}</strong></div>
+          {readOnly && (
+            <p className="mol-editor-lock-notice" data-testid="locked-notice" role="status">
+              {lockedBy === null ? 'جارٍ الحصول على قفل التحرير…' : `يحرر ${lockedBy} هذا العنصر الآن. يمكنك قراءته فقط.`}
+            </p>
+          )}
+          <fieldset className="mol-editor-lock-fields" disabled={readOnly}>
           <label>
             <span>النص العربي</span>
             <textarea
@@ -346,10 +357,40 @@ function PropertiesPanel({
             <button type="button" onClick={onDuplicate}>نسخ العنصر</button>
             <button type="button" className="is-danger" disabled={deleteDisabled} onClick={onDelete}>حذف العنصر</button>
           </div>
+          </fieldset>
           <p className="mol-editor-readonly-note">تُرسل التغييرات تلقائيًا بعد توقف قصير. عند انقطاع الشبكة تبقى في ذاكرة هذا التبويب فقط.</p>
         </div>
       )}
     </aside>
+  );
+}
+
+function ConflictCard({
+  conflict,
+  onUseCurrent,
+  onReapply,
+}: {
+  readonly conflict: ElementConflict;
+  readonly onUseCurrent: () => void;
+  readonly onReapply: () => void;
+}) {
+  return (
+    <section className="mol-editor-conflict" data-testid="conflict-card" role="alert" aria-labelledby="mol-conflict-title">
+      <div>
+        <h2 id="mol-conflict-title">تعارض في العنصر #{conflict.elementId}</h2>
+        <p>وصلت نسخة أحدث قبل حفظ تغييرك. لم يُكتب فوقها.</p>
+      </div>
+      <div className="mol-editor-conflict-versions">
+        <article><h3>نسختك</h3><p dir="auto">{conflict.yours.content || '—'}</p><small>الإصدار {conflict.yours.version}</small></article>
+        <article><h3>النسخة الحالية</h3><p dir="auto">{conflict.current.content || '—'}</p><small>الإصدار {conflict.current.version}</small></article>
+      </div>
+      <div className="mol-editor-conflict-actions">
+        <button type="button" onClick={onUseCurrent}>استخدام الحالية</button>
+        <button type="button" className="is-primary" onClick={onReapply}>
+          {conflict.operation === 'delete' ? 'حذف النسخة الحالية' : 'إعادة تطبيق تغييري ثم الحفظ'}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -405,23 +446,29 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
     },
   });
 
+  useEffect(() => {
+    autosave.activateElement(state.selectedElementId);
+  }, [autosave.activateElement, state.selectedElementId]);
+
   const updateElement = useCallback((
     id: number,
     update: (element: EditorElement) => EditorElement,
     saveDelay = 1_200,
   ): void => {
-    if (page === null) return;
+    if (page === null || autosave.isReadOnly(id)) return;
     const current = elementsByPageRef.current[page.id] ?? [];
-    if (!current.some((element) => element.id === id)) return;
+    const baseline = current.find((element) => element.id === id);
+    if (baseline === undefined) return;
     setPageElements(page.id, current.map((element) => element.id === id ? update(element) : element));
-    autosave.markDirty(id, saveDelay);
+    autosave.markDirty(id, saveDelay, baseline);
   }, [autosave, page, setPageElements]);
 
   const selectElement = useCallback((id: number): void => dispatch({ type: 'select-element', id }), []);
   const focusElementText = useCallback((id: number): void => {
     selectElement(id);
+    if (autosave.isReadOnly(id)) return;
     window.requestAnimationFrame(() => document.getElementById(`mol-element-content-${id}`)?.focus());
-  }, [selectElement]);
+  }, [autosave, selectElement]);
 
   const addElement = useCallback((type: ElementType): void => {
     if (page === null) return;
@@ -445,20 +492,20 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
 
   const deleteSelected = useCallback((): void => {
     if (page === null || selectedElement === null) return;
-    if (autosave.isSaving(selectedElement.id)) return;
+    if (autosave.isSaving(selectedElement.id) || autosave.isReadOnly(selectedElement.id)) return;
     void autosave.deleteElement(selectedElement).then((deleted) => {
       if (deleted) dispatch({ type: 'select-element', id: null });
     });
   }, [autosave, page, selectedElement]);
 
   const moveSelectedLayer = useCallback((direction: 'up' | 'down'): void => {
-    if (page === null || selectedElement === null) return;
+    if (page === null || selectedElement === null || autosave.isReadOnly(selectedElement.id)) return;
     const current = elementsByPageRef.current[page.id] ?? [];
     const next = moveElementLayer(current, selectedElement.id, direction);
     setPageElements(page.id, next);
     for (const element of next) {
       const previous = current.find((candidate) => candidate.id === element.id);
-      if (previous?.z_index !== element.z_index) autosave.markDirty(element.id, 0);
+      if (previous !== undefined && previous.z_index !== element.z_index) autosave.markDirty(element.id, 0, previous);
     }
   }, [autosave, page, selectedElement, setPageElements]);
 
@@ -484,7 +531,7 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
         else dispatch({ type: 'select-element', id: null });
         return;
       }
-      if (state.preview || selectedElement === null || isTypingTarget(event.target)) return;
+      if (state.preview || selectedElement === null || autosave.isReadOnly(selectedElement.id) || isTypingTarget(event.target)) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
         event.preventDefault();
         duplicateSelected();
@@ -508,7 +555,7 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
     };
     window.addEventListener('keydown', handleKeyboard);
     return () => window.removeEventListener('keydown', handleKeyboard);
-  }, [deleteSelected, duplicateSelected, selectedElement, state.preview, updateElement]);
+  }, [autosave, deleteSelected, duplicateSelected, selectedElement, state.preview, updateElement]);
 
   return (
     <div className={`mol-editor-shell${state.preview ? ' is-preview' : ''}`} data-testid="editor-shell">
@@ -529,8 +576,16 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
         <nav className="mol-editor-toolbar" aria-label="أدوات المحرر">
           <button type="button" aria-pressed={state.selectedElementId === null} onClick={() => dispatch({ type: 'select-element', id: null })}><span aria-hidden="true">↖</span>تحديد</button>
           {ADD_TOOLS.map((tool) => <button key={tool.type} type="button" data-testid={`add-${tool.type}`} aria-label={tool.label} onClick={() => addElement(tool.type)}><span aria-hidden="true">{tool.glyph}</span>{tool.shortLabel}</button>)}
-          <span className="mol-editor-toolbar-note">T‑12 · حفظ تلقائي آمن</span>
+          <span className="mol-editor-toolbar-note">T‑13 · أقفال وتعارض آمن</span>
         </nav>
+      )}
+
+      {autosave.conflict !== null && (
+        <ConflictCard
+          conflict={autosave.conflict}
+          onUseCurrent={autosave.useCurrentVersion}
+          onReapply={autosave.reapplyConflict}
+        />
       )}
 
       {page === null ? (
@@ -539,13 +594,13 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
         <div className={`mol-editor-layout${state.layersCollapsed ? ' has-collapsed-layers' : ''}`}>
           {!state.preview && <LayersPanel elements={elements} selectedId={state.selectedElementId} collapsed={state.layersCollapsed} onSelect={selectElement} onToggle={() => dispatch({ type: 'toggle-layers' })} />}
           <main className="mol-editor-main">
-            <EditorStage page={page as EditorPageData} elements={elements} zoom={state.zoom} selectedId={state.selectedElementId} preview={state.preview} onSelect={selectElement} onDeselect={() => dispatch({ type: 'select-element', id: null })} onEditText={focusElementText} onCommit={(id, update) => updateElement(id, update, 0)} />
+            <EditorStage page={page as EditorPageData} elements={elements} zoom={state.zoom} selectedId={state.selectedElementId} preview={state.preview} readOnlySelected={selectedElement !== null && autosave.isReadOnly(selectedElement.id)} onSelect={selectElement} onDeselect={() => dispatch({ type: 'select-element', id: null })} onEditText={focusElementText} onCommit={(id, update) => updateElement(id, update, 0)} />
             <div className="mol-editor-stage-controls">
               <div role="group" aria-label="التنقل بين الصفحات"><button type="button" data-testid="previous-page" disabled={state.pagePosition <= 0} onClick={() => goToPage(state.pagePosition - 1)}>السابق</button><span>{state.pagePosition + 1} / {data.pages.length}</span><button type="button" data-testid="next-page" disabled={state.pagePosition >= data.pages.length - 1} onClick={() => goToPage(state.pagePosition + 1)}>التالي</button></div>
               {!state.preview && <div role="group" aria-label="تكبير مساحة العمل"><button type="button" aria-label="تصغير" onClick={() => dispatch({ type: 'set-zoom', zoom: state.zoom - 0.25 })}>−</button><output>{Math.round(state.zoom * 100)}%</output><button type="button" aria-label="تكبير" onClick={() => dispatch({ type: 'set-zoom', zoom: state.zoom + 0.25 })}>＋</button><button type="button" onClick={() => dispatch({ type: 'set-zoom', zoom: 1 })}>ملاءمة</button></div>}
             </div>
           </main>
-          {!state.preview && <PropertiesPanel element={selectedElement} onUpdate={(update) => selectedElement !== null && updateElement(selectedElement.id, update)} onDuplicate={duplicateSelected} onDelete={deleteSelected} deleteDisabled={selectedElement !== null && autosave.isSaving(selectedElement.id)} onLayer={moveSelectedLayer} />}
+          {!state.preview && <PropertiesPanel element={selectedElement} onUpdate={(update) => selectedElement !== null && updateElement(selectedElement.id, update)} onDuplicate={duplicateSelected} onDelete={deleteSelected} deleteDisabled={selectedElement !== null && (autosave.isSaving(selectedElement.id) || autosave.isReadOnly(selectedElement.id))} readOnly={selectedElement !== null && autosave.isReadOnly(selectedElement.id)} lockedBy={selectedElement === null ? null : autosave.lockedBy(selectedElement.id)} onLayer={moveSelectedLayer} />}
         </div>
       )}
       <span className="mol-editor-release" aria-hidden="true">Core {data.release.core}</span>

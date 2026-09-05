@@ -208,6 +208,9 @@ $later = gmdate('Y-m-d H:i:s', time() + 120);
 $locks = new ElementLockRepository($wpdb);
 $locks->insert($elementId, $userId, str_repeat('a', 64), $now, $later);
 molIntegrationAssert($userId === $locks->findForElement($elementId)['user_id'], 'Element lock repository failed.');
+$renewedUntil = gmdate('Y-m-d H:i:s', time() + 180);
+$locks->renew($elementId, $renewedUntil);
+molIntegrationAssert($renewedUntil === $locks->findForElement($elementId)['expires_at'], 'Element lock renewal failed.');
 
 $contributions = new ContributionRepository($wpdb);
 $contributions->upsert($elementId, $userId, $workId, $chapterId, true, $now);

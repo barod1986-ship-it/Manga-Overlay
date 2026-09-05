@@ -1,6 +1,6 @@
 # Manga Overlay Core
 
-WordPress domain, persistence, content-management, public-read, reading-progress, and element-editor services through T-12 for Master Spec v1.1.3.
+WordPress domain, persistence, content-management, public-read, reading-progress, and element-editor services through T-13 for Master Spec v1.1.3.
 
 ## Scope
 
@@ -24,7 +24,9 @@ WordPress domain, persistence, content-management, public-read, reading-progress
 - A production React editor with URL-backed page state, physical image geometry, zoom, Preview, and creation/editing for bubble, narration, free-text, and SFX elements.
 - Shared safe DOM/SVG rendering, Moveable drag/resize/rotate controls, numeric and keyboard alternatives, type-aware style controls, duplication, deletion, and layer ordering.
 - Strict `POST/PATCH/DELETE` element writes with server-owned resolved styles, idempotent create, quoted-version ETags, lock/version preconditions, no-store responses, and actual write throttling.
-- A 1200ms autosave state machine with gesture-end commits, safe create retries, in-tab offline recovery, and Arabic dirty/saving/saved/offline/error feedback.
+- Atomic element leases with 45-second TTL, 15-second renewal, owner-token release, same-route manager force-release, and explicit `409 mol_lock_lost` recovery.
+- A 1200ms autosave state machine with gesture-end commits, safe create retries, in-tab offline recovery, read-only locked elements, and Arabic dirty/saving/saved/offline/locked/conflict/error feedback.
+- A non-destructive `412` conflict card showing both versions, with current-version acceptance or field-level local-change reapplication over the latest server version.
 - Hex-safe JSON bootstrapping and committed production `assets/dist/editor.{js,css}` files, so the installable PHP artifact needs no Node runtime.
 - Opt-in-only uninstall cleanup through `mol_delete_data_on_uninstall=1`.
 

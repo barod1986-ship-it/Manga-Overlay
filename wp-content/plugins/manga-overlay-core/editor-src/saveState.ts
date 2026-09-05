@@ -12,7 +12,7 @@ const LABELS: Readonly<Record<SaveStateKind, string>> = {
 };
 
 export function saveState(kind: SaveStateKind, message = LABELS[kind]): SaveState {
-  return { kind, message, canRetry: kind === 'offline' || kind === 'error' };
+  return { kind, message, canRetry: kind === 'offline' || kind === 'locked' || kind === 'error' };
 }
 
 export function stateForError(error: unknown, online: boolean): SaveState {
@@ -24,6 +24,9 @@ export function stateForError(error: unknown, online: boolean): SaveState {
   }
   if (error instanceof ElementApiError && error.status === 412) {
     return saveState('conflict');
+  }
+  if (error instanceof ElementApiError && error.status === 428) {
+    return saveState('error', 'تعذر إرسال شرط النسخة If‑Match — تحقق من إعدادات الخادم ثم أعد المحاولة');
   }
 
   return saveState('error');

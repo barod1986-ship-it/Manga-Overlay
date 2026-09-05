@@ -19,7 +19,7 @@ const element: EditorElement = {
   version: 7,
 };
 
-describe('T-12 element REST client contract', () => {
+describe('T-13 element REST and concurrency contract', () => {
   it('serializes create and patch without client-only identifiers', () => {
     expect(createBody(element)).toMatchObject({ page_id: 41, content: element.content });
     expect(createBody(element)).not.toHaveProperty('id');
@@ -50,5 +50,12 @@ describe('T-12 element REST client contract', () => {
     expect(stateForError(new ElementApiError(0, 'mol_network_error', 'offline'), false).kind).toBe('offline');
     expect(stateForError(new ElementApiError(423, 'mol_element_locked', 'locked'), true).kind).toBe('locked');
     expect(stateForError(new ElementApiError(412, 'mol_version_conflict', 'stale'), true).kind).toBe('conflict');
+    expect(stateForError(new ElementApiError(428, 'mol_precondition_required', 'missing'), true).message)
+      .toContain('If‑Match');
+  });
+
+  it('keeps structured error details for the lock owner label', () => {
+    const error = new ElementApiError(423, 'mol_element_locked', 'locked', null, { locked_by: 'سارة' });
+    expect(error.details.locked_by).toBe('سارة');
   });
 });

@@ -44,6 +44,23 @@ final class Permissions
         return self::requireCapability('mol_delete_translation_elements');
     }
 
+    public static function releaseElementLock(): bool|\WP_Error
+    {
+        $authenticated = self::authenticatedUser();
+        if (is_wp_error($authenticated)) {
+            return $authenticated;
+        }
+        if (! current_user_can('mol_edit_translations') && ! current_user_can('mol_manage_content')) {
+            return new \WP_Error(
+                'mol_forbidden',
+                'You are not allowed to perform this action.',
+                array('status' => 403)
+            );
+        }
+
+        return true;
+    }
+
     private static function requireCapability(string $capability): bool|\WP_Error
     {
         $authenticated = self::authenticatedUser();

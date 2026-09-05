@@ -425,6 +425,112 @@ body.mol-editor-document {
   color: var(--mol-editor-paper);
 }
 
+.mol-editor-lock-fields {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  gap: 18px;
+}
+
+.mol-editor-lock-fields:disabled {
+  opacity: 0.62;
+}
+
+.mol-editor-lock-notice {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid #9b544a;
+  border-radius: 7px;
+  color: #ffd0c8;
+  background: #351d1a;
+  font-size: 0.76rem;
+  line-height: 1.65;
+}
+
+.mol-editor-conflict {
+  position: absolute;
+  inset-block-start: calc(var(--mol-editor-header-height) + 66px);
+  left: 50%;
+  z-index: 45;
+  display: grid;
+  width: min(680px, calc(100% - 32px));
+  max-height: calc(100% - var(--mol-editor-header-height) - 82px);
+  gap: 14px;
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid #c66a5d;
+  border-radius: 11px;
+  background: #2d1d19;
+  box-shadow: 0 18px 55px rgb(0 0 0 / 48%);
+  transform: translateX(-50%);
+}
+
+.mol-editor-conflict h2,
+.mol-editor-conflict h3,
+.mol-editor-conflict p {
+  margin: 0;
+}
+
+.mol-editor-conflict > div:first-child p {
+  margin-block-start: 5px;
+  color: #d7c0b6;
+  font-size: 0.82rem;
+}
+
+.mol-editor-conflict-versions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mol-editor-conflict-versions article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #65463e;
+  border-radius: 8px;
+  background: #1b1513;
+}
+
+.mol-editor-conflict-versions h3 {
+  color: #f2b6ae;
+  font-size: 0.82rem;
+}
+
+.mol-editor-conflict-versions p {
+  min-height: 3.2em;
+  margin-block: 8px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.mol-editor-conflict-versions small {
+  color: var(--mol-editor-muted);
+}
+
+.mol-editor-conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mol-editor-conflict-actions button {
+  min-height: 42px;
+  padding: 8px 13px;
+  border: 1px solid #73534a;
+  border-radius: 7px;
+  color: var(--mol-editor-paper);
+  background: #392822;
+  cursor: pointer;
+}
+
+.mol-editor-conflict-actions .is-primary {
+  border-color: var(--mol-editor-accent);
+  background: var(--mol-editor-accent);
+}
+
 .mol-editor-property-content label > span,
 .mol-editor-fieldset label > span {
   display: block;
@@ -860,6 +966,15 @@ body.mol-editor-document {
 
   .mol-editor-toolbar button {
     min-width: 76px;
+  }
+
+  .mol-editor-conflict {
+    inset-block-start: calc(var(--mol-editor-header-height) + 58px);
+    padding: 14px;
+  }
+
+  .mol-editor-conflict-versions {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .mol-editor-layout,
