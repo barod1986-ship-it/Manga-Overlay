@@ -1,0 +1,81 @@
+name: Frontend PoC
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/frontend-poc.yml'
+      - '.nvmrc'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'poc/editor-input/**'
+      - 'poc/renderer/**'
+      - 'wp-content/plugins/manga-overlay-core/editor-src/**'
+      - 'wp-content/plugins/manga-overlay-core/assets/dist/**'
+      - 'wp-content/plugins/manga-overlay-core/tests/editor*'
+      - 'wp-content/plugins/manga-overlay-core/package.json'
+      - 'wp-content/plugins/manga-overlay-core/tsconfig.json'
+      - 'wp-content/plugins/manga-overlay-core/vite.config.ts'
+      - 'wp-content/themes/manga-overlay-theme/assets/js/reader.js'
+      - 'wp-content/themes/manga-overlay-theme/assets/css/reader.css'
+      - 'wp-content/themes/manga-overlay-theme/chapter-reader.php'
+      - 'wp-content/themes/manga-overlay-theme/tests/reader*'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/frontend-poc.yml'
+      - '.nvmrc'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'poc/editor-input/**'
+      - 'poc/renderer/**'
+      - 'wp-content/plugins/manga-overlay-core/editor-src/**'
+      - 'wp-content/plugins/manga-overlay-core/assets/dist/**'
+      - 'wp-content/plugins/manga-overlay-core/tests/editor*'
+      - 'wp-content/plugins/manga-overlay-core/package.json'
+      - 'wp-content/plugins/manga-overlay-core/tsconfig.json'
+      - 'wp-content/plugins/manga-overlay-core/vite.config.ts'
+      - 'wp-content/themes/manga-overlay-theme/assets/js/reader.js'
+      - 'wp-content/themes/manga-overlay-theme/assets/css/reader.css'
+      - 'wp-content/themes/manga-overlay-theme/chapter-reader.php'
+      - 'wp-content/themes/manga-overlay-theme/tests/reader*'
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-pocs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check renderer, editor-input PoC, reader, and editor shell
+        run: npm run check
+
+      - name: Prepare device preview artifact
+        run: cp docs/T02_DEVICE_VALIDATION.md poc/editor-input/dist/DEVICE_VALIDATION.md
+
+      - name: Upload device preview artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: t02-device-preview
+          path: poc/editor-input/dist/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Verify renderer, reader, and editor shell in browsers
+        run: npm run test:e2e

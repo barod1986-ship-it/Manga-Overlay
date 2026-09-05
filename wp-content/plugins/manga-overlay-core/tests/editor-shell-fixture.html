@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manga Overlay editor shell fixture</title>
+  <link rel="stylesheet" href="/assets/dist/editor.css">
+</head>
+<body class="mol-editor-document">
+  <div id="mol-editor-root" dir="rtl"></div>
+  <script id="mol-editor-bootstrap" type="application/json">
+    {
+      "work": {"id": 11, "slug": "demo-work", "title": "عمل تجريبي", "status": "publish"},
+      "chapter": {
+        "id": 31,
+        "chapter_label": "1",
+        "title": "بداية الحكاية",
+        "slug": "chapter-1",
+        "translation_status": "in_progress",
+        "is_published": true
+      },
+      "pages": [
+        {
+          "id": 41,
+          "chapter_id": 31,
+          "page_index": 0,
+          "natural_width": 800,
+          "natural_height": 1200,
+          "image": {
+            "attachment_id": 71,
+            "url": "/tests/editor-fixture-page.svg",
+            "width": 800,
+            "height": 1200,
+            "srcset": null,
+            "sizes": null,
+            "alt": "صفحة تجريبية أولى"
+          },
+          "elements": [
+            {
+              "id": 101,
+              "page_id": 41,
+              "target_lang": "ar",
+              "element_type": "bubble",
+              "x_unit": 100000,
+              "y_unit": 160000,
+              "w_unit": 320000,
+              "h_unit": 180000,
+              "rotation_mdeg": 0,
+              "z_index": 2,
+              "content": "مرحبا من الفقاعة",
+              "style": {},
+              "version": 1
+            },
+            {
+              "id": 102,
+              "page_id": 41,
+              "target_lang": "ar",
+              "element_type": "free_text",
+              "x_unit": 560000,
+              "y_unit": 420000,
+              "w_unit": 250000,
+              "h_unit": 120000,
+              "rotation_mdeg": -5000,
+              "z_index": 3,
+              "content": "\u003Cimg src=x onerror=\"window.__molXss=true\"\u003Eنص آمن",
+              "style": {},
+              "version": 4
+            }
+          ]
+        },
+        {
+          "id": 42,
+          "chapter_id": 31,
+          "page_index": 1,
+          "natural_width": 800,
+          "natural_height": 1200,
+          "image": {
+            "attachment_id": 72,
+            "url": "/tests/editor-fixture-page.svg",
+            "width": 800,
+            "height": 1200,
+            "srcset": null,
+            "sizes": null,
+            "alt": "صفحة تجريبية ثانية"
+          },
+          "elements": []
+        }
+      ],
+      "targetLanguage": "ar",
+      "api": {"root": "/wp-json/mol/v1/", "nonce": "t12-fixture-nonce"},
+      "links": {"work": "/series/demo-work/", "reader": "/series/demo-work/chapter/chapter-1/"},
+      "permissions": {"manageWorkPresets": true, "manageGlobalPresets": false},
+      "release": {"core": "0.12.0"}
+    }
+  </script>
+  <script>window.__molXss = false;</script>
+  <script type="module" src="/tests/editor-shell-loader.ts"></script>
+</body>
+</html>

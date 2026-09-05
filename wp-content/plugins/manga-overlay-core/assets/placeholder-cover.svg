@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" role="img" aria-labelledby="title description">
+  <title id="title">Manga Overlay placeholder cover</title>
+  <desc id="description">A neutral placeholder used when a work has no featured cover image.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#172033"/>
+      <stop offset="1" stop-color="#4b2a67"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1200" fill="url(#background)"/>
+  <rect x="120" y="260" width="560" height="680" rx="40" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="16"/>
+  <path d="M220 760l120-170 105 120 90-105 145 155" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="20"/>
+  <circle cx="530" cy="490" r="54" fill="#ffffff" fill-opacity="0.8"/>
+  <text x="400" y="1030" fill="#ffffff" font-family="sans-serif" font-size="52" text-anchor="middle">Manga Overlay</text>
+</svg>
