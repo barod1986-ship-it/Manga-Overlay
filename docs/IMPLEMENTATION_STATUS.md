@@ -285,7 +285,7 @@ Implemented and verified:
 - [PHP Bootstrap run #37](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33928162960) passed PHP 8.4 checks and produced the installable Core 0.8.0 artifact.
 - [Public Theme run #21](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33928162968) remained green.
 
-T-11 is complete at the implementation, CI, and staging levels. T-12 is the next development task. Physical iOS/Android and final Safari/Arabic-font evidence remain independent release gates.
+T-11 is complete at the implementation, CI, and staging levels. T-12 is tracked below. Physical iOS/Android and final Safari/Arabic-font evidence remain independent release gates.
 
 ### T-11 staging smoke test
 
@@ -300,3 +300,24 @@ On 2026-09-04, the exact Core 0.8.0 artifact from PHP Bootstrap run #37 at PR he
 - Preview hid the toolbar, properties, and Moveable controls while retaining all four overlays. Returning restored the editor.
 - `?mol_page=2` showed the empty second page; returning to `?mol_page=1` retained the four local edits during the session. A full reload kept the editor route but correctly restored zero server-backed elements and the ready state because network persistence belongs to T-12.
 - Browser logs contained no warning or error from the staging origin. Repeated metadata messages emitted only by the controlled browser extension were excluded from the application result.
+
+## T-12 — Strict element writes and autosave
+
+Implemented and verified:
+
+- Protected element `POST`, `PATCH`, and `DELETE` routes now use strict request schemas, reject unknown properties, enforce editor authorization and chapter visibility, and return only presenter-backed DTOs.
+- Create requests require an application `Idempotency-Key`; safe client retries reuse the same key and the server stores/replays the canonical response instead of creating a duplicate element.
+- Persisted updates and deletes require both a valid 45-second element lease and `If-Match`. Missing preconditions return `428`, stale versions return `412`, and unavailable/invalid leases return `423` without mutating the row.
+- Successful writes advance the integer element version and return a matching quoted `ETag`. Style responses are resolved through the explicit preset, default preset, and server-owned base-style chain rather than trusting incomplete client JSON.
+- Element deletion owns its dependent contribution/report/lock cleanup in a transaction. The write service also applies the project rate-limit contract and preserves the frozen error envelope.
+- The React editor marks text/style changes dirty and debounces them for 1,200 ms. Create, update, and delete use the strict REST client; persisted edits acquire a lease first, while completed pointer and keyboard transforms flush immediately.
+- Dirty changes survive network loss inside the current tab. The status distinguishes dirty, saving, saved, offline, and retryable errors; reconnect and the explicit retry action resume the queued write without claiming that unsent data was persisted.
+- Moveable commits only a real completed drag/resize/rotation. Per-frame pointer updates and zero-distance clicks perform no network write, preventing duplicate PATCH traffic during gesture rendering.
+- WordPress integration tests cover successful create/update/delete, idempotent replay, ETags, lease ownership, stale/missing preconditions, strict payload rejection, rate limiting, style resolution, and dependency cleanup on both supported database engines.
+- Editor unit tests report `12/12` passing, and the production TypeScript/Vite build succeeds. The editor Playwright suite reports `15/15` passing across Chromium, Firefox, and WebKit, including autosave, offline recovery, strict request sequencing, and end-of-gesture persistence.
+- [Frontend PoC run #45](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931637153) passed all unit/build and browser suites.
+- [Database Matrix run #37](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931637161) passed on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #41](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931637162) passed PHP 8.4 checks and produced the installable Core 0.9.0 artifact.
+- [Public Theme run #25](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931637174) remained green.
+
+T-12 is complete at the implementation and CI levels. Installing Core 0.9.0 and exercising persistence on staging remain the next verification gate. T-13 retains lease renewal/release/force-release, complete conflict UX, and reverse-proxy concurrency validation; those concerns are not claimed by T-12.
