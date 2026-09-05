@@ -25,6 +25,7 @@ use MOL\Services\ElementWriteService;
 use MOL\Services\PageReorderService;
 use MOL\Services\PageUploadService;
 use MOL\Services\PublicReadService;
+use MOL\Services\PresetService;
 use MOL\Services\ReadingProgressService;
 
 final class Routes
@@ -94,6 +95,11 @@ final class Routes
             new ReadingProgressService(new ReadingProgressRepository($wpdb), $reads)
         );
         $profileController = new ProfileController($contributions);
+        $presetController = new PresetController(new PresetService(
+            new StylePresetRepository($wpdb),
+            $works,
+            $transactions
+        ));
 
         register_rest_route(self::API_NAMESPACE, '/library', array(
             array(
@@ -250,6 +256,30 @@ final class Routes
                 'methods' => 'PUT',
                 'callback' => array($readingProgressController, 'save'),
                 'permission_callback' => array(Permissions::class, 'authenticatedUser'),
+            ),
+        ));
+        register_rest_route(self::API_NAMESPACE, '/presets', array(
+            array(
+                'methods' => 'GET',
+                'callback' => array($presetController, 'listPresets'),
+                'permission_callback' => array(Permissions::class, 'useEditor'),
+            ),
+            array(
+                'methods' => 'POST',
+                'callback' => array($presetController, 'create'),
+                'permission_callback' => array(Permissions::class, 'useEditor'),
+            ),
+        ));
+        register_rest_route(self::API_NAMESPACE, '/presets/(?P<id>\d+)', array(
+            array(
+                'methods' => 'PATCH',
+                'callback' => array($presetController, 'update'),
+                'permission_callback' => array(Permissions::class, 'useEditor'),
+            ),
+            array(
+                'methods' => 'DELETE',
+                'callback' => array($presetController, 'delete'),
+                'permission_callback' => array(Permissions::class, 'useEditor'),
             ),
         ));
     }

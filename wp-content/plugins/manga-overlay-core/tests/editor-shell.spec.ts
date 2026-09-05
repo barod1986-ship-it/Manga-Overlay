@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { EditorElement } from '../editor-src/types';
+import type { EditorElement, StylePreset } from '../editor-src/types';
 
 const requestsByPage = new WeakMap<Page, string[]>();
 
@@ -8,6 +8,20 @@ test.beforeEach(async ({ page }) => {
   requestsByPage.set(page, requests);
   let nextId = 500;
   let conflictTriggered = false;
+  let nextPresetId = 800;
+  const presets: StylePreset[] = [{
+    id: 701,
+    scope: 'work',
+    owner_user_id: null,
+    work_id: 11,
+    name: 'فقاعة حمراء',
+    element_type: 'bubble',
+    style: { color: '#cc0000', backgroundColor: '#fff4f2', fontSizeUnit: 24_000 },
+    is_default: true,
+    created_by: 9,
+    created_at: '2026-09-05T00:00:00Z',
+    updated_at: '2026-09-05T00:00:00Z',
+  }];
   const stored = new Map<number, EditorElement>([
     [101, {
       id: 101, page_id: 41, target_lang: 'ar', element_type: 'bubble', version: 1,
@@ -27,7 +41,39 @@ test.beforeEach(async ({ page }) => {
     const url = new URL(request.url());
     const path = url.pathname.replace(/^.*\/wp-json\/mol\/v1\/?/, '');
     const scenario = new URL(page.url()).searchParams.get('mol_scenario');
-    requests.push(`${request.method()} ${path}`);
+    if (!path.startsWith('presets')) requests.push(`${request.method()} ${path}`);
+
+    if (request.method() === 'GET' && path === 'presets') {
+      const type = url.searchParams.get('type');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: presets.filter((preset) => preset.element_type === type),
+          meta: { count: presets.length },
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === 'POST' && path === 'presets') {
+      const body = request.postDataJSON() as Omit<StylePreset, 'id' | 'owner_user_id' | 'created_by' | 'created_at' | 'updated_at'>;
+      const preset: StylePreset = {
+        ...body,
+        id: ++nextPresetId,
+        owner_user_id: body.scope === 'personal' ? 9 : null,
+        created_by: 9,
+        created_at: '2026-09-05T00:00:00Z',
+        updated_at: '2026-09-05T00:00:00Z',
+      };
+      presets.push(preset);
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: preset, meta: {} }),
+      });
+      return;
+    }
 
     const pageElementsMatch = /^pages\/(\d+)\/elements$/.exec(path);
     if (request.method() === 'GET' && pageElementsMatch !== null) {
@@ -321,6 +367,49 @@ test('commits Moveable drag/resize and supports numeric and keyboard alternative
   await element.click();
   await page.keyboard.press('ArrowRight');
   await expect.poll(async () => Number(await page.getByTestId('geometry-x_unit').inputValue())).toBeGreaterThan(beforeKeyboard);
+});
+
+test('applies presets without changing content or geometry and saves a personal preset', async ({ page }) => {
+  await page.goto('/tests/editor-shell-fixture.html?mol_page=1');
+  await page.getByTestId('layer-101').click();
+  await expect(page.getByTestId('preset-select')).toContainText('فقاعة حمراء');
+  const before = await page.getByTestId('geometry-x_unit').inputValue();
+  const content = await page.getByTestId('property-content').inputValue();
+  await page.getByTestId('apply-preset').click();
+  await expect(page.getByTestId('text-color')).toHaveValue('#cc0000');
+  await expect(page.getByTestId('geometry-x_unit')).toHaveValue(before);
+  await expect(page.getByTestId('property-content')).toHaveValue(content);
+
+  await page.getByTestId('save-preset-toggle').click();
+  await page.getByTestId('preset-name').fill('نمط شخصي جديد');
+  await page.getByTestId('preset-scope').selectOption('personal');
+  await page.getByTestId('save-preset').click();
+  await expect(page.getByTestId('preset-select')).toContainText('نمط شخصي جديد');
+  await expect(page.getByText('حُفظ النمط.')).toBeVisible();
+});
+
+test('auto-fits text without changing its box and Alt temporarily disables snapping', async ({ page }) => {
+  await page.goto('/tests/editor-shell-fixture.html?mol_page=1');
+  await page.getByTestId('layer-101').click();
+  const element = page.getByTestId('stage-element-101');
+  const before = await element.boundingBox();
+  if (before === null) throw new Error('Element box is missing.');
+  await page.getByTestId('property-content').fill('هذا نص عربي طويل لاختبار الملاءمة التلقائية داخل صندوق الفقاعة من دون تغيير أبعاده');
+  await expect(element).toHaveAttribute('data-fitted-font-size-unit', /\d+/);
+  const after = await element.boundingBox();
+  expect(after).toEqual(before);
+  const overflow = await element.locator('.mol-element-text').evaluate((text) => ({
+    horizontal: text.scrollWidth - text.clientWidth,
+    vertical: text.scrollHeight - text.clientHeight,
+  }));
+  expect(overflow.horizontal).toBeLessThanOrEqual(1);
+  expect(overflow.vertical).toBeLessThanOrEqual(1);
+
+  await expect(page.getByTestId('editor-stage')).toHaveAttribute('data-snapping', 'on');
+  await page.keyboard.down('Alt');
+  await expect(page.getByTestId('editor-stage')).toHaveAttribute('data-snapping', 'off');
+  await page.keyboard.up('Alt');
+  await expect(page.getByTestId('editor-stage')).toHaveAttribute('data-snapping', 'on');
 });
 
 test('keeps an element locked by another editor readable but read-only', async ({ page }) => {

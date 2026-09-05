@@ -425,6 +425,67 @@ body.mol-editor-document {
   color: var(--mol-editor-paper);
 }
 
+.mol-editor-preset-bar {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #735748;
+  border-radius: 8px;
+  background: #261c18;
+}
+
+.mol-editor-preset-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 7px;
+}
+
+.mol-editor-preset-row label,
+.mol-editor-preset-save label {
+  min-width: 0;
+}
+
+.mol-editor-preset-row button,
+.mol-editor-preset-save button {
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid #73534a;
+  border-radius: 6px;
+  color: var(--mol-editor-paper);
+  background: var(--mol-editor-panel-raised);
+  cursor: pointer;
+}
+
+.mol-editor-preset-row button:disabled,
+.mol-editor-preset-save button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.mol-editor-preset-save {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.75fr);
+  gap: 8px;
+  padding-block-start: 10px;
+  border-block-start: 1px solid var(--mol-editor-line);
+}
+
+.mol-editor-preset-save .mol-editor-checkbox {
+  margin: 0;
+}
+
+.mol-editor-preset-save .is-primary {
+  border-color: var(--mol-editor-accent);
+  background: var(--mol-editor-accent);
+}
+
+.mol-editor-preset-status {
+  min-height: 1.3em;
+  color: var(--mol-editor-muted);
+  font-size: 0.68rem;
+}
+
 .mol-editor-lock-fields {
   display: grid;
   min-width: 0;
@@ -990,6 +1051,13 @@ body.mol-editor-document {
 
   .mol-editor-stage-scroll {
     padding: 48px 14px 60px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .mol-editor-preset-row,
+  .mol-editor-preset-save {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

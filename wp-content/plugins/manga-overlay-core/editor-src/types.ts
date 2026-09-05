@@ -1,4 +1,5 @@
 export type ElementType = 'bubble' | 'narration' | 'free_text' | 'sfx';
+export type PresetScope = 'personal' | 'work' | 'global';
 
 export type FontId =
   | 'noto-sans-arabic'
@@ -91,6 +92,20 @@ export interface EditorPageData {
   readonly elements: readonly EditorElement[];
 }
 
+export interface StylePreset {
+  readonly id: number;
+  readonly scope: PresetScope;
+  readonly owner_user_id: number | null;
+  readonly work_id: number | null;
+  readonly name: string;
+  readonly element_type: ElementType;
+  readonly style: Readonly<Record<string, unknown>>;
+  readonly is_default: boolean;
+  readonly created_by: number;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
 export interface EditorBootstrap {
   readonly work: {
     readonly id: number;
@@ -115,6 +130,10 @@ export interface EditorBootstrap {
   readonly links: {
     readonly work: string;
     readonly reader: string | null;
+  };
+  readonly permissions: {
+    readonly manageWorkPresets: boolean;
+    readonly manageGlobalPresets: boolean;
   };
   readonly release: {
     readonly core: string;

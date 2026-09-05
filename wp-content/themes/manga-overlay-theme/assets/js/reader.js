@@ -298,6 +298,50 @@
         return node;
     }
 
+    function largestFittingFontSize(minimum, desired, fits, iterations = 14) {
+        const lowerBound = Math.max(0, Math.min(minimum, desired));
+        const upperBound = Math.max(lowerBound, desired);
+        if (fits(upperBound)) {
+            return upperBound;
+        }
+        if (!fits(lowerBound)) {
+            return lowerBound;
+        }
+        let lower = lowerBound;
+        let upper = upperBound;
+        for (let index = 0; index < iterations; index += 1) {
+            const candidate = (lower + upper) / 2;
+            if (fits(candidate)) {
+                lower = candidate;
+            } else {
+                upper = candidate;
+            }
+        }
+        return lower;
+    }
+
+    function fitOverlayText(node, element, imageWidth) {
+        const elementType = ['bubble', 'narration'].includes(element?.element_type)
+            ? element.element_type
+            : null;
+        const style = elementType ? normalizeStyle(elementType, element?.style) : null;
+        const text = node.querySelector('.mol-element-text');
+        if (!(text instanceof HTMLElement) || !style?.autoFit) {
+            node.removeAttribute('data-fitted-font-size-unit');
+            return null;
+        }
+        const desired = unitToPixels(style.fontSizeUnit, imageWidth);
+        const minimum = unitToPixels(Math.min(style.minFontSizeUnit || style.fontSizeUnit, style.fontSizeUnit), imageWidth);
+        const fitted = largestFittingFontSize(minimum, desired, (fontSize) => {
+            text.style.fontSize = `${fontSize}px`;
+            return text.scrollWidth <= text.clientWidth + 0.5 && text.scrollHeight <= text.clientHeight + 0.5;
+        });
+        text.style.fontSize = `${fitted}px`;
+        const fittedUnit = Math.round(fitted / imageWidth * MOL_UNIT);
+        node.dataset.fittedFontSizeUnit = String(fittedUnit);
+        return fittedUnit;
+    }
+
     function createProgressPayload(chapterId, pageIndex, progressUnit, readerMode) {
         return {
             chapter_id: integer(chapterId, 0, 1),
@@ -392,10 +436,16 @@
             }
             const elements = groups.get(Number(frame.dataset.pageId)) || [];
             const fragment = document.createDocumentFragment();
+            const nodes = [];
             for (const element of elements) {
-                fragment.append(createOverlayNode(element, imageWidth, targetLanguage));
+                const node = createOverlayNode(element, imageWidth, targetLanguage);
+                fragment.append(node);
+                nodes.push([node, element]);
             }
             layer.replaceChildren(fragment);
+            for (const [node, element] of nodes) {
+                fitOverlayText(node, element, imageWidth);
+            }
             renderedFrames.add(frame);
         };
 
@@ -414,6 +464,15 @@
             if (image instanceof HTMLImageElement && resizeObserver) {
                 resizeObserver.observe(image);
             }
+        }
+        if ('fonts' in document) {
+            void document.fonts.ready.then(() => {
+                for (const frame of frames) {
+                    if (renderedFrames.has(frame)) {
+                        renderFrame(frame, true);
+                    }
+                }
+            });
         }
 
         let translationVisible = Boolean(config.hasTranslation);
@@ -873,6 +932,7 @@
         asPercentage,
         clamp,
         createProgressPayload,
+        largestFittingFontSize,
         normalizeDirection,
         normalizeMode,
         normalizeStyle,

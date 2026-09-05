@@ -75,15 +75,24 @@ export function EditorStage({
   const resizeDraftRef = useRef<ActiveResizeDraft | null>(null);
   const rotateDraftRef = useRef<RotateDraft | null>(null);
   const [target, setTarget] = useState<HTMLElement | null>(null);
+  const [elementGuidelines, setElementGuidelines] = useState<HTMLElement[]>([]);
+  const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
+  const [snappingEnabled, setSnappingEnabled] = useState(true);
   const selectedElement = elements.find((element) => element.id === selectedId) ?? null;
 
   const refreshTarget = useCallback((): void => {
     const layer = layerRef.current;
     if (layer === null || selectedId === null || preview) {
       setTarget(null);
+      setElementGuidelines([]);
+      setStageSize({ width: layer?.clientWidth ?? 0, height: layer?.clientHeight ?? 0 });
       return;
     }
-    setTarget(layer.querySelector<HTMLElement>(`[data-element-id="${selectedId}"]`));
+    const nextTarget = layer.querySelector<HTMLElement>(`[data-element-id="${selectedId}"]`);
+    setTarget(nextTarget);
+    setElementGuidelines(Array.from(layer.querySelectorAll<HTMLElement>('.mol-overlay-element'))
+      .filter((element) => element !== nextTarget));
+    setStageSize({ width: layer.clientWidth, height: layer.clientHeight });
   }, [preview, selectedId]);
 
   useLayoutEffect(() => {
@@ -113,6 +122,29 @@ export function EditorStage({
     observer.observe(layer, { childList: true });
     return () => observer.disconnect();
   }, [refreshTarget]);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (stage === null) return undefined;
+    const observer = new ResizeObserver(() => refreshTarget());
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [refreshTarget]);
+
+  useEffect(() => {
+    const disableSnapping = (event: KeyboardEvent): void => {
+      if (event.key === 'Alt') setSnappingEnabled(false);
+    };
+    const restoreSnapping = (): void => setSnappingEnabled(true);
+    window.addEventListener('keydown', disableSnapping);
+    window.addEventListener('keyup', restoreSnapping);
+    window.addEventListener('blur', restoreSnapping);
+    return () => {
+      window.removeEventListener('keydown', disableSnapping);
+      window.removeEventListener('keyup', restoreSnapping);
+      window.removeEventListener('blur', restoreSnapping);
+    };
+  }, []);
 
   useEffect(() => {
     const layer = layerRef.current;
@@ -260,6 +292,7 @@ export function EditorStage({
         ref={stageRef}
         className="mol-editor-stage"
         data-testid="editor-stage"
+        data-snapping={snappingEnabled ? 'on' : 'off'}
         style={{
           aspectRatio: ratio,
           width: `${zoom * 100}%`,
@@ -297,7 +330,15 @@ export function EditorStage({
             draggable={!readOnlySelected}
             resizable={!readOnlySelected}
             rotatable={!readOnlySelected}
-            snappable={false}
+            snappable={snappingEnabled && !readOnlySelected}
+            snapContainer={stageRef.current}
+            snapDirections={{ left: true, top: true, right: true, bottom: true, center: true, middle: true }}
+            elementSnapDirections={{ left: true, top: true, right: true, bottom: true, center: true, middle: true }}
+            elementGuidelines={elementGuidelines}
+            verticalGuidelines={[0, stageSize.width / 2, stageSize.width]}
+            horizontalGuidelines={[0, stageSize.height / 2, stageSize.height]}
+            snapThreshold={Math.max(3, 6 / zoom)}
+            isDisplaySnapDigit={false}
             renderDirections={readOnlySelected ? [] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']}
             rotationPosition="top"
             origin={false}

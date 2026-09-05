@@ -1,4 +1,11 @@
-import type { EditorBootstrap, EditorElement, LockLease } from './types';
+import type {
+  EditorBootstrap,
+  EditorElement,
+  ElementType,
+  LockLease,
+  PresetScope,
+  StylePreset,
+} from './types';
 
 interface ElementResponse {
   readonly data: EditorElement;
@@ -13,6 +20,16 @@ interface LockResponse {
 interface ElementListResponse {
   readonly data: readonly EditorElement[];
   readonly meta: Readonly<Record<string, unknown>>;
+}
+
+interface PresetResponse {
+  readonly data: StylePreset;
+  readonly meta: Readonly<Record<string, unknown>>;
+}
+
+interface PresetListResponse {
+  readonly data: readonly StylePreset[];
+  readonly meta: { readonly count: number };
 }
 
 interface ErrorResponse {
@@ -133,6 +150,47 @@ export class ElementApi {
         'X-MOL-Lock-Token': lockToken,
       },
     });
+  }
+
+  public async listPresets(workId: number, elementType: ElementType): Promise<readonly StylePreset[]> {
+    const response = await this.request<PresetListResponse>('presets', {
+      method: 'GET',
+      query: { work_id: String(workId), type: elementType },
+    });
+
+    return response.data;
+  }
+
+  public async createPreset(input: {
+    readonly scope: PresetScope;
+    readonly work_id: number | null;
+    readonly name: string;
+    readonly element_type: ElementType;
+    readonly style: Readonly<Record<string, unknown>>;
+    readonly is_default: boolean;
+  }): Promise<StylePreset> {
+    const response = await this.request<PresetResponse>('presets', {
+      method: 'POST',
+      body: input,
+    });
+
+    return response.data;
+  }
+
+  public async updatePreset(
+    presetId: number,
+    patch: Readonly<{ name?: string; style?: Readonly<Record<string, unknown>>; is_default?: boolean }>,
+  ): Promise<StylePreset> {
+    const response = await this.request<PresetResponse>(`presets/${presetId}`, {
+      method: 'PATCH',
+      body: patch,
+    });
+
+    return response.data;
+  }
+
+  public async deletePreset(presetId: number): Promise<void> {
+    await this.request<null>(`presets/${presetId}`, { method: 'DELETE' });
   }
 
   private async request<T>(

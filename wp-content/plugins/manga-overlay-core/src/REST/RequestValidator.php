@@ -295,6 +295,91 @@ final class RequestValidator
     }
 
     /**
+     * @param mixed $payload
+     * @return array{
+     *   scope: string,
+     *   work_id: int|null,
+     *   name: string,
+     *   element_type: string,
+     *   style: array<string, mixed>,
+     *   is_default: bool
+     * }
+     */
+    public static function presetCreate(mixed $payload): array
+    {
+        $data = self::object($payload, array(
+            'scope', 'work_id', 'name', 'element_type', 'style', 'is_default',
+        ));
+        foreach (array('scope', 'name', 'element_type', 'style') as $field) {
+            if (! array_key_exists($field, $data)) {
+                throw ApiException::invalidParams(sprintf('%s is required.', $field));
+            }
+        }
+        if (! is_string($data['scope'])
+            || ! in_array($data['scope'], array('personal', 'work', 'global'), true)
+        ) {
+            throw ApiException::invalidParams('scope contains an unsupported value.');
+        }
+        $workId = null;
+        if (array_key_exists('work_id', $data) && null !== $data['work_id']) {
+            $workId = self::positiveInteger($data['work_id'], 'work_id');
+        }
+        $elementType = self::elementType($data['element_type']);
+        if (array_key_exists('is_default', $data) && ! is_bool($data['is_default'])) {
+            throw ApiException::invalidParams('is_default must be a boolean.');
+        }
+
+        return array(
+            'scope' => $data['scope'],
+            'work_id' => $workId,
+            'name' => self::requiredText($data['name'], 'name', 100),
+            'element_type' => $elementType,
+            'style' => self::style($data['style'], $elementType),
+            'is_default' => (bool) ($data['is_default'] ?? false),
+        );
+    }
+
+    /** @param mixed $payload @return array<string, mixed> */
+    public static function presetPatch(mixed $payload): array
+    {
+        $data = self::object($payload, array('name', 'style', 'is_default'));
+        if (array() === $data) {
+            throw ApiException::invalidParams('At least one preset field is required.');
+        }
+        if (array_key_exists('name', $data)) {
+            $data['name'] = self::requiredText($data['name'], 'name', 100);
+        }
+        if (array_key_exists('style', $data)
+            && (! is_array($data['style']) || (array() !== $data['style'] && array_is_list($data['style'])))
+        ) {
+            throw ApiException::invalidParams('style must be a JSON object.');
+        }
+        if (array_key_exists('is_default', $data) && ! is_bool($data['is_default'])) {
+            throw ApiException::invalidParams('is_default must be a boolean.');
+        }
+
+        return $data;
+    }
+
+    /** @return array{work_id: int|null, element_type: string|null} */
+    public static function presetQuery(mixed $workId, mixed $elementType): array
+    {
+        $normalizedWorkId = null;
+        if (null !== $workId && '' !== $workId) {
+            if (is_string($workId) && ctype_digit($workId)) {
+                $workId = (int) $workId;
+            }
+            $normalizedWorkId = self::positiveInteger($workId, 'work_id');
+        }
+        $normalizedType = null;
+        if (null !== $elementType && '' !== $elementType) {
+            $normalizedType = self::elementType($elementType);
+        }
+
+        return array('work_id' => $normalizedWorkId, 'element_type' => $normalizedType);
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */

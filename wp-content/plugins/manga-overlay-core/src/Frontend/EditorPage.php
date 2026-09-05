@@ -95,6 +95,7 @@ final class EditorPage
      *   targetLanguage: string,
      *   api: array{root: string, nonce: string},
      *   links: array{work: string, reader: string|null},
+     *   permissions: array{manageWorkPresets: bool, manageGlobalPresets: bool},
      *   release: array{core: string}
      * }
      */
@@ -160,6 +161,10 @@ final class EditorPage
             'links' => array(
                 'work' => $workUrl,
                 'reader' => $readerUrl,
+            ),
+            'permissions' => array(
+                'manageWorkPresets' => current_user_can('mol_manage_work_presets'),
+                'manageGlobalPresets' => current_user_can('mol_manage_global_presets'),
             ),
             'release' => array('core' => MOL_PLUGIN_VERSION),
         );

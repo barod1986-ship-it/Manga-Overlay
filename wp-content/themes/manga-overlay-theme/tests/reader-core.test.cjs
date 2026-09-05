@@ -42,3 +42,10 @@ test('renderer style normalization keeps only safe values', () => {
     assert.equal(style.fontSizeUnit, 200_000);
     assert.equal(style.shape, 'ellipse');
 });
+
+test('auto-fit binary search keeps the box-independent size inside bounds', () => {
+    assert.equal(reader.largestFittingFontSize(12, 30, () => true), 30);
+    const fitted = reader.largestFittingFontSize(12, 30, (size) => size <= 21.25);
+    assert.ok(fitted > 21.24 && fitted <= 21.25);
+    assert.equal(reader.largestFittingFontSize(12, 30, () => false), 12);
+});

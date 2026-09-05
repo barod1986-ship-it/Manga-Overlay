@@ -18,4 +18,10 @@ export {
   unitToPixels,
 } from './geometry';
 export type { CssGeometry, PixelGeometry } from './geometry';
-export { createOverlayNode, normalizeElementStyle, OverlayRenderer } from './renderer';
+export {
+  createOverlayNode,
+  fitOverlayText,
+  largestFittingFontSize,
+  normalizeElementStyle,
+  OverlayRenderer,
+} from './renderer';

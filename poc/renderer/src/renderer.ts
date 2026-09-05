@@ -197,6 +197,48 @@ function createTextNode(element: OverlayElement, style: ElementStyle, imageWidth
   return text;
 }
 
+export function largestFittingFontSize(
+  minimum: number,
+  desired: number,
+  fits: (fontSize: number) => boolean,
+  iterations = 14,
+): number {
+  const lowerBound = Math.max(0, Math.min(minimum, desired));
+  const upperBound = Math.max(lowerBound, desired);
+  if (fits(upperBound)) return upperBound;
+  if (!fits(lowerBound)) return lowerBound;
+
+  let lower = lowerBound;
+  let upper = upperBound;
+  for (let index = 0; index < iterations; index += 1) {
+    const candidate = (lower + upper) / 2;
+    if (fits(candidate)) lower = candidate;
+    else upper = candidate;
+  }
+  return lower;
+}
+
+export function fitOverlayText(node: HTMLElement, element: OverlayElement, imageWidth: number): number | null {
+  const style = normalizeElementStyle(element.element_type, element.style);
+  const text = node.querySelector<HTMLElement>('.mol-element-text');
+  if (text === null || style.autoFit !== true || !['bubble', 'narration'].includes(element.element_type)) {
+    node.removeAttribute('data-fitted-font-size-unit');
+    return null;
+  }
+
+  const desired = unitToPixels(style.fontSizeUnit, imageWidth);
+  const minimum = unitToPixels(Math.min(style.minFontSizeUnit ?? style.fontSizeUnit, style.fontSizeUnit), imageWidth);
+  const fitted = largestFittingFontSize(minimum, desired, (fontSize) => {
+    text.style.fontSize = `${fontSize}px`;
+    return text.scrollWidth <= text.clientWidth + 0.5 && text.scrollHeight <= text.clientHeight + 0.5;
+  });
+  text.style.fontSize = `${fitted}px`;
+  const fittedUnit = Math.round(fitted / imageWidth * 1_000_000);
+  node.dataset.fittedFontSizeUnit = String(fittedUnit);
+
+  return fittedUnit;
+}
+
 export function createOverlayNode(element: OverlayElement, imageWidth: number, selected = false): HTMLElement {
   const geometry = toCssGeometry(element);
   const style = normalizeElementStyle(element.element_type, element.style);
@@ -239,6 +281,7 @@ export class OverlayRenderer {
   readonly #resizeObserver: ResizeObserver;
   #elements: readonly OverlayElement[];
   #selectedId: number | null;
+  #mounted = false;
 
   constructor(layer: HTMLElement, frame: HTMLElement, image: HTMLImageElement, elements: readonly OverlayElement[], selectedId: number | null = null) {
     this.#layer = layer;
@@ -250,12 +293,19 @@ export class OverlayRenderer {
   }
 
   mount(): void {
+    this.#mounted = true;
     this.#image.addEventListener('load', this.render);
     this.#resizeObserver.observe(this.#frame);
     this.render();
+    if ('fonts' in document) {
+      void document.fonts.ready.then(() => {
+        if (this.#mounted) this.render();
+      });
+    }
   }
 
   destroy(): void {
+    this.#mounted = false;
     this.#image.removeEventListener('load', this.render);
     this.#resizeObserver.disconnect();
     this.#layer.replaceChildren();
@@ -299,6 +349,7 @@ export class OverlayRenderer {
 
       const nodeAtIndex = this.#layer.children.item(index);
       if (nodeAtIndex !== node) this.#layer.insertBefore(node, nodeAtIndex);
+      fitOverlayText(node, element, imageWidth);
       retained.add(node);
     });
 

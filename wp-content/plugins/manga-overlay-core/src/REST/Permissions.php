@@ -24,6 +24,11 @@ final class Permissions
         return self::requireCapability('mol_manage_content');
     }
 
+    public static function useEditor(): bool|\WP_Error
+    {
+        return self::requireCapability('mol_use_editor');
+    }
+
     public static function uploadContent(): bool|\WP_Error
     {
         return self::requireCapability('mol_upload_content');

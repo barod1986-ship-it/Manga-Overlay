@@ -7,6 +7,8 @@ import React, {
   useState,
 } from 'react';
 import { EditorStage } from './EditorStage';
+import { autoFitTogglePatch, fittedFontSizeUnit } from './autoFit';
+import { PresetBar } from './PresetBar';
 import {
   ELEMENT_LABELS,
   SHAPE_OPTIONS,
@@ -210,6 +212,33 @@ function StyleFields({
             </select>
           </label>
           <PercentInput label="الحجم" value={unitsToPercent(style.fontSizeUnit)} maximum={20} onChange={(value) => patchStyle({ fontSizeUnit: Math.round(value * 10_000) })} />
+          {(element.element_type === 'bubble' || element.element_type === 'narration') && (
+            <>
+              <label className="mol-editor-checkbox is-wide">
+                <input
+                  type="checkbox"
+                  checked={style.autoFit === true}
+                  data-testid="auto-fit-toggle"
+                  onChange={(event) => patchStyle(autoFitTogglePatch(
+                    style,
+                    event.target.checked,
+                    fittedFontSizeUnit(element.id),
+                  ))}
+                />
+                <span>ملاءمة النص تلقائيًا داخل الصندوق</span>
+              </label>
+              {style.autoFit === true && (
+                <PercentInput
+                  label="أصغر حجم"
+                  value={unitsToPercent(style.minFontSizeUnit ?? 1_000)}
+                  minimum={0.1}
+                  maximum={10}
+                  testId="auto-fit-minimum"
+                  onChange={(value) => patchStyle({ minFontSizeUnit: Math.round(value * 10_000) })}
+                />
+              )}
+            </>
+          )}
           <label>
             <span>السماكة</span>
             <select value={style.fontWeight} onChange={(event) => patchStyle({ fontWeight: Number(event.target.value) as ElementStyle['fontWeight'] })}>
@@ -282,6 +311,7 @@ function StyleFields({
 }
 
 function PropertiesPanel({
+  data,
   element,
   onUpdate,
   onDuplicate,
@@ -291,6 +321,7 @@ function PropertiesPanel({
   lockedBy,
   onLayer,
 }: {
+  readonly data: EditorBootstrap;
   readonly element: EditorElement | null;
   readonly onUpdate: (update: (element: EditorElement) => EditorElement) => void;
   readonly onDuplicate: () => void;
@@ -313,6 +344,7 @@ function PropertiesPanel({
               {lockedBy === null ? 'جارٍ الحصول على قفل التحرير…' : `يحرر ${lockedBy} هذا العنصر الآن. يمكنك قراءته فقط.`}
             </p>
           )}
+          <PresetBar data={data} element={element} disabled={readOnly} onUpdate={onUpdate} />
           <fieldset className="mol-editor-lock-fields" disabled={readOnly}>
           <label>
             <span>النص العربي</span>
@@ -576,7 +608,7 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
         <nav className="mol-editor-toolbar" aria-label="أدوات المحرر">
           <button type="button" aria-pressed={state.selectedElementId === null} onClick={() => dispatch({ type: 'select-element', id: null })}><span aria-hidden="true">↖</span>تحديد</button>
           {ADD_TOOLS.map((tool) => <button key={tool.type} type="button" data-testid={`add-${tool.type}`} aria-label={tool.label} onClick={() => addElement(tool.type)}><span aria-hidden="true">{tool.glyph}</span>{tool.shortLabel}</button>)}
-          <span className="mol-editor-toolbar-note">T‑13 · أقفال وتعارض آمن</span>
+          <span className="mol-editor-toolbar-note">T‑15 · أنماط وملاءمة ومحاذاة ذكية</span>
         </nav>
       )}
 
@@ -600,7 +632,7 @@ export function EditorApp({ data }: { readonly data: EditorBootstrap }) {
               {!state.preview && <div role="group" aria-label="تكبير مساحة العمل"><button type="button" aria-label="تصغير" onClick={() => dispatch({ type: 'set-zoom', zoom: state.zoom - 0.25 })}>−</button><output>{Math.round(state.zoom * 100)}%</output><button type="button" aria-label="تكبير" onClick={() => dispatch({ type: 'set-zoom', zoom: state.zoom + 0.25 })}>＋</button><button type="button" onClick={() => dispatch({ type: 'set-zoom', zoom: 1 })}>ملاءمة</button></div>}
             </div>
           </main>
-          {!state.preview && <PropertiesPanel element={selectedElement} onUpdate={(update) => selectedElement !== null && updateElement(selectedElement.id, update)} onDuplicate={duplicateSelected} onDelete={deleteSelected} deleteDisabled={selectedElement !== null && (autosave.isSaving(selectedElement.id) || autosave.isReadOnly(selectedElement.id))} readOnly={selectedElement !== null && autosave.isReadOnly(selectedElement.id)} lockedBy={selectedElement === null ? null : autosave.lockedBy(selectedElement.id)} onLayer={moveSelectedLayer} />}
+          {!state.preview && <PropertiesPanel data={data} element={selectedElement} onUpdate={(update) => selectedElement !== null && updateElement(selectedElement.id, update)} onDuplicate={duplicateSelected} onDelete={deleteSelected} deleteDisabled={selectedElement !== null && (autosave.isSaving(selectedElement.id) || autosave.isReadOnly(selectedElement.id))} readOnly={selectedElement !== null && autosave.isReadOnly(selectedElement.id)} lockedBy={selectedElement === null ? null : autosave.lockedBy(selectedElement.id)} onLayer={moveSelectedLayer} />}
         </div>
       )}
       <span className="mol-editor-release" aria-hidden="true">Core {data.release.core}</span>

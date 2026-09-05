@@ -48,7 +48,7 @@ jobs:
         run: |
           test -s wp-content/plugins/manga-overlay-core/assets/dist/editor.js
           test -s wp-content/plugins/manga-overlay-core/assets/dist/editor.css
-          grep -F 'Version:           0.11.0' wp-content/plugins/manga-overlay-core/manga-overlay-core.php
+          grep -F 'Version:           0.12.0' wp-content/plugins/manga-overlay-core/manga-overlay-core.php
           mkdir -p build/manga-overlay-core
           rsync -a --exclude='tests/' wp-content/plugins/manga-overlay-core/ build/manga-overlay-core/
           (cd build && zip -qr manga-overlay-core.zip manga-overlay-core)

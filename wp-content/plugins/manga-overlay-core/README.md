@@ -1,6 +1,6 @@
 # Manga Overlay Core
 
-WordPress domain, persistence, content-management, public-read, reading-progress, and element-editor services through T-14 for Master Spec v1.1.3.
+WordPress domain, persistence, content-management, public-read, reading-progress, and element-editor services through T-15 for Master Spec v1.1.3.
 
 ## Scope
 
