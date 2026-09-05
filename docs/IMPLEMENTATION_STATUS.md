@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 ## T-00 — Environment
 
@@ -352,7 +352,7 @@ Implemented and verified:
 - [PHP Bootstrap run #49](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33965835909) passed PHP 8.4 checks and produced the installable Core 0.10.1 artifact.
 - [Public Theme run #33](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33965835863) remained green.
 
-T-13 is complete at the implementation and CI levels. The staging installation, lease lifecycle, successful conditional update, and stale `If-Match`/412 conflict smoke tests passed below. The deliberate missing-header probe that must return `428` remains an open deployment gate.
+T-13 is complete at the implementation, CI, and staging levels. The staging installation, lease lifecycle, successful conditional update, stale `If-Match`/412 conflict, and missing `If-Match`/428 reverse-proxy smoke tests all passed below.
 
 ### T-13 staging installation and lease smoke test
 
@@ -374,4 +374,6 @@ On 2026-09-05, the exact Core 0.10.1 artifact from PHP Bootstrap run #49 at PR s
 - A different temporary edit from the stale second tab produced `412 mol_version_conflict`. The comparison card showed local version 5 and current server version 6 without overwriting either value.
 - Clicking `استخدام الحالية` with a real pointer dismissed the card and adopted the server value. This verifies the Core 0.10.1 stacking fix that prevents Moveable controls from intercepting conflict-action clicks.
 - The original Arabic demo text `اختبار T‑12 — تعديل محفوظ عبر PATCH` was restored, autosaved, and confirmed after a fresh reload. Both editor selections were released at the end of the test.
-- Successful and stale `If-Match` behavior is therefore verified through the actual staging hostname. A direct missing-header request returning `428` remains the only open reverse-proxy header case.
+- Successful and stale `If-Match` behavior is verified through the actual staging hostname.
+- The owner then sent an authenticated `PATCH /wp-json/mol/v1/elements/1` through the same staging hostname with a valid JSON patch but deliberately omitted both `If-Match` and the element lock token. WordPress returned HTTP `428 Precondition Required` with code `mol_precondition_required`, message `If-Match is required for this operation.`, and `Cache-Control: no-cache, must-revalidate, max-age=0, no-store, private`.
+- Because the request failed at the required precondition before lease validation or persistence, no element mutation occurred. This closes the final T-13 reverse-proxy header gate: correct → success, stale → 412, and missing → 428.
