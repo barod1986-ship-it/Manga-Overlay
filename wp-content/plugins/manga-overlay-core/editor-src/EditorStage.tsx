@@ -38,11 +38,20 @@ interface DragDraft {
 
 interface RotateDraft {
   readonly id: number;
+  readonly initialDegrees: number;
   readonly degrees: number;
 }
 
 interface ActiveResizeDraft extends ResizeDraft {
   readonly id: number;
+  readonly initialWidth: number;
+  readonly initialHeight: number;
+}
+
+const TRANSFORM_EPSILON = 0.01;
+
+function isEffectivelyZero(value: number): boolean {
+  return Math.abs(value) <= TRANSFORM_EPSILON;
 }
 
 export function EditorStage({
@@ -159,6 +168,7 @@ export function EditorStage({
     dragDraftRef.current = null;
     const size = currentStageSize();
     if (draft === null || size.width <= 0 || size.height <= 0) return;
+    if (isEffectivelyZero(draft.translateX) && isEffectivelyZero(draft.translateY)) return;
     onCommit(draft.id, (element) => moveElementByPixels(element, draft.translateX, draft.translateY, size));
   };
 
@@ -171,6 +181,8 @@ export function EditorStage({
     }
     resizeDraftRef.current = {
       id: selectedElement.id,
+      initialWidth: event.target.clientWidth,
+      initialHeight: event.target.clientHeight,
       translateX: 0,
       translateY: 0,
       width: event.target.clientWidth,
@@ -186,6 +198,8 @@ export function EditorStage({
     if (selectedElement !== null) {
       resizeDraftRef.current = {
         id: selectedElement.id,
+        initialWidth: resizeDraftRef.current?.initialWidth ?? event.target.clientWidth,
+        initialHeight: resizeDraftRef.current?.initialHeight ?? event.target.clientHeight,
         translateX,
         translateY,
         width: event.width,
@@ -199,6 +213,12 @@ export function EditorStage({
     resizeDraftRef.current = null;
     const size = currentStageSize();
     if (draft === null || size.width <= 0 || size.height <= 0) return;
+    if (
+      isEffectivelyZero(draft.translateX)
+      && isEffectivelyZero(draft.translateY)
+      && isEffectivelyZero(draft.width - draft.initialWidth)
+      && isEffectivelyZero(draft.height - draft.initialHeight)
+    ) return;
     onCommit(draft.id, (element) => resizeElementFromPixels(element, draft, size));
   };
 
@@ -206,20 +226,24 @@ export function EditorStage({
     if (selectedElement === null) return;
     const degrees = selectedElement.rotation_mdeg / 1_000;
     event.set(degrees);
-    rotateDraftRef.current = { id: selectedElement.id, degrees };
+    rotateDraftRef.current = { id: selectedElement.id, initialDegrees: degrees, degrees };
   };
 
   const handleRotate = (event: OnRotate): void => {
     if (selectedElement === null) return;
     const style = resolvedStyle(selectedElement);
     event.target.style.transform = `rotate(${event.rotation}deg) scale(${style.scaleX ?? 1}, ${style.scaleY ?? 1})`;
-    rotateDraftRef.current = { id: selectedElement.id, degrees: event.rotation };
+    rotateDraftRef.current = {
+      id: selectedElement.id,
+      initialDegrees: rotateDraftRef.current?.initialDegrees ?? selectedElement.rotation_mdeg / 1_000,
+      degrees: event.rotation,
+    };
   };
 
   const handleRotateEnd = (): void => {
     const draft = rotateDraftRef.current;
     rotateDraftRef.current = null;
-    if (draft !== null) {
+    if (draft !== null && !isEffectivelyZero(draft.degrees - draft.initialDegrees)) {
       onCommit(draft.id, (element) => rotateElementToDegrees(element, draft.degrees));
     }
   };

@@ -181,7 +181,8 @@ test('keeps dirty edits in the tab while offline and sends them after reconnect'
   await context.setOffline(true);
   await page.getByTestId('add-free_text').click();
   await page.getByTestId('property-content').fill('نص أثناء انقطاع الشبكة');
-  await expect(page.getByTestId('save-state')).toHaveText('غير متصل — لم تُرسل تغييرات هذه الجلسة');
+  await expect(page.getByTestId('save-state')).toHaveAttribute('data-state', 'offline');
+  await expect(page.getByTestId('save-state')).toContainText('غير متصل — لم تُرسل تغييرات هذه الجلسة');
 
   await context.setOffline(false);
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
