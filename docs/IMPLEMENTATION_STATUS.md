@@ -235,7 +235,7 @@ On 2026-09-04, the exact artifacts produced for PR head `a005b25` were installed
 - Authenticated progress reported a successful save; a full reload restored paged mode and page 2.
 - The first image remained eager/high-priority, the nearby second image was promoted with low fetch priority, and both retained explicit width/height attributes.
 - No JavaScript error originated from the staging site or reader. Messages emitted only by the controlled browser extension were excluded from the application result.
-- The smoke chapter currently contains zero Arabic translation elements, so WordPress correctly rendered the translation toggle disabled. CI verifies safe DOM/SVG rendering, instant hide/show without image reload, and normalized placement at 360/768/1440; a visual staging overlay check remains pending until demo data includes at least one translation element.
+- At the time of the T-09 smoke test the chapter contained zero Arabic translation elements, so WordPress correctly rendered the translation toggle disabled. The later T-12 staging test added a persisted Arabic bubble and verified its public rendering plus instant hide/show without replacing the page image, closing this visual staging gate.
 - Physical iOS/Android and final Safari/Arabic-font evidence remain release gates and are not waived by this staging smoke test.
 
 ## T-10 — React editor shell
@@ -315,9 +315,22 @@ Implemented and verified:
 - Moveable commits only a real completed drag/resize/rotation. Per-frame pointer updates and zero-distance clicks perform no network write, preventing duplicate PATCH traffic during gesture rendering.
 - WordPress integration tests cover successful create/update/delete, idempotent replay, ETags, lease ownership, stale/missing preconditions, strict payload rejection, rate limiting, style resolution, and dependency cleanup on both supported database engines.
 - Editor unit tests report `12/12` passing, and the production TypeScript/Vite build succeeds. The editor Playwright suite reports `15/15` passing across Chromium, Firefox, and WebKit, including autosave, offline recovery, strict request sequencing, and end-of-gesture persistence.
-- [Frontend PoC run #45](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931637153) passed all unit/build and browser suites.
-- [Database Matrix run #37](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931637161) passed on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
-- [PHP Bootstrap run #41](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931637162) passed PHP 8.4 checks and produced the installable Core 0.9.0 artifact.
-- [Public Theme run #25](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931637174) remained green.
+- [Frontend PoC run #46](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931887411) passed all unit/build and browser suites.
+- [Database Matrix run #38](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931887495) passed on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #42](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931887312) passed PHP 8.4 checks and produced the installable Core 0.9.0 artifact.
+- [Public Theme run #26](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33931887365) remained green.
 
-T-12 is complete at the implementation and CI levels. Installing Core 0.9.0 and exercising persistence on staging remain the next verification gate. T-13 retains lease renewal/release/force-release, complete conflict UX, and reverse-proxy concurrency validation; those concerns are not claimed by T-12.
+T-12 is complete at the implementation, CI, and staging levels. T-13 retains lease renewal/release/force-release, complete conflict UX, and reverse-proxy concurrency validation; those concerns are not claimed by T-12.
+
+### T-12 staging smoke test
+
+On 2026-09-05, the exact Core 0.9.0 artifact from PHP Bootstrap run #42 at PR head `4b377af` was installed over Core 0.8.0 on the project staging site. The GitHub artifact digest was `36460e65adb9a50889346141c92a57be24bdbef4739bd378a6a2d9c7d329e2f4`; the inner installable ZIP SHA-256 was `c8ecb9f05600c4d6e2f94e6c827c268bf321fa70319bef05aa62623289634580`.
+
+- WordPress reported Manga Overlay Core 0.9.0 active, and the canonical editor loaded with the T-12 autosave UI.
+- Creating an Arabic bubble moved the visible save state through `dirty -> saving -> saved`, assigned persisted element ID `1` at version `1`, and survived a full reload.
+- Editing its Arabic content and normalized X position again moved through the complete save-state sequence. Reloaded bootstrap data showed version `2`, `x_unit=425000`, and the updated content, proving the persisted PATCH rather than a React-only change.
+- A real Moveable drag saved at gesture end. One reload showed exactly one version increase from `2` to `3` with `x_unit=485606` and `y_unit=301242`; the no-frame-write behavior remains covered across all three CI browser engines.
+- A temporary narration element persisted as ID `2`, then DELETE moved through `saving -> saved`. After reload, ID `2` and its content were absent while ID `1` remained.
+- The public reader reported one translation element and rendered the Arabic bubble over page 1. The translation control hid and restored the overlay immediately; the page image remained complete with the same source URL.
+- No warning or error originated from the staging site. Repeated metadata errors emitted only by the controlled browser extension were excluded from the application result.
+- Offline recovery remains established by the green Chromium/Firefox/WebKit suite; the staging browser session did not expose a network-offline control, so this smoke test does not claim a separate manual offline run.

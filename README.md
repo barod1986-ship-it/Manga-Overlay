@@ -4,7 +4,7 @@
 
 ## حالة المشروع
 
-المشروع في مرحلة تنفيذ الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات وإدارة المحتوى وواجهات القراءة العامة والقالب والقارئ ومحرر العناصر حتى T‑12 على مستوى التنفيذ وCI. موقع التجارب مثبت حتى T‑11، واختبار حزمة T‑12 التالية ما زال بوابة مستقلة.
+المشروع في مرحلة تنفيذ الـMVP وفق **Manga Overlay Master Spec v1.1.3**. اكتملت نواة الإضافة ومخطط البيانات وإدارة المحتوى وواجهات القراءة العامة والقالب والقارئ ومحرر العناصر حتى T‑12 على مستوى التنفيذ وCI وموقع التجارب.
 
 | المهمة | الحالة |
 |---|---|
@@ -17,10 +17,10 @@
 | T-06 — Chapter/page management | مكتمل: CRUD + upload queue + MIME/decoder checks + idempotency + reorder ثنائي المرحلة + review policy |
 | T-07 — Public data APIs | مكتمل: library/work/chapter/page/element/contributor/profile reads مع visibility وcache contracts |
 | T-08 — Public library theme | مكتمل ومختبر على موقع التجارب: الرئيسية والمكتبة وصفحة العمل العربية RTL |
-| T-09 — Chapter reader | مكتمل في CI ومثبّت على staging: Webtoon/Paged وRTL/LTR والتكبير وحفظ التقدم؛ فصل الديمو الحالي بلا عناصر ترجمة |
+| T-09 — Chapter reader | مكتمل في CI ومثبّت على staging: Webtoon/Paged وRTL/LTR والتكبير وحفظ التقدم وطبقة ترجمة فعلية قابلة للإخفاء والإظهار |
 | T-10 — Editor shell | مكتمل في CI وموقع التجارب: بوابة صلاحيات وقالب مستقل وReact state/routing/stage/properties/layers مع Core 0.7.1 |
 | T-11 — Element editing | مكتمل في CI وموقع التجارب مع Core 0.8.0: الأنواع الأربعة وDOM/SVG آمن وMoveable والبدائل الرقمية والخصائص والطبقات؛ الحفظ الشبكي لـT-12 |
-| T-12 — Element writes/autosave | مكتمل في التنفيذ وCI مع Core 0.9.0: REST صارم وETag/If-Match وأقفال قصيرة وIdempotency-Key وحفظ تلقائي واستعادة داخل التبويب؛ اختبار staging معلّق |
+| T-12 — Element writes/autosave | مكتمل في التنفيذ وCI وstaging مع Core 0.9.0: REST صارم وETag/If-Match وأقفال قصيرة وIdempotency-Key وحفظ تلقائي واستعادة داخل التبويب |
 
 ## بنية المستودع
 
