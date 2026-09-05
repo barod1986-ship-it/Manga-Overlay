@@ -334,3 +334,32 @@ On 2026-09-05, the exact Core 0.9.0 artifact from PHP Bootstrap run #42 at PR he
 - The public reader reported one translation element and rendered the Arabic bubble over page 1. The translation control hid and restored the overlay immediately; the page image remained complete with the same source URL.
 - No warning or error originated from the staging site. Repeated metadata errors emitted only by the controlled browser extension were excluded from the application result.
 - Offline recovery remains established by the green Chromium/Firefox/WebKit suite; the staging browser session did not expose a network-offline control, so this smoke test does not claim a separate manual offline run.
+
+## T-13 — Locks and concurrency
+
+Implemented and verified:
+
+- Element leases are atomic and use the frozen 45-second TTL. The editor acquires a lease when a persisted element becomes active, renews it every 15 seconds, and releases it on deselection, page change, or teardown.
+- Renewal and owner release require the exact 256-bit lock token. An expired, released, or replaced token returns `409 mol_lock_lost`; an active lease owned by another editor returns `423 mol_element_locked` with a safe display name.
+- A user with `mol_manage_content` can force-release through the same `DELETE /elements/{id}/lock` route without adding a parallel administrative endpoint.
+- Elements locked by another editor remain visible and selectable but become read-only; their property fields and Moveable controls are disabled until a lease is available.
+- `412 mol_version_conflict` opens a non-destructive comparison card showing the local and current versions. The editor can accept the server version or reapply only fields changed locally over the newest server version.
+- Missing `If-Match` remains an explicit `428` error, while valid ETags, lock tokens, and no-store behavior stay within the strict T-12 write contract.
+- Editor unit tests report `15/15` passing. The production editor browser suite reports `27/27` passing across Chromium, Firefox, and WebKit, including renewal, read-only locks, lock-loss recovery, and 412 conflict reapplication.
+- [Frontend PoC run #50](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33964456211) passed all unit, TypeScript/build, and browser suites.
+- [Database Matrix run #42](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33964456234) passed the lock/write integration suite on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #46](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33964456180) passed PHP 8.4 checks and produced the installable Core 0.10.0 artifact.
+- [Public Theme run #30](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33964456200) remained green.
+
+T-13 is complete at the implementation and CI levels. The staging installation and lease lifecycle smoke test passed below. The full deployment gate that sends successful, stale, and missing `If-Match` requests through the actual staging reverse proxy remains open and is not inferred from localhost integration tests.
+
+### T-13 staging installation and lease smoke test
+
+On 2026-09-05, the exact Core 0.10.0 artifact from PHP Bootstrap run #46 at PR source head `2f86898` was installed over Core 0.9.0 on the project staging site. The published GitHub artifact digest `272e6845f8accece38d7aea11cdba586605930ff39971d50b78c42123638c84c` matched the downloaded archive; the inner installable ZIP SHA-256 was `2b989d5cb570c6fc0ca8b52d1c1213cdce96cbb94dc0eb8ed78c3f8d5377f9ca`.
+
+- WordPress completed the replacement successfully; Manga Overlay Core remained active and reported version 0.10.0.
+- The canonical editor loaded page 1 of the existing two-page smoke chapter and identified itself as `T-13 · أقفال وتعارض آمن`.
+- Selecting persisted element #1 exposed enabled properties and Moveable editing, establishing successful lease acquisition through the staging hostname.
+- After more than one 15-second renewal interval, the element remained editable, the save state remained `تم الحفظ`, and no warning or error originated from the staging site.
+- Pressing Escape deselected the element and returned the properties panel to its empty state, exercising the editor's release lifecycle without changing persisted demo content.
+- The stale and missing `If-Match` reverse-proxy cases were deliberately not claimed by this non-destructive smoke test.
