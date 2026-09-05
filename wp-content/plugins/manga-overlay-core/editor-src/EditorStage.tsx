@@ -79,12 +79,12 @@ export function EditorStage({
 
   const refreshTarget = useCallback((): void => {
     const layer = layerRef.current;
-    if (layer === null || selectedId === null || preview || readOnlySelected) {
+    if (layer === null || selectedId === null || preview) {
       setTarget(null);
       return;
     }
     setTarget(layer.querySelector<HTMLElement>(`[data-element-id="${selectedId}"]`));
-  }, [preview, readOnlySelected, selectedId]);
+  }, [preview, selectedId]);
 
   useLayoutEffect(() => {
     const layer = layerRef.current;
@@ -151,7 +151,7 @@ export function EditorStage({
   };
 
   const handleDragStart = (event: OnDragStart): void => {
-    if (selectedElement === null) return;
+    if (selectedElement === null || readOnlySelected) return;
     event.set([0, 0]);
     event.setTransform(selectedTransform());
     dragDraftRef.current = { id: selectedElement.id, translateX: 0, translateY: 0 };
@@ -175,7 +175,7 @@ export function EditorStage({
   };
 
   const handleResizeStart = (event: OnResizeStart): void => {
-    if (selectedElement === null) return;
+    if (selectedElement === null || readOnlySelected) return;
     event.setOrigin(['50%', '50%']);
     if (event.dragStart !== false) {
       event.dragStart.set([0, 0]);
@@ -225,7 +225,7 @@ export function EditorStage({
   };
 
   const handleRotateStart = (event: OnRotateStart): void => {
-    if (selectedElement === null) return;
+    if (selectedElement === null || readOnlySelected) return;
     const degrees = selectedElement.rotation_mdeg / 1_000;
     event.set(degrees);
     rotateDraftRef.current = { id: selectedElement.id, initialDegrees: degrees, degrees };
@@ -290,15 +290,15 @@ export function EditorStage({
           className={`mol-overlay-layer mol-editor-overlay${preview ? ' is-preview' : ''}`}
           data-testid="overlay-layer"
         />
-        {!preview && !readOnlySelected && target !== null ? (
+        {!preview && target !== null ? (
           <Moveable
             target={target}
             container={stageRef.current}
-            draggable
-            resizable
-            rotatable
+            draggable={!readOnlySelected}
+            resizable={!readOnlySelected}
+            rotatable={!readOnlySelected}
             snappable={false}
-            renderDirections={['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']}
+            renderDirections={readOnlySelected ? [] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']}
             rotationPosition="top"
             origin={false}
             keepRatio={false}

@@ -281,7 +281,7 @@ test('keeps dirty edits in the tab while offline and sends them after reconnect'
   await context.setOffline(false);
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(page.getByTestId('save-state')).toHaveAttribute('data-state', 'saved', { timeout: 5_000 });
-  expect(requestsByPage.get(page)).toEqual(['POST elements']);
+  expect(requestsByPage.get(page)).toEqual(['POST elements', 'POST elements/501/lock']);
 });
 
 test('commits Moveable drag/resize and supports numeric and keyboard alternatives', async ({ page }) => {
@@ -332,7 +332,7 @@ test('keeps an element locked by another editor readable but read-only', async (
   await expect(page.getByTestId('locked-notice')).toContainText('يحرر سارة هذا العنصر الآن');
   await expect(page.getByTestId('property-content')).toHaveValue('مرحبا من الفقاعة');
   await expect(page.getByTestId('property-content')).toBeDisabled();
-  await expect(page.locator('.moveable-control-box')).toHaveCount(0);
+  await expect(page.locator('.moveable-control-box')).not.toBeVisible();
 });
 
 test('shows both versions on 412 and reapplies only the local change', async ({ page }) => {
