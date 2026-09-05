@@ -53,6 +53,18 @@ function molElementWriteUser(string $username, string $role): int
     return (int) $userId;
 }
 
+/** @return list<array<string, mixed>> */
+function molElementWriteContributionsForElement(
+    ContributionRepository $contributions,
+    int $chapterId,
+    int $elementId
+): array {
+    return array_values(array_filter(
+        $contributions->forChapter($chapterId),
+        static fn (array $row): bool => $elementId === (int) $row['element_id']
+    ));
+}
+
 /** @return array<string, mixed> */
 function molElementCreateBody(int $pageId, string $content = 'نص T12 آمن'): array
 {
@@ -346,7 +358,10 @@ molElementWriteAssert(400 === $invalidGeometry->get_status(), 'Cross-field inval
 molElementWriteAssert(2 === (new ElementRepository($wpdb))->find($elementId)['version'], 'Invalid PATCH incremented version.');
 
 $contributions = new ContributionRepository($wpdb);
-$contributions->upsert($elementId, $translatorId, $workId, $chapterId, true);
+$automaticContribution = molElementWriteContributionsForElement($contributions, $chapterId, $elementId);
+molElementWriteAssert(1 === count($automaticContribution), 'Element create/PATCH did not record one contribution.');
+molElementWriteAssert($translatorId === $automaticContribution[0]['user_id'], 'Element contribution used the wrong user.');
+molElementWriteAssert(true === $automaticContribution[0]['created_element'], 'Creator attribution was not recorded.');
 $reports = new ReportRepository($wpdb);
 $reportId = $reports->insert(array(
     'chapter_id' => $chapterId,
@@ -368,7 +383,10 @@ $deleted = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $elementId, nu
 molElementWriteAssert(204 === $deleted->get_status(), 'Conditional element DELETE failed.');
 molElementWriteAssert(null === (new ElementRepository($wpdb))->find($elementId), 'Deleted element still exists.');
 molElementWriteAssert(null === (new ElementLockRepository($wpdb))->findForElement($elementId), 'Element lock was orphaned.');
-molElementWriteAssert(array() === $contributions->forChapter($chapterId), 'Element contribution was orphaned.');
+molElementWriteAssert(
+    array() === molElementWriteContributionsForElement($contributions, $chapterId, $elementId),
+    'Element contribution was orphaned.'
+);
 molElementWriteAssert(null === $reports->find($reportId), 'Element report was orphaned.');
 
 $rateUserId = molElementWriteUser('mol_t12_rate', 'mol_translator');
@@ -385,6 +403,144 @@ remove_filter('mol_element_write_rate_limit', $oneWrite);
 molElementWriteAssert(201 === $rateFirst->get_status(), 'First element write was rate-limited.');
 molElementWriteAssert(429 === $rateSecond->get_status(), 'Element write limiter did not return 429.');
 molElementWriteAssert(isset($rateSecond->get_headers()['Retry-After']), 'Element rate limit omitted Retry-After.');
+
+$t14WorkId = wp_insert_post(array(
+    'post_type' => WorkContent::POST_TYPE,
+    'post_status' => 'publish',
+    'post_title' => 'T14 Contributions',
+), true);
+molElementWriteAssert(is_int($t14WorkId) && $t14WorkId > 0, 'Could not create the T14 work.');
+$t14ChapterId = $chapters->insert(array(
+    'work_id' => $t14WorkId,
+    'chapter_label' => '14',
+    'slug' => 't14-contributions',
+    'translation_status' => 'in_progress',
+    'is_published' => true,
+    'published_at' => current_time('mysql', true),
+    'created_by' => $administratorId,
+));
+$t14PageId = $pages->insert($t14ChapterId, 0, 900_014, 800, 1_200);
+
+wp_set_current_user($translatorId);
+$t14CreateBody = molElementCreateBody($t14PageId, 'عنصر مساهمة T14');
+$t14Created = molElementWriteRequest('POST', '/mol/v1/elements', $t14CreateBody, array(
+    'MOL-Idempotency-Key' => 't14-contribution-element',
+));
+$t14CreatedBody = $t14Created->get_data();
+$t14ElementId = is_array($t14CreatedBody) ? (int) ($t14CreatedBody['data']['id'] ?? 0) : 0;
+molElementWriteAssert(201 === $t14Created->get_status() && $t14ElementId > 0, 'T14 element create failed.');
+
+$t14InitialRows = molElementWriteContributionsForElement($contributions, $t14ChapterId, $t14ElementId);
+molElementWriteAssert(1 === count($t14InitialRows), 'T14 create did not insert exactly one contribution.');
+molElementWriteAssert(true === $t14InitialRows[0]['created_element'], 'T14 create lost creator attribution.');
+$t14InitialContribution = $t14InitialRows[0];
+
+$t14Replay = molElementWriteRequest('POST', '/mol/v1/elements', $t14CreateBody, array(
+    'MOL-Idempotency-Key' => 't14-contribution-element',
+));
+molElementWriteAssert(201 === $t14Replay->get_status(), 'T14 idempotent create replay failed.');
+molElementWriteAssert(
+    $t14InitialRows === molElementWriteContributionsForElement($contributions, $t14ChapterId, $t14ElementId),
+    'Idempotent create replay changed or duplicated the contribution.'
+);
+
+$t14Lock = molElementWriteRequest('POST', '/mol/v1/elements/' . $t14ElementId . '/lock');
+$t14LockBody = $t14Lock->get_data();
+$t14LockToken = is_array($t14LockBody) ? (string) ($t14LockBody['data']['lock_token'] ?? '') : '';
+molElementWriteAssert(200 === $t14Lock->get_status() && 64 === strlen($t14LockToken), 'T14 creator lock failed.');
+
+$t14Version = 1;
+for ($autosave = 1; $autosave <= 10; ++$autosave) {
+    $t14Updated = molElementWriteRequest(
+        'PATCH',
+        '/mol/v1/elements/' . $t14ElementId,
+        array('content' => sprintf('T14 autosave %d', $autosave)),
+        array(
+            'If-Match' => sprintf('"%d"', $t14Version),
+            'X-MOL-Lock-Token' => $t14LockToken,
+        )
+    );
+    $t14UpdatedBody = $t14Updated->get_data();
+    ++$t14Version;
+    molElementWriteAssert(200 === $t14Updated->get_status(), sprintf('T14 autosave %d failed.', $autosave));
+    molElementWriteAssert(
+        is_array($t14UpdatedBody) && $t14Version === (int) ($t14UpdatedBody['data']['version'] ?? 0),
+        sprintf('T14 autosave %d returned the wrong version.', $autosave)
+    );
+}
+
+$t14CreatorRows = molElementWriteContributionsForElement($contributions, $t14ChapterId, $t14ElementId);
+molElementWriteAssert(1 === count($t14CreatorRows), 'Ten autosaves duplicated the creator contribution.');
+molElementWriteAssert(
+    $t14InitialContribution['first_contributed_at'] === $t14CreatorRows[0]['first_contributed_at'],
+    'Autosave changed first_contributed_at.'
+);
+molElementWriteAssert(
+    $t14CreatorRows[0]['last_contributed_at'] >= $t14CreatorRows[0]['first_contributed_at'],
+    'Autosave moved last_contributed_at before the first contribution.'
+);
+molElementWriteAssert(true === $t14CreatorRows[0]['created_element'], 'Autosave cleared creator attribution.');
+
+$t14CreatorRelease = molElementWriteRequest('DELETE', '/mol/v1/elements/' . $t14ElementId . '/lock', null, array(
+    'X-MOL-Lock-Token' => $t14LockToken,
+));
+molElementWriteAssert(204 === $t14CreatorRelease->get_status(), 'T14 creator lock release failed.');
+
+wp_set_current_user($otherTranslatorId);
+$t14CollaboratorLock = molElementWriteRequest('POST', '/mol/v1/elements/' . $t14ElementId . '/lock');
+$t14CollaboratorLockBody = $t14CollaboratorLock->get_data();
+$t14CollaboratorToken = is_array($t14CollaboratorLockBody)
+    ? (string) ($t14CollaboratorLockBody['data']['lock_token'] ?? '')
+    : '';
+molElementWriteAssert(
+    200 === $t14CollaboratorLock->get_status() && 64 === strlen($t14CollaboratorToken),
+    'T14 second contributor lock failed.'
+);
+$t14CollaboratorUpdate = molElementWriteRequest(
+    'PATCH',
+    '/mol/v1/elements/' . $t14ElementId,
+    array('content' => 'تحرير المساهم الثاني'),
+    array(
+        'If-Match' => sprintf('"%d"', $t14Version),
+        'X-MOL-Lock-Token' => $t14CollaboratorToken,
+    )
+);
+molElementWriteAssert(200 === $t14CollaboratorUpdate->get_status(), 'T14 second contributor PATCH failed.');
+$t14CollaboratorRelease = molElementWriteRequest(
+    'DELETE',
+    '/mol/v1/elements/' . $t14ElementId . '/lock',
+    null,
+    array('X-MOL-Lock-Token' => $t14CollaboratorToken)
+);
+molElementWriteAssert(204 === $t14CollaboratorRelease->get_status(), 'T14 second contributor release failed.');
+
+$t14Rows = molElementWriteContributionsForElement($contributions, $t14ChapterId, $t14ElementId);
+molElementWriteAssert(2 === count($t14Rows), 'A second editor did not create a second unique contribution.');
+$t14RowsByUser = array();
+foreach ($t14Rows as $row) {
+    $t14RowsByUser[(int) $row['user_id']] = $row;
+}
+molElementWriteAssert(true === ($t14RowsByUser[$translatorId]['created_element'] ?? null), 'Creator row lost its flag.');
+molElementWriteAssert(false === ($t14RowsByUser[$otherTranslatorId]['created_element'] ?? null), 'Editor row was marked as creator.');
+
+$t14ContributorTotals = $contributions->contributorsForChapter($t14ChapterId);
+molElementWriteAssert(2 === count($t14ContributorTotals), 'T14 chapter contributor aggregate count drifted.');
+foreach ($t14ContributorTotals as $total) {
+    molElementWriteAssert(1 === $total['element_count'], 'A chapter view counted saves instead of unique elements.');
+}
+
+wp_set_current_user(0);
+$t14ContributorsResponse = molElementWriteRequest('GET', '/mol/v1/chapters/' . $t14ChapterId . '/contributors');
+$t14ContributorsBody = $t14ContributorsResponse->get_data();
+molElementWriteAssert(200 === $t14ContributorsResponse->get_status(), 'T14 contributor REST view failed.');
+molElementWriteAssert(
+    is_array($t14ContributorsBody) && 2 === (int) ($t14ContributorsBody['meta']['count'] ?? 0),
+    'T14 contributor REST view omitted a contributor.'
+);
+molElementWriteAssert(function_exists('mol_theme_chapter_contributors_data'), 'Theme contributor data bridge is missing.');
+$t14ThemeContributors = mol_theme_chapter_contributors_data($t14ChapterId);
+molElementWriteAssert(200 === $t14ThemeContributors['status'], 'Theme contributor view failed.');
+molElementWriteAssert(2 === count($t14ThemeContributors['data']), 'Theme contributor view did not expose both users.');
 
 wp_set_current_user($administratorId);
 echo "Manga Overlay element-write integration passed.\n";

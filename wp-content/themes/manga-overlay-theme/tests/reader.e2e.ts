@@ -91,6 +91,28 @@ function readerMarkup(direction: 'rtl' | 'ltr' = 'rtl'): string {
         <button data-mol-zoom-in>zoom in</button>
         <button data-mol-zoom-reset>reset</button>
       </div>
+      <section class="mol-reader-contributors" aria-labelledby="mol-reader-contributors-heading">
+        <header>
+          <span class="mol-kicker">طبقة الترجمة</span>
+          <h2 id="mol-reader-contributors-heading">مساهمو هذا الفصل</h2>
+        </header>
+        <ul>
+          <li>
+            <a href="/u/translator-one/">
+              <span class="mol-reader-contributors__avatar" aria-hidden="true">أ</span>
+              <span><strong dir="auto">المترجم الأول</strong><small dir="auto">مترجم عربي</small></span>
+              <b>1 عنصر</b>
+            </a>
+          </li>
+          <li>
+            <a href="/u/translator-two/">
+              <span class="mol-reader-contributors__avatar" aria-hidden="true">ث</span>
+              <span><strong dir="auto">المترجم الثاني</strong></span>
+              <b>1 عنصر</b>
+            </a>
+          </li>
+        </ul>
+      </section>
       <script type="application/json" id="mol-reader-data">${JSON.stringify(payload).replaceAll('<', '\\u003c')}</script>
     </main>
   </body></html>`;
@@ -133,6 +155,23 @@ test('toggles every translation surface without changing image sources', async (
 test('preloads only the nearby page image', async ({ page }) => {
   await expect(page.locator('.mol-reader-image').nth(1)).toHaveAttribute('loading', 'eager');
   await expect(page.locator('.mol-reader-image').nth(1)).toHaveAttribute('fetchpriority', 'low');
+});
+
+test('shows unique chapter contributors outside the artwork with profile links', async ({ page }) => {
+  const contributors = page.locator('.mol-reader-contributors');
+  await expect(contributors.getByRole('heading', { name: 'مساهمو هذا الفصل' })).toBeVisible();
+  await expect(contributors.locator('li')).toHaveCount(2);
+  await expect(contributors.locator('b')).toHaveText(['1 عنصر', '1 عنصر']);
+  await expect(contributors.locator('a').nth(0)).toHaveAttribute('href', '/u/translator-one/');
+  await expect(contributors.locator('a').nth(1)).toHaveAttribute('href', '/u/translator-two/');
+
+  const layout = await contributors.evaluate((section) => ({
+    insideArtwork: section.closest('[data-mol-page-surface]') !== null,
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: document.documentElement.clientWidth,
+  }));
+  expect(layout.insideArtwork).toBe(false);
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
 });
 
 test('switches to paged RTL navigation and resets zoom on page change', async ({ page }) => {

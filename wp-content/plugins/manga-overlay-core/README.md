@@ -1,6 +1,6 @@
 # Manga Overlay Core
 
-WordPress domain, persistence, content-management, public-read, reading-progress, and element-editor services through T-13 for Master Spec v1.1.3.
+WordPress domain, persistence, content-management, public-read, reading-progress, and element-editor services through T-14 for Master Spec v1.1.3.
 
 ## Scope
 
@@ -27,6 +27,7 @@ WordPress domain, persistence, content-management, public-read, reading-progress
 - Atomic element leases with 45-second TTL, 15-second renewal, owner-token release, same-route manager force-release, and explicit `409 mol_lock_lost` recovery.
 - A 1200ms autosave state machine with gesture-end commits, safe create retries, in-tab offline recovery, read-only locked elements, and Arabic dirty/saving/saved/offline/locked/conflict/error feedback.
 - A non-destructive `412` conflict card showing both versions, with current-version acceptance or field-level local-change reapplication over the latest server version.
+- Transactional contribution UPSERTs on successful element creation and editing, preserving one row per `(element_id, user_id)` while feeding the chapter contributor REST and theme views.
 - Hex-safe JSON bootstrapping and committed production `assets/dist/editor.{js,css}` files, so the installable PHP artifact needs no Node runtime.
 - Opt-in-only uninstall cleanup through `mol_delete_data_on_uninstall=1`.
 

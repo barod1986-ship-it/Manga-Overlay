@@ -95,6 +95,13 @@ final class ElementWriteService
                     'style' => $style,
                     'created_by' => $userId,
                 ));
+                $this->contributions->upsert(
+                    $elementId,
+                    $userId,
+                    (int) $chapter['work_id'],
+                    (int) $chapter['id'],
+                    true
+                );
                 $this->idempotency->complete(
                     $reservationId,
                     'element',
@@ -143,7 +150,7 @@ final class ElementWriteService
             $lockToken,
             $patch
         ): array {
-            $this->editablePage($pageId, $userId, 'mol_edit_translations', true);
+            [, $chapter] = $this->editablePage($pageId, $userId, 'mol_edit_translations', true);
             $element = $this->elements->lockForUpdate($elementId);
             if (null === $element || $pageId !== (int) $element['page_id']) {
                 throw ApiException::notFound('Element not found.');
@@ -188,6 +195,13 @@ final class ElementWriteService
                 'updated_by' => $userId,
                 'updated_at' => current_time('mysql', true),
             ));
+            $this->contributions->upsert(
+                $elementId,
+                $userId,
+                (int) $chapter['work_id'],
+                (int) $chapter['id'],
+                false
+            );
 
             return $this->elements->find($elementId)
                 ?? throw new \RuntimeException('The updated element could not be loaded.');
