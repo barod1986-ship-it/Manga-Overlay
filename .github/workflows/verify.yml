@@ -1,7 +1,11 @@
 name: Verify initial implementation
 on:
   push:
+    branches: [main]
   pull_request:
+concurrency:
+  group: verify-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
