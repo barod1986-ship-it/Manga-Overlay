@@ -168,8 +168,8 @@ molEditorIntegrationAssert(MOL_PLUGIN_VERSION === $registeredScript->ver, 'Edito
 
 $bootstrap = EditorPage::bootstrap();
 molEditorIntegrationAssert('0.12.0' === $bootstrap['release']['core'], 'Editor bootstrap release drifted.');
-molEditorIntegrationAssert(true === $bootstrap['permissions']['manageWorkPresets'], 'Administrator lost work-preset management.');
-molEditorIntegrationAssert(true === $bootstrap['permissions']['manageGlobalPresets'], 'Administrator lost global-preset management.');
+molEditorIntegrationAssert(false === $bootstrap['permissions']['manageWorkPresets'], 'Translator gained work-preset management.');
+molEditorIntegrationAssert(false === $bootstrap['permissions']['manageGlobalPresets'], 'Translator gained global-preset management.');
 molEditorIntegrationAssert(str_ends_with($bootstrap['api']['root'], '/wp-json/mol/v1/'), 'Editor REST root drifted.');
 molEditorIntegrationAssert('' !== $bootstrap['api']['nonce'], 'Editor REST nonce is missing.');
 molEditorIntegrationAssert(false === $bootstrap['chapter']['is_published'], 'Draft publication state drifted.');
