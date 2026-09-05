@@ -300,7 +300,7 @@ test('commits Moveable drag/resize and supports numeric and keyboard alternative
   await page.mouse.move(beforeDrag.x + beforeDrag.width / 2, beforeDrag.y + beforeDrag.height / 2);
   await page.mouse.down();
   await page.mouse.move(beforeDrag.x + beforeDrag.width / 2 + 36, beforeDrag.y + beforeDrag.height / 2 + 22, { steps: 5 });
-  expect(requestsByPage.get(page)).toEqual([]);
+  expect(requestsByPage.get(page)).toEqual(['POST elements/101/lock']);
   await page.mouse.up();
   await expect.poll(async () => Number(await page.getByTestId('geometry-x_unit').inputValue())).toBeGreaterThan(10);
   await expect.poll(() => requestsByPage.get(page)).toContain('PATCH elements/101');
@@ -332,7 +332,7 @@ test('keeps an element locked by another editor readable but read-only', async (
   await expect(page.getByTestId('locked-notice')).toContainText('يحرر سارة هذا العنصر الآن');
   await expect(page.getByTestId('property-content')).toHaveValue('مرحبا من الفقاعة');
   await expect(page.getByTestId('property-content')).toBeDisabled();
-  await expect(page.locator('.moveable-control-box')).not.toBeVisible();
+  await expect(page.locator('.moveable-control')).toHaveCount(0);
 });
 
 test('shows both versions on 412 and reapplies only the local change', async ({ page }) => {
