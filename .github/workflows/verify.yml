@@ -91,4 +91,4 @@ jobs:
         env:
           MOL_WP_ROOT: ${{ runner.temp }}/mol-wordpress
           MOL_TEST_ENV: '1'
-        run: wp eval-file "$GITHUB_WORKSPACE/tests/wordpress/integration.php" --path="$MOL_WP_ROOT"
+        run: wp eval-file "$GITHUB_WORKSPACE/tests/wordpress/integration.php" --use-include --path="$MOL_WP_ROOT"
