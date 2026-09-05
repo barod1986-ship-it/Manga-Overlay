@@ -21,7 +21,7 @@
 | T-10 — Editor shell | مكتمل في CI وموقع التجارب: بوابة صلاحيات وقالب مستقل وReact state/routing/stage/properties/layers مع Core 0.7.1 |
 | T-11 — Element editing | مكتمل في CI وموقع التجارب مع Core 0.8.0: الأنواع الأربعة وDOM/SVG آمن وMoveable والبدائل الرقمية والخصائص والطبقات؛ الحفظ الشبكي لـT-12 |
 | T-12 — Element writes/autosave | مكتمل في التنفيذ وCI وstaging مع Core 0.9.0: REST صارم وETag/If-Match وأقفال قصيرة وIdempotency-Key وحفظ تلقائي واستعادة داخل التبويب |
-| T-13 — Locks/concurrency | مكتمل في التنفيذ وCI ومثبّت كـCore 0.10.1: renew/release/force-release وواجهة 412/423/428؛ نجح If-Match الصحيح والمتقادم عبر staging وتبقى حالة missing→428 بوابة نشر |
+| T-13 — Locks/concurrency | مكتمل في التنفيذ وCI وstaging مع Core 0.10.1: renew/release/force-release وواجهة 412/423/428؛ نجحت حالات If-Match الصحيحة والمتقادمة والمفقودة عبر reverse proxy الفعلي |
 
 ## بنية المستودع
 
