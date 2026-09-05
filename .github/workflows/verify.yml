@@ -1,0 +1,42 @@
+name: Verify initial implementation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  renderer-and-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - run: npm ci
+      - run: npm run check
+      - name: Verify generated types are current
+        run: |
+          npm run generate:types
+          git diff --exit-code -- wp-content/plugins/manga-overlay-core/editor-src/generated/api.d.ts
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: renderer-editor-poc
+          path: wp-content/plugins/manga-overlay-core/assets/dist/poc/
