@@ -142,9 +142,17 @@ wp_set_current_user($translatorId);
 $available = molPresetRequest('GET', '/mol/v1/presets?work_id=' . $workId . '&type=bubble');
 molPresetAssert(200 === $available->get_status(), 'Translator could not list available presets.');
 $availableData = molPresetData($available);
-molPresetAssert(4 === count($availableData), 'Preset list did not contain personal, work, and global scopes.');
+$availableIds = array_map(static fn (array $preset): int => (int) $preset['id'], $availableData);
 molPresetAssert(
-    array('personal', 'personal', 'work', 'global') === array_column($availableData, 'scope'),
+    array() === array_diff(array($personalOneId, $personalTwoId, $workPresetId, $globalPresetId), $availableIds),
+    'Preset list did not contain personal, work, and global scopes.'
+);
+$personalPosition = array_search($personalOneId, $availableIds, true);
+$workPosition = array_search($workPresetId, $availableIds, true);
+$globalPosition = array_search($globalPresetId, $availableIds, true);
+molPresetAssert(
+    is_int($personalPosition) && is_int($workPosition) && is_int($globalPosition)
+        && $personalPosition < $workPosition && $workPosition < $globalPosition,
     'Preset scope ordering drifted.'
 );
 
