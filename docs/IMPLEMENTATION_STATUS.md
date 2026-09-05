@@ -377,3 +377,31 @@ On 2026-09-05, the exact Core 0.10.1 artifact from PHP Bootstrap run #49 at PR s
 - Successful and stale `If-Match` behavior is verified through the actual staging hostname.
 - The owner then sent an authenticated `PATCH /wp-json/mol/v1/elements/1` through the same staging hostname with a valid JSON patch but deliberately omitted both `If-Match` and the element lock token. WordPress returned HTTP `428 Precondition Required` with code `mol_precondition_required`, message `If-Match is required for this operation.`, and `Cache-Control: no-cache, must-revalidate, max-age=0, no-store, private`.
 - Because the request failed at the required precondition before lease validation or persistence, no element mutation occurred. This closes the final T-13 reverse-proxy header gate: correct → success, stale → 412, and missing → 428.
+
+## T-14 — Unique contributions and contributor views
+
+Implemented and verified:
+
+- Successful element creation and editing now UPSERT a contribution inside the same database transaction as the element write. A contribution is unique by `(element_id, user_id)`; repeated autosaves update `last_contributed_at` instead of creating save-count rows.
+- Creation preserves `created_element=true`, while a later editor receives an independent row with `created_element=false`. The chapter aggregate continues to count unique contributed elements rather than write operations.
+- Idempotent POST replay returns the stored response without touching or duplicating the contribution row.
+- Existing chapter contributor REST and theme views now receive data from real editor writes; the public reader keeps the contributor section outside the artwork and links each name to the canonical `/u/{username}/` route.
+- Database integration covers create, idempotent replay, ten successive PATCH autosaves, a second editor, aggregate counts, REST output, theme output, and contribution cleanup after element deletion on both supported database engines.
+- Reader browser coverage verifies two unique contributors, profile links, placement outside the artwork, and no horizontal overflow at the mobile viewport across Chromium, Firefox, and WebKit.
+- [Frontend PoC run #58](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33977150854) passed unit/build and the Chromium, Firefox, and WebKit suites.
+- [Database Matrix run #50](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33977150864) passed on WordPress 7.1 with MySQL 8.4 and MariaDB 10.11.
+- [PHP Bootstrap run #54](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33977150856) passed PHP 8.4 checks and produced the installable Core 0.11.0 artifact.
+- [Public Theme run #38](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/33977150855) remained green.
+
+T-14 is complete at the implementation, CI, and staging levels. T-15 owns presets, auto-fit, and snapping. Physical iOS/Android and final Safari/Arabic-font evidence remain independent release gates.
+
+### T-14 staging contribution smoke test
+
+On 2026-09-05, the exact Core 0.11.0 artifact from PHP Bootstrap run #54 at PR head `227ce22` was installed on the project staging site. The published GitHub artifact digest `a6ff20b9172144a6231dc908212c61d790eb70d1ea962dee99872991e8779922` matched the downloaded archive; the inner installable ZIP SHA-256 was `4445f069a16d794c3b655e26748fe20fb288d882c58ac660fa562d0e10260056`.
+
+- WordPress completed the verified replacement successfully; Manga Overlay Core remained active and reported version 0.11.0.
+- Existing persisted element #1 was edited through the canonical staging editor. A temporary Arabic T-14 value completed the visible `dirty → saved` autosave cycle, then the original Arabic demo text was restored through a second completed autosave.
+- The freshly rendered public reader retained exactly one translation element with the restored text and reported element version 13, proving both PATCH writes reached persistence rather than remaining React-only changes.
+- After both saves, the public section `مساهمو هذا الفصل` showed one contributor, `chatgpt`, with `1 عنصر`. Repeated saves therefore did not inflate the unique-element count.
+- The contributor link resolved to the canonical public route `/u/chatgpt/`. Rich public profile presentation remains assigned to T-17.
+- The editor selection was cleared at the end, releasing the element lease. No demo content change was left behind.
