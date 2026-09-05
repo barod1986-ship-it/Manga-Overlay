@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import subprocess
 import sys
+import re
 
 root = Path(__file__).resolve().parents[1] / 'docs/spec-v1.1.3'
 failures = []
@@ -16,4 +17,11 @@ for entry in (root / 'SHA256SUMS.txt').read_text().splitlines():
 if failures:
     sys.exit('Frozen spec integrity failure: ' + ', '.join(failures))
 print('Frozen specification SHA256 checks passed.', flush=True)
+runtime_schema = root.parents[1] / 'wp-content/plugins/manga-overlay-core/database/schema.sql'
+if runtime_schema.exists():
+    statements = re.findall(r'```sql\n(.*?)```', (root / 'DATABASE_SCHEMA.md').read_text(), re.S)
+    expected_sql = '\n\n'.join(statement.rstrip() for statement in statements) + '\n'
+    if len(statements) != 9 or runtime_schema.read_text() != expected_sql:
+        sys.exit('Runtime SQL differs from the nine canonical schema statements.')
+    print('Runtime SQL matches all nine canonical tables.', flush=True)
 subprocess.run([sys.executable, str(root / 'VALIDATION_HARNESS.py')], check=True)

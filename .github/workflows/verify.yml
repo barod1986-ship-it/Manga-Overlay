@@ -44,3 +44,51 @@ jobs:
         with:
           name: renderer-editor-poc
           path: wp-content/plugins/manga-overlay-core/assets/dist/poc/
+  wordpress-foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        database: ['mysql:8.4', 'mariadb:10.11']
+    services:
+      database:
+        image: ${{ matrix.database }}
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: mol_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 --silent || mariadb-admin ping -h 127.0.0.1 --silent"
+          --health-interval 10s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mysqli, mbstring
+          tools: composer:v2, wp-cli
+          coverage: none
+      - name: Build the plugin autoloader and lint PHP
+        run: |
+          composer validate --working-dir=wp-content/plugins/manga-overlay-core --no-check-publish
+          composer dump-autoload --working-dir=wp-content/plugins/manga-overlay-core --classmap-authoritative
+          find wp-content/plugins/manga-overlay-core/src tests/wordpress -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l wp-content/plugins/manga-overlay-core/manga-overlay-core.php
+      - name: Install a disposable WordPress 7.1 application
+        env:
+          MOL_WP_ROOT: ${{ runner.temp }}/mol-wordpress
+        run: |
+          mkdir -p "$MOL_WP_ROOT"
+          wp core download --version=7.1 --path="$MOL_WP_ROOT"
+          wp config create --path="$MOL_WP_ROOT" --dbname=mol_test --dbuser=root --dbpass='' --dbhost=127.0.0.1 --dbprefix=qa_
+          wp config set WP_ENVIRONMENT_TYPE local --path="$MOL_WP_ROOT"
+          wp core install --path="$MOL_WP_ROOT" --url=http://localhost:8080 --title='MOL CI' --admin_user=mol_ci --admin_password="$(openssl rand -hex 24)" --admin_email=mol-ci@example.invalid --skip-email
+          ln -s "$GITHUB_WORKSPACE/wp-content/plugins/manga-overlay-core" "$MOL_WP_ROOT/wp-content/plugins/manga-overlay-core"
+          wp plugin activate manga-overlay-core --path="$MOL_WP_ROOT"
+      - name: Run actual dbDelta, role, CPT and transaction tests
+        env:
+          MOL_WP_ROOT: ${{ runner.temp }}/mol-wordpress
+          MOL_TEST_ENV: '1'
+        run: wp eval-file "$GITHUB_WORKSPACE/tests/wordpress/integration.php" --path="$MOL_WP_ROOT"

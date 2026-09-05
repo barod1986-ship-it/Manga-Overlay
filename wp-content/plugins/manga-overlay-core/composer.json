@@ -1,0 +1,8 @@
+{
+  "name": "mol/manga-overlay-core",
+  "description": "WordPress domain plugin for Manga Overlay",
+  "type": "wordpress-plugin",
+  "require": { "php": "^8.4" },
+  "autoload": { "psr-4": { "MOL\\": "src/" } },
+  "config": { "sort-packages": true }
+}
