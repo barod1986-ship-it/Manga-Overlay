@@ -6,7 +6,7 @@
 
 ## تفعيل إضافة WordPress
 
-راجع `docs/WORDPRESS_DEVELOPMENT.md` لبناء Composer autoloader وتثبيت الإضافة في بيئة تطوير مطابقة للمواصفات. التفعيل ينشئ الجداول التسعة، ويثبت الأدوار، ويسجل الأعمال وتصنيفاتها. لا يوجد نشر آلي إلى خادم المستخدم.
+راجع [دليل تطوير WordPress](docs/WORDPRESS_DEVELOPMENT.md) لبناء Composer autoloader أو استخدام ZIP من artifact `manga-overlay-development-package` بعد نجاح Actions، ثم تثبيت الإضافة في بيئة تطوير مطابقة للمواصفات. التفعيل ينشئ الجداول التسعة، ويثبت الأدوار، ويسجل الأعمال وتصنيفاتها. لا يوجد نشر آلي إلى خادم المستخدم.
 
 ## تشغيل تجربة المحرر
 
@@ -49,7 +49,7 @@ python -m http.server 8080 --bind 127.0.0.1 --directory wp-content/plugins/manga
 - معاينة وإخفاء الترجمة دون تغيير الصورة الأصلية، وملاءمة النص ضمن حد الحجم الأدنى.
 - خصائص الجوال في لوحة سفلية، وتكبير/تحريك سطح الصفحة، وخطوط عربية مستضافة محليًا.
 - أنواع API مولدة من العقد بعد اجتياز فحصه؛ لا mock endpoints ولا نسخة مخترعة من عقد البيانات.
-- Workflow لـGitHub Actions جاهز لتشغيل العقد وTypeScript والبناء واختبارات المتصفح عند رفع المشروع.
+- GitHub Actions يشغّل العقد وTypeScript والبناء واختبارات المتصفح ومصفوفة WordPress/قواعد البيانات.
 
 ## الاختبارات
 
@@ -76,12 +76,15 @@ npm run generate:types
 docs/spec-v1.1.3/                 المواصفات الأصلية كاملة دون تعديل
 docs/verification/                نتائج الفحوص والقيود المسجلة
 wp-content/plugins/manga-overlay-core/
+  src/                            التفعيل وقاعدة البيانات والصلاحيات وCPT
+  database/schema.sql             SQL المطابق للمواصفات
+  composer.json                   autoload لـPHP
   editor-src/domain/              الأنماط والتحويلات والأنواع المشتقة
   editor-src/renderer/            العارض المشترك
   editor-src/poc/                 تجربة مستقلة؛ الحالة محلية فقط
   editor-src/generated/           أنواع OpenAPI المولدة
   public/reference-page.svg       صورة اختبار أصلية
-tests/                            اختبارات المجال والمتصفحات
+tests/                            اختبارات المجال والمتصفحات وتكامل WordPress
 ```
 
 مجلد `poc` غلاف تجربة؛ العارض والتحويلات منفصلان لاستخدامهما لاحقًا داخل الإضافة والقارئ. المسار الحالي داخل `wp-content` هيكل مستودع كما تصفه المواصفات، ولا يمثل افتراضًا لمسارات تثبيت WordPress الفعلية.

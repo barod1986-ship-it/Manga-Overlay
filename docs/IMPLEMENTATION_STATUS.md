@@ -5,12 +5,12 @@
 | المرحلة | الحالة | الدليل / ما تبقى |
 |---|---|---|
 | بوابة عقد 1.1.3 | اجتازت | فحص البصمات و49 فحصًا في harness الأصلي؛ توليد أنواع TypeScript بعده |
-| T-00 البيئة | جزئية | Node 24 وlockfile وCI للواجهة؛ تشغيل WordPress/PHP وDB matrix لم يُنفذ بعد |
+| T-00 البيئة | جزئية | CI ناجح: Node 24 وWordPress 7.1/PHP 8.4 ومصفوفة MySQL 8.4 وMariaDB 10.11؛ إعدادات خادم xCloud غير مفحوصة |
 | T-01 PoC renderer | كود منفذ، والقبول البصري معلق | DOM عربي + أشكال SVG + إحداثيات normalized؛ اختبارات التحويل والمتصفحات على GitHub تنجح؛ اعتماد الأجهزة واللقطات البصرية باقٍ |
 | T-02 PoC editor input | منفذ جزئيًا؛ البوابة مفتوحة | React/Moveable، textarea، transform controls، zoom/pan؛ اختبار الأجهزة الفعلية وبقية سيناريوهات الحفظ/القفل غير منفذ |
-| T-03 | كود منفذ؛ فحوص CI قيد التشغيل | Composer PSR-4، التفعيل والترقية، إصدارات schema/roles وحفظ البيانات عند التعطيل |
+| T-03 | منفذ؛ اجتازت فحوص التكامل | Composer PSR-4، التفعيل والترقية، إصدارات schema/roles وحفظ البيانات عند التعطيل |
 | T-04 | جزئية | الجداول التسعة، transaction، ChapterRepository/DTO، Geometry validator؛ بقية repositories/validators/services لم تكتمل |
-| T-05 | كود منفذ؛ فحوص CI قيد التشغيل | CPT، التصنيفات والأنواع الستة، registered metadata وصلاحيات Core REST |
+| T-05 | منفذ؛ اجتازت فحوص التكامل | CPT، التصنيفات والأنواع الستة، registered metadata وصلاحيات Core REST |
 | T-06 | لم تبدأ | إدارة الفصول والصفحات والرفع والترتيب |
 | T-07–T-09 | لم تبدأ | API العامة والسياسات، القالب والمكتبة والقارئ الإنتاجي |
 | T-10–T-16 | لم تبدأ | المحرر المتصل، autosave/locks/contributions/presets والجوال الإنتاجي |
@@ -53,4 +53,4 @@
 
 حدد المستخدم المستودع `barod1986-ship-it/Manga-Overlay`، وتأكدت صلاحية الكتابة. كان المستودع فارغًا؛ تمت تهيئة `main` بملف تعريف، وتُرفع دفعة البداية على `codex/initial-renderer-editor` للمراجعة. نتائج التشغيل على GitHub موثقة في `verification/RESULTS.md` وسجل Actions.
 
-لم يتم الدخول إلى xCloud أو الخادم. ملف GitHub Actions يشغل فحوص الواجهة، وأضيفت مصفوفة MySQL 8.4 وMariaDB 10.11 عبر WordPress 7.1/PHP 8.4 و`dbDelta()` الفعلية. نتائجها تُسجل بعد اكتمال التشغيل؛ لا توجد اختبارات نشر على NGINX الفعلي.
+لم يتم الدخول إلى xCloud أو الخادم. ملف GitHub Actions يشغل فحوص الواجهة، وأضيفت مصفوفة MySQL 8.4 وMariaDB 10.11 عبر WordPress 7.1/PHP 8.4 و`dbDelta()` الفعلية. نجح 71 فحصًا على كل محرك في تشغيل #6؛ لا توجد اختبارات نشر على NGINX الفعلي.

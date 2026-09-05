@@ -92,3 +92,49 @@ jobs:
           MOL_WP_ROOT: ${{ runner.temp }}/mol-wordpress
           MOL_TEST_ENV: '1'
         run: wp eval-file "$GITHUB_WORKSPACE/tests/wordpress/integration.php" --use-include --path="$MOL_WP_ROOT"
+  development-package:
+    needs: [renderer-and-contract, wordpress-foundation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      database:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: mol_package_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval 10s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mysqli, mbstring
+          tools: composer:v2, wp-cli
+          coverage: none
+      - uses: actions/download-artifact@v4
+        with:
+          name: renderer-editor-poc
+          path: wp-content/plugins/manga-overlay-core/assets/dist/poc/
+      - name: Build the development ZIP
+        run: |
+          composer dump-autoload --working-dir=wp-content/plugins/manga-overlay-core --classmap-authoritative
+          python scripts/package-development.py
+      - name: Verify installation from the actual ZIP
+        env:
+          MOL_WP_ROOT: ${{ runner.temp }}/mol-package-wordpress
+        run: |
+          mkdir -p "$MOL_WP_ROOT"
+          wp core download --version=7.1 --path="$MOL_WP_ROOT"
+          wp config create --path="$MOL_WP_ROOT" --dbname=mol_package_test --dbuser=root --dbpass='' --dbhost=127.0.0.1 --dbprefix=package_
+          wp core install --path="$MOL_WP_ROOT" --url=http://localhost:8080 --title='MOL package CI' --admin_user=mol_package_ci --admin_password="$(openssl rand -hex 24)" --admin_email=mol-package-ci@example.invalid --skip-email
+          wp plugin install "$GITHUB_WORKSPACE/build/manga-overlay-core-development.zip" --activate --path="$MOL_WP_ROOT"
+          wp eval 'if (get_option("mol_db_version") !== "1.1.3" || !post_type_exists("mol_work")) { WP_CLI::error("Packaged plugin did not initialize."); } WP_CLI::success("Packaged plugin activated and initialized.");' --path="$MOL_WP_ROOT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: manga-overlay-development-package
+          path: build/
+          retention-days: 30

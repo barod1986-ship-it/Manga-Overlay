@@ -1,4 +1,5 @@
 node_modules/
+build/
 **/assets/dist/
 playwright-report/
 test-results/
