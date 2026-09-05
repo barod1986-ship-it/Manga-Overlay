@@ -453,7 +453,7 @@ body.mol-editor-document {
   position: absolute;
   inset-block-start: calc(var(--mol-editor-header-height) + 66px);
   left: 50%;
-  z-index: 45;
+  z-index: 120;
   display: grid;
   width: min(680px, calc(100% - 32px));
   max-height: calc(100% - var(--mol-editor-header-height) - 82px);

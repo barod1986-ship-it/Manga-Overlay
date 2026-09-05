@@ -357,6 +357,22 @@ test('shows both versions on 412 and reapplies only the local change', async ({ 
   expect(requestsByPage.get(page)?.filter((request) => request === 'PATCH elements/101')).toHaveLength(2);
 });
 
+test('accepts the current server version with a pointer click above Moveable controls', async ({ page }) => {
+  await page.goto('/tests/editor-shell-fixture.html?mol_page=1&mol_scenario=conflict');
+  await page.getByTestId('layer-101').click();
+  await expect(page.getByTestId('property-content')).toBeEnabled();
+  await page.getByTestId('property-content').fill('نسخة محلية ستُرفض');
+
+  const conflict = page.getByTestId('conflict-card');
+  await expect(conflict).toBeVisible({ timeout: 5_000 });
+  await conflict.getByRole('button', { name: 'استخدام الحالية' }).click();
+
+  await expect(conflict).toBeHidden();
+  await expect(page.getByTestId('save-state')).toHaveAttribute('data-state', 'saved');
+  await expect(page.getByTestId('property-content')).toHaveValue('النسخة الحالية من سارة');
+  await expect(page.getByTestId('geometry-y_unit')).toHaveValue('21');
+});
+
 test('surfaces a persistent 428 after refreshing the current version once', async ({ page }) => {
   await page.goto('/tests/editor-shell-fixture.html?mol_page=1&mol_scenario=precondition');
   await page.getByTestId('layer-101').click();
