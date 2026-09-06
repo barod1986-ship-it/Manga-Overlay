@@ -42,9 +42,10 @@ jobs:
           retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
-          name: renderer-editor-poc
-          path: wp-content/plugins/manga-overlay-core/assets/dist/poc/
+          name: mol-frontend
+          path: wp-content/plugins/manga-overlay-core/assets/dist/
   wordpress-foundation:
+    needs: [renderer-and-contract]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -74,7 +75,7 @@ jobs:
         run: |
           composer validate --working-dir=wp-content/plugins/manga-overlay-core --no-check-publish
           composer dump-autoload --working-dir=wp-content/plugins/manga-overlay-core --classmap-authoritative
-          find wp-content/plugins/manga-overlay-core/src tests/wordpress -name '*.php' -print0 | xargs -0 -n1 php -l
+          find wp-content/plugins/manga-overlay-core/src wp-content/themes/manga-overlay-theme tests/wordpress -name '*.php' -print0 | xargs -0 -n1 php -l
           php -l wp-content/plugins/manga-overlay-core/manga-overlay-core.php
       - name: Install a disposable WordPress 7.1 application
         env:
@@ -87,6 +88,21 @@ jobs:
           wp core install --path="$MOL_WP_ROOT" --url=http://localhost:8080 --title='MOL CI' --admin_user=mol_ci --admin_password="$(openssl rand -hex 24)" --admin_email=mol-ci@example.invalid --skip-email
           ln -s "$GITHUB_WORKSPACE/wp-content/plugins/manga-overlay-core" "$MOL_WP_ROOT/wp-content/plugins/manga-overlay-core"
           wp plugin activate manga-overlay-core --path="$MOL_WP_ROOT"
+          ln -s "$GITHUB_WORKSPACE/wp-content/themes/manga-overlay-theme" "$MOL_WP_ROOT/wp-content/themes/manga-overlay-theme"
+          wp theme activate manga-overlay-theme --path="$MOL_WP_ROOT"
+          wp rewrite structure '/%postname%/' --path="$MOL_WP_ROOT"
+          mkdir -p "$MOL_WP_ROOT/wp-content/mu-plugins"
+          cp "$GITHUB_WORKSPACE/tests/wordpress/hold-deletion.php" "$MOL_WP_ROOT/wp-content/mu-plugins/hold-deletion.php"
+      - uses: actions/download-artifact@v4
+        with:
+          name: mol-frontend
+          path: wp-content/plugins/manga-overlay-core/assets/dist/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - name: Run actual dbDelta, role, CPT and transaction tests
         env:
           MOL_WP_ROOT: ${{ runner.temp }}/mol-wordpress
@@ -105,6 +121,13 @@ jobs:
           python tests/wordpress/http_content.py
           python -m pip install -r requirements-dev.txt
           python scripts/check-content-responses.py "$MOL_CONTENT_RESPONSES"
+          npx playwright test --config playwright.wordpress.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wordpress-browser-${{ strategy.job-index }}
+          path: test-results/
+          retention-days: 14
   development-package:
     needs: [renderer-and-contract, wordpress-foundation]
     runs-on: ubuntu-24.04
@@ -130,8 +153,8 @@ jobs:
           coverage: none
       - uses: actions/download-artifact@v4
         with:
-          name: renderer-editor-poc
-          path: wp-content/plugins/manga-overlay-core/assets/dist/poc/
+          name: mol-frontend
+          path: wp-content/plugins/manga-overlay-core/assets/dist/
       - name: Build the development ZIP
         run: |
           composer dump-autoload --working-dir=wp-content/plugins/manga-overlay-core --classmap-authoritative
@@ -145,7 +168,8 @@ jobs:
           wp config create --path="$MOL_WP_ROOT" --dbname=mol_package_test --dbuser=root --dbpass='' --dbhost=127.0.0.1 --dbprefix=package_
           wp core install --path="$MOL_WP_ROOT" --url=http://localhost:8080 --title='MOL package CI' --admin_user=mol_package_ci --admin_password="$(openssl rand -hex 24)" --admin_email=mol-package-ci@example.invalid --skip-email
           wp plugin install "$GITHUB_WORKSPACE/build/manga-overlay-core-development.zip" --activate --path="$MOL_WP_ROOT"
-          wp eval 'if (get_option("mol_db_version") !== "1.1.3" || !post_type_exists("mol_work")) { WP_CLI::error("Packaged plugin did not initialize."); } WP_CLI::success("Packaged plugin activated and initialized.");' --path="$MOL_WP_ROOT"
+          wp theme install "$GITHUB_WORKSPACE/build/manga-overlay-theme-development.zip" --activate --path="$MOL_WP_ROOT"
+          wp eval 'if (get_option("mol_db_version") !== "1.1.3" || !post_type_exists("mol_work") || get_stylesheet() !== "manga-overlay-theme" || !is_file(WP_PLUGIN_DIR . "/manga-overlay-core/assets/dist/reader/reader.js")) { WP_CLI::error("Packaged plugin did not initialize."); } WP_CLI::success("Packaged plugin activated and initialized.");' --path="$MOL_WP_ROOT"
       - uses: actions/upload-artifact@v4
         with:
           name: manga-overlay-development-package

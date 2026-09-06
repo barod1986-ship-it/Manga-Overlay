@@ -86,13 +86,15 @@ def api(method, route, data=None, headers=None, auth=True, nonce=True):
     if isinstance(data, dict):
         data = json.dumps(data).encode()
         request_headers['Content-Type'] = 'application/json'
-    request = Request(base + '/wp-json/mol/v1' + route, data=data, headers=request_headers, method=method)
+    request = Request(boot['api'].rstrip('/') + route, data=data, headers=request_headers, method=method)
     try:
         response = urlopen(request, timeout=90)
     except HTTPError as error:
         response = error
     with response:
         raw = response.read()
+        if raw and 'json' not in response.headers.get('Content-Type', ''):
+            raise AssertionError(f'Expected REST JSON, got HTTP {response.status}, {response.headers.get("Content-Type")}')
         return response.status, json.loads(raw) if raw else None, dict(response.headers)
 
 
@@ -144,5 +146,42 @@ expect(upload('missing-key' * 20), 400, 'oversized retry key rejected over HTTP'
 expect(upload(''), 400, 'missing retry key rejected over HTTP', 'ErrorResponse')
 expect(api('DELETE', f'/chapters/{draft_id}'), 204, 'actual HTTP chapter delete completes')
 expect(api('GET', f'/chapters/{draft_id}', auth=False, nonce=False), 404, 'deleted HTTP chapter remains unavailable', 'ErrorResponse')
+# Actual core deletion overlaps a chapter create request while the work lock is held.
+def core(method, suffix='', data=None):
+    url = boot['api'].replace('/mol/v1/', '/wp/v2/mol_work') + suffix
+    request = Request(url, data=json.dumps(data).encode() if data else None, method=method,
+                      headers={'Cookie': cookie, 'X-WP-Nonce': boot['nonce'], 'Content-Type': 'application/json'})
+    try:
+        response = urlopen(request, timeout=20)
+    except HTTPError as error:
+        response = error
+    with response:
+        return response.status, json.loads(response.read())
+
+status, created = core('POST', data={'title': 'CI work deletion race', 'slug': 'reader-race-work', 'status': 'publish'})
+check(status == 201, 'create disposable work for parent deletion race')
+marker = Path(os.environ['MOL_HTTP_FIXTURE'] + '.delete-lock')
+marker.unlink(missing_ok=True)
+separator = '&' if '?' in boot['api'] else '?'
+with ThreadPoolExecutor(max_workers=2) as pool:
+    deleting = pool.submit(core, 'DELETE', f'/{created["id"]}{separator}force=true')
+    for _ in range(100):
+        if marker.exists():
+            break
+        time.sleep(.02)
+    check(marker.exists(), 'core parent deletion entered the protected mutation window')
+    expect(api('POST', '/chapters', {'work_id': created['id'], 'chapter_label': 'must not become orphan'}), 400,
+           'concurrent chapter creation waits and rejects a deleted parent', 'ErrorResponse')
+    check(deleting.result()[0] == 200, 'parent deletion completes without an orphan chapter')
+marker.unlink(missing_ok=True)
+
+# Public HTML never inherits draft access from the manager cookie.
+try:
+    response = opener.open(fixture['draft_reader_url'])
+except HTTPError as error:
+    response = error
+with response:
+    check(response.status == 404 and b'mol-reader-data' not in response.read(), 'manager public reader URL still hides drafts')
+
 samples_path.write_text(json.dumps(samples, ensure_ascii=False, indent=2))
 print(f'{checks} HTTP content checks passed.')

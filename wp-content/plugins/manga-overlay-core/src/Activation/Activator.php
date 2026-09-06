@@ -19,6 +19,7 @@ final class Activator
 			self::upgrade();
 			Roles::install();
 			WorkType::register();
+			\MOL\Frontend\Routes::register();
 			WorkType::seed_types();
 			flush_rewrite_rules(false);
 		} catch (\Throwable $error) {

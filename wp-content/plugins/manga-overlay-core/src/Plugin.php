@@ -11,7 +11,7 @@ use MOL\Security\WorkDeletionPolicy;
 
 final class Plugin
 {
-	public const VERSION = '0.3.0';
+	public const VERSION = '0.4.0';
 
 	public static function boot(): void
 	{
@@ -29,6 +29,7 @@ final class Plugin
 			return;
 		}
 		add_action('init', [WorkType::class, 'register']);
+		Frontend\Routes::boot();
 		add_filter('pre_insert_term', [WorkType::class, 'validate_type_term'], 10, 3);
 		add_filter('pre_delete_post', [WorkDeletionPolicy::class, 'guard'], 10, 2);
 		add_filter('pre_trash_post', [WorkDeletionPolicy::class, 'guard'], 10, 2);
@@ -41,6 +42,8 @@ final class Plugin
 		add_action('rest_api_init', [$runtime->controller, 'register']);
 		$library = new REST\LibraryController(new Database\WorkRepository($wpdb), new Database\ProfileRepository($wpdb));
 		add_action('rest_api_init', [$library, 'register']);
+		$progress = new REST\ProgressController(new Services\ProgressService($wpdb));
+		add_action('rest_api_init', [$progress, 'register']);
 		add_filter('rest_post_dispatch', [REST\ContentController::class, 'response_headers'], 10, 3);
 		new Admin\ContentScreen($runtime->chapters);
 		add_action('add_meta_boxes_mol_work', [Admin\WorkMetadata::class, 'register']);

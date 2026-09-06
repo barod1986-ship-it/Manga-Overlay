@@ -31,7 +31,7 @@ contracts_path = root.parents[1] / 'wp-content/plugins/manga-overlay-core/databa
 if contracts_path.exists():
     contracts = json.loads(contracts_path.read_text())
     schemas = yaml.safe_load((root / 'API.openapi.yaml').read_text())['components']['schemas']
-    expected_names = {'ChapterCreate', 'ChapterPatch', 'ChapterReviewPatch', 'PageReorder'}
+    expected_names = {'ChapterCreate', 'ChapterPatch', 'ChapterReviewPatch', 'PageReorder', 'ReadingProgressUpdate'}
     if set(contracts) != expected_names or any(contracts[name] != schemas[name] for name in expected_names):
         sys.exit('Content request schemas differ from frozen OpenAPI.')
     print('Content request schemas match frozen OpenAPI.', flush=True)

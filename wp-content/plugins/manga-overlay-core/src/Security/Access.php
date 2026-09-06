@@ -17,7 +17,7 @@ final class Access
 		if (!is_user_logged_in()) {
 			throw new Fault('mol_not_authenticated', 'سجّل الدخول للمتابعة.', 401);
 		}
-		if (!self::authenticated($request) || !current_user_can($capability)) {
+		if (!self::authenticated($request) || ($capability !== 'authenticated_user' && !current_user_can($capability))) {
 			throw new Fault('mol_forbidden', 'لا تملك صلاحية هذه العملية.', 403);
 		}
 		return true;

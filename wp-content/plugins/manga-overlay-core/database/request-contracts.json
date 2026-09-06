@@ -172,5 +172,37 @@
         }
       }
     }
+  },
+  "ReadingProgressUpdate": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "chapter_id",
+      "page_index",
+      "progress_unit",
+      "reader_mode"
+    ],
+    "properties": {
+      "chapter_id": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "page_index": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "progress_unit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "reader_mode": {
+        "type": "string",
+        "enum": [
+          "webtoon",
+          "paged"
+        ]
+      }
+    }
   }
 }

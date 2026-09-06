@@ -299,6 +299,7 @@ $check((bool) wp_next_scheduled('mol_cleanup_temporary_data'), 'temporary data c
 $password = wp_generate_password(40, false);
 wp_set_password($password, $users['manager']);
 $http_fixture = ['username' => 'mol_content_manager', 'password' => $password, 'chapter_id' => $published['id'], 'work_id' => $work, 'image_path' => $fixture];
+require __DIR__ . '/reader.php';
 $fixture_path = getenv('MOL_HTTP_FIXTURE');
 $samples_path = getenv('MOL_CONTENT_RESPONSES');
 if (!$fixture_path || !$samples_path) {
