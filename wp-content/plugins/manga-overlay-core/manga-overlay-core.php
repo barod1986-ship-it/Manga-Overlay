@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Manga Overlay Core
  * Description: البنية الأساسية لمنصة القصص المصورة والترجمة العربية فوق الصور.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Requires at least: 7.1
  * Requires PHP: 8.4
  * Text Domain: manga-overlay-core
@@ -31,6 +31,7 @@ unset($mol_autoloader);
 
 register_activation_hook(__FILE__, [MOL\Activation\Activator::class, 'activate']);
 register_deactivation_hook(__FILE__, static function (): void {
+	wp_clear_scheduled_hook('mol_cleanup_temporary_data');
 	flush_rewrite_rules(false);
 });
 add_action('plugins_loaded', [MOL\Plugin::class, 'boot']);

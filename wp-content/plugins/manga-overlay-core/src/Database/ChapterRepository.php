@@ -31,6 +31,53 @@ final class ChapterRepository
 		return $row ? self::to_dto($row) : null;
 	}
 
+	public function lock(int $chapter_id): ?array
+	{
+		$row = $this->db->get_row($this->db->prepare('SELECT * FROM %i WHERE id = %d FOR UPDATE', $this->tables->name('chapters'), $chapter_id), ARRAY_A);
+		$this->assert_query_succeeded();
+		return $row ? self::to_dto($row) : null;
+	}
+
+	public function for_work(int $work_id, bool $published_only = true): array
+	{
+		$sql = $this->db->prepare('SELECT * FROM %i WHERE work_id = %d', $this->tables->name('chapters'), $work_id);
+		$sql .= $published_only ? ' AND is_published = 1' : '';
+		$rows = $this->db->get_results($sql . ' ORDER BY sort_order, id', ARRAY_A);
+		$this->assert_query_succeeded();
+		return array_map([self::class, 'to_dto'], $rows ?? []);
+	}
+
+	/** Returns null only for a unique-slug collision, which the service may retry. */
+	public function insert(array $data): ?int
+	{
+		if (array_key_exists('is_published', $data)) {
+			$data['is_published'] = (int) $data['is_published'];
+		}
+		$previous = $this->db->suppress_errors();
+		try {
+			$result = $this->db->insert($this->tables->name('chapters'), $data);
+			if ($result === false && $this->db->dbh instanceof \mysqli && mysqli_errno($this->db->dbh) === 1062) {
+				return null;
+			}
+			$this->assert_query_succeeded();
+			if ($result !== 1) {
+				throw new \RuntimeException('Could not create chapter.');
+			}
+			return (int) $this->db->insert_id;
+		} finally {
+			$this->db->suppress_errors($previous);
+		}
+	}
+
+	public function update(int $id, array $data): void
+	{
+		if (array_key_exists('is_published', $data)) {
+			$data['is_published'] = (int) $data['is_published'];
+		}
+		$this->db->update($this->tables->name('chapters'), $data, ['id' => $id]);
+		$this->assert_query_succeeded();
+	}
+
 	private function assert_query_succeeded(): void
 	{
 		if ($this->db->last_error !== '') {

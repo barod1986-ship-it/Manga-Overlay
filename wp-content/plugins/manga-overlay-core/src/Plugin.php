@@ -11,7 +11,7 @@ use MOL\Security\WorkDeletionPolicy;
 
 final class Plugin
 {
-	public const VERSION = '0.2.0';
+	public const VERSION = '0.3.0';
 
 	public static function boot(): void
 	{
@@ -32,5 +32,17 @@ final class Plugin
 		add_filter('pre_insert_term', [WorkType::class, 'validate_type_term'], 10, 3);
 		add_filter('pre_delete_post', [WorkDeletionPolicy::class, 'guard'], 10, 2);
 		add_filter('pre_trash_post', [WorkDeletionPolicy::class, 'guard'], 10, 2);
+		add_filter('pre_delete_attachment', [Security\AttachmentDeletionPolicy::class, 'guard'], 10, 2);
+		global $wpdb;
+		$runtime = new Services\ContentRuntime($wpdb);
+		add_action('rest_api_init', [$runtime->controller, 'register']);
+		add_filter('rest_post_dispatch', [REST\ContentController::class, 'response_headers'], 10, 3);
+		new Admin\ContentScreen($runtime->chapters);
+		add_action('add_meta_boxes_mol_work', [Admin\WorkMetadata::class, 'register']);
+		add_action('save_post_mol_work', [Admin\WorkMetadata::class, 'save']);
+		add_action('mol_cleanup_temporary_data', [Services\ContentRuntime::class, 'cleanup']);
+		if (!wp_next_scheduled('mol_cleanup_temporary_data')) {
+			wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'mol_cleanup_temporary_data');
+		}
 	}
 }

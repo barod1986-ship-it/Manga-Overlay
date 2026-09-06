@@ -4,6 +4,8 @@ import hashlib
 import subprocess
 import sys
 import re
+import json
+import yaml
 
 root = Path(__file__).resolve().parents[1] / 'docs/spec-v1.1.3'
 failures = []
@@ -25,3 +27,11 @@ if runtime_schema.exists():
         sys.exit('Runtime SQL differs from the nine canonical schema statements.')
     print('Runtime SQL matches all nine canonical tables.', flush=True)
 subprocess.run([sys.executable, str(root / 'VALIDATION_HARNESS.py')], check=True)
+contracts_path = root.parents[1] / 'wp-content/plugins/manga-overlay-core/database/request-contracts.json'
+if contracts_path.exists():
+    contracts = json.loads(contracts_path.read_text())
+    schemas = yaml.safe_load((root / 'API.openapi.yaml').read_text())['components']['schemas']
+    expected_names = {'ChapterCreate', 'ChapterPatch', 'ChapterReviewPatch', 'PageReorder'}
+    if set(contracts) != expected_names or any(contracts[name] != schemas[name] for name in expected_names):
+        sys.exit('Content request schemas differ from frozen OpenAPI.')
+    print('Content request schemas match frozen OpenAPI.', flush=True)

@@ -13,7 +13,7 @@ for name in required:
 
 # Explicit inputs keep credentials, uploads, tests and development dependencies out.
 files = {}
-for name in ['manga-overlay-core.php', 'composer.json', 'src', 'database', 'vendor', 'assets/dist/poc']:
+for name in ['manga-overlay-core.php', 'composer.json', 'src', 'database', 'vendor', 'assets/dist/poc', 'assets/admin']:
     source = plugin / name
     for path in sorted(source.rglob('*')) if source.is_dir() else [source]:
         if path.is_file():
