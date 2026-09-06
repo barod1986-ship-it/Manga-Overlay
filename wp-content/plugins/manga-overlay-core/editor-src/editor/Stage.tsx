@@ -84,13 +84,13 @@ export function Stage({ page, elements, selectedKey, preview, visible, zoom, can
           draggable resizable rotatable pinchable={false} snappable={false} keepRatio={false} checkInput
           rotationPosition="top" throttleDrag={0} throttleResize={0} throttleRotate={.1}
           renderDirections={['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se']}
-          onDragStart={event => { const box = begin(); if (box) event.set([box.x, box.y]); else event.stop(); }}
+          onDragStart={event => { const box = begin(); if (box) event.set([box.x, box.y]); else moveable.current?.stopDrag(); }}
           onDrag={event => draw({ x: event.beforeTranslate[0], y: event.beforeTranslate[1] })}
           onDragEnd={event => finish(event.inputEvent)}
-          onResizeStart={event => { const box = begin(); if (box && event.dragStart) event.dragStart.set([box.x, box.y]); else if (!box) event.stop(); }}
+          onResizeStart={event => { const box = begin(); if (box && event.dragStart) event.dragStart.set([box.x, box.y]); else if (!box) moveable.current?.stopDrag(); }}
           onResize={event => draw({ width: event.width, height: event.height, x: event.drag.beforeTranslate[0], y: event.drag.beforeTranslate[1] })}
           onResizeEnd={event => finish(event.inputEvent)}
-          onRotateStart={event => { const box = begin(); if (box) event.set(box.rotation); else event.stop(); }}
+          onRotateStart={event => { const box = begin(); if (box) event.set(box.rotation); else moveable.current?.stopDrag(); }}
           onRotate={event => draw({ rotation: event.beforeRotate })}
           onRotateEnd={event => finish(event.inputEvent)} />}
       </div>
