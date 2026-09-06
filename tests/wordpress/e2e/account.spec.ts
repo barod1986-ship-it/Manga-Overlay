@@ -4,15 +4,18 @@ const fixture = JSON.parse(readFileSync(process.env.MOL_HTTP_FIXTURE!, 'utf8')) 
   username: string; password: string; reader_url: string; reader_work_id: number; reader_chapter_id: number;
 };
 async function login(page: Page) {
-  // Keep login in the tested application; the dashboard may load external widgets.
-  await page.goto('/wp-login.php?redirect_to=' + encodeURIComponent(fixture.reader_url));
-  await page.locator('#user_login').fill(fixture.username);
-  await page.locator('#user_pass').fill(fixture.password);
-  const destination = new URL(fixture.reader_url);
-  await Promise.all([
-    page.waitForURL(url => url.origin === destination.origin && decodeURI(url.pathname) === decodeURI(destination.pathname), { waitUntil: 'domcontentloaded' }),
-    page.locator('#wp-submit').click(),
-  ]);
+  // These scenarios test the MOL UI, not WordPress's responsive login form.
+  // Authenticate with real credentials/cookies; do not inject a session or bypass permissions.
+  await page.request.get('/wp-login.php');
+  const response = await page.request.post('/wp-login.php', {
+    form: { log: fixture.username, pwd: fixture.password, 'wp-submit': 'Log In', redirect_to: fixture.reader_url, testcookie: '1' },
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(302);
+  expect((await page.context().cookies()).some(cookie => cookie.name.startsWith('wordpress_logged_in_'))).toBe(true);
+  await page.goto(fixture.reader_url);
+  const boot = JSON.parse((await page.locator('#mol-reader-data').textContent())!);
+  expect(typeof boot.nonce).toBe('string');
 }
 
 test('manager reorders pages numerically and reload proves persistence', async ({ page }) => {
