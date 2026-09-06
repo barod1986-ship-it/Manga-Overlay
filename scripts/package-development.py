@@ -26,7 +26,7 @@ files['manga-overlay-core/DEVELOPMENT.md'] = (root / 'docs/WORDPRESS_DEVELOPMENT
 files['manga-overlay-core/build-info.json'] = json.dumps({
     'version': json.loads((plugin / 'package.json').read_text())['version'],
     'spec_version': '1.1.3',
-    'stage': 'development-editor-shell',
+    'stage': 'development-element-editing',
     'editor_persistence': False,
 }, indent=2).encode() + b'\n'
 

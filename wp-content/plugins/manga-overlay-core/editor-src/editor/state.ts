@@ -5,7 +5,7 @@ export type Chapter = components['schemas']['Chapter'];
 export type Page = components['schemas']['Page'];
 export type Element = components['schemas']['Element'];
 export interface EditorRoute { pageId: number | null; elementId: number | null }
-export interface Bootstrap { chapterId: number; workTitle: string; api: string; nonce: string; backUrl: string; backLabel: string }
+export interface Bootstrap { chapterId: number; workTitle: string; api: string; nonce: string; backUrl: string; backLabel: string; canEdit: boolean; canDelete: boolean }
 
 const positiveId = (value: string | null): number | null => value && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value)) ? Number(value) : null;
 export function parseRoute(hash: string): EditorRoute {

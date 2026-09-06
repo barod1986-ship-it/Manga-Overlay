@@ -52,7 +52,7 @@ test('translator inspects live layers and properties, preview preserves the orig
   if (isMobile) await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
   await page.locator('.mol-editor-layers button').filter({ hasText: 'نص خاص داخل المحرر' }).click();
   await expect(page.getByLabel('النص العربي', { exact: true })).toHaveValue('نص خاص داخل المحرر');
-  await expect(page.getByLabel('النص العربي', { exact: true })).toHaveAttribute('readonly', '');
+  await expect(page.getByLabel('النص العربي', { exact: true })).not.toHaveAttribute('readonly', '');
   await expect.poll(() => decodeURI(page.url())).toBe(decodeURI(fixture.editor_url + `#page=${firstPage}&element=${bubble}`));
   const image = page.locator('.mol-editor-stage img');
   await image.evaluate(node => node.setAttribute('data-original-node', 'retained'));
@@ -78,7 +78,7 @@ test('translator inspects live layers and properties, preview preserves the orig
   await expect(page.locator('.mol-element-selected')).toHaveAttribute('data-element-key', String(bubble));
   await page.reload();
   await expect(page.locator('.mol-element-selected')).toHaveAttribute('data-element-key', String(bubble));
-  await expect(page.locator('.mol-editor-save-state')).toContainText('عرض فقط');
+  await expect(page.locator('.mol-editor-save-state')).toContainText('الحفظ والنشر غير متاحين');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => key.includes('editor')))).toEqual([]);
   expect(writes).toEqual([]); expect(errors).toEqual([]);

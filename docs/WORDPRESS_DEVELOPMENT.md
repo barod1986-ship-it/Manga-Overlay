@@ -48,6 +48,17 @@ Reader preferences are per work in localStorage. Guest progress uses `mol_progre
 
 The plugin owns `templates/editor.php` and `assets/dist/editor/`, built with `vite.editor.config.ts`. Its canonical route is `/series/{work-slug}/chapter/{chapter-slug}/edit/`. Grant `mol_use_editor` to enter; membership alone is insufficient. The reader and content admin expose the link only to authorized users. A route marker upgrade refreshes the existing rewrite table once.
 
-The shell is read-only in this increment. It fetches the chapter, page list and selected page's elements from the existing authenticated REST endpoints, preserving IDs/versions in state. Browser fragments identify page/element IDs across reload and history navigation. The stage uses actual image dimensions and the shared renderer; preview/toggle retain the original image node. Desktop side panels become mobile sheets. No mutation endpoints, new REST contracts or local draft persistence are introduced.
+T-10 introduced a read-only shell; T-11 adds session-only editing described below. It fetches the chapter, page list and selected page's elements from the existing authenticated REST endpoints, preserving IDs/versions in state. Browser fragments identify page/element IDs across reload and history navigation. The stage uses actual image dimensions and the shared renderer; preview/toggle retain the original image node. Desktop side panels become mobile sheets. No mutation endpoints, new REST contracts or local draft persistence are introduced.
 
 CI adds route/capability/revocation and private-bootstrap integration coverage, plus browser scenarios for portrait/landscape geometry, layers/properties, history restoration, empty content, failed reads, stale-response cancellation and session expiry. The package gate requires the editor template and its built assets. Exact head/run results are maintained in PR #1. Testing on the real xCloud application and physical devices remains deferred/open.
+
+
+## Connected element editing T-11 (Core 0.6.0)
+
+`mol_use_editor` grants inspection; `mol_edit_translations` enables local edits; deletion additionally checks `mol_delete_translation_elements`. The private bootstrap exposes booleans for these grants. This is UI gating; REST write authorization/validation remains T-12/T-13 work.
+
+Working elements retain an immutable server baseline. New/duplicated elements have a session key and no invented server ID/version/attribution. Per-page edits survive in-app navigation and preview, but do not persist across reload or leave. A beforeunload warning and an explicit unsaved status make that boundary visible. Access failures hide the stage and clear the session copies. No mutation requests, locks, autosave or browser draft storage are implemented in this increment.
+
+Moveable drag/resize/rotate operates in pixels during the gesture and commits bounded normalized geometry at its end, using actual portrait/landscape image dimensions. Numeric inputs and step buttons cover every transform; keyboard shortcuts ignore native fields and IME composition. Structured style fields cover all four types, including type-specific tail/burst options. Preview retains the original image and shared renderer. Snapping/presets and full auto-fit remain T-15; physical touch and keyboard acceptance remain T-16. The existing PoC stays independently available.
+
+CI tests actual WordPress data, independent grants, source immutability, plain-text safety, page-draft isolation, duplicate/delete/undo, numeric/keyboard controls, structured effects, real mouse transforms at zoom, navigation and a guarded reload. See PR #1 for exact head/run and package links. No real xCloud server test or deployment is part of this batch.

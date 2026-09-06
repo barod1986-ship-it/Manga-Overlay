@@ -43,6 +43,7 @@ wp_set_current_user(0); wp_set_current_user($users['member']);
 $context = EditorSite::context($work_slug, $reader_draft['slug']);
 $check($context['chapterId'] === $reader_draft['id'], 'editor shell checks individual capability, not role name or edit capability');
 $check(!isset($context['pages'], $context['elements'], $context['chapter']) && !str_contains(wp_json_encode($context, JSON_UNESCAPED_UNICODE), 'نص خاص داخل المحرر'), 'shell bootstrap contains no draft page or overlay payload');
+$check($context['canEdit'] === false && $context['canDelete'] === false, 'shell-only grant does not enable editing or deletion');
 $check((bool) wp_verify_nonce($context['nonce'], 'wp_rest'), 'editor bootstrap nonce belongs to the current session');
 $expect($request('GET', '/pages/' . $editor_pages[0]['id'] . '/elements'), 200, 'editor retrieves draft elements only via authenticated REST', 'PageElementsResponse');
 $check(mol_get_chapter($reader_draft['id']) === null, 'public PHP reader still hides draft from shell user');
@@ -52,7 +53,9 @@ $fault(static fn () => EditorSite::context($work_slug, $reader_draft['slug']), '
 $expect($request('GET', '/pages/' . $editor_pages[0]['id'] . '/elements'), 404, 'revoked editor capability closes draft REST access', 'ErrorResponse');
 wp_set_current_user($users['translator']);
 $fault(static fn () => EditorSite::context($work_slug, 'nonexistent'), 'mol_not_found');
-$check(EditorSite::context($work_slug, $reader_draft['slug'])['chapterId'] === $reader_draft['id'], 'translator opens editor shell for draft chapter');
+$translator_context = EditorSite::context($work_slug, $reader_draft['slug']);
+$check($translator_context['chapterId'] === $reader_draft['id'], 'translator opens editor shell for draft chapter');
+$check($translator_context['canEdit'] && $translator_context['canDelete'], 'translator receives independent editing and deletion grants');
 wp_update_post(['ID' => $reader_work, 'post_status' => 'draft']);
 $check(EditorSite::context($work_slug, $reader_draft['slug'])['chapterId'] === $reader_draft['id'], 'authorized editor shell can resolve an unpublished parent work');
 $check(mol_get_chapter($reader_chapter['id']) === null, 'unpublished parent remains hidden from public reader');
@@ -73,4 +76,20 @@ $http_fixture += [
 	'editor_empty_url' => PublicSite::chapter_url($editor_empty) . 'edit/',
 	'editor_page_ids' => array_column($editor_pages, 'id'), 'editor_element_ids' => $editor_elements,
 ];
+wp_set_current_user($users['manager']);
+
+// Independent grants exercise the connected UI without relying on translator role names.
+foreach (['viewer', 'writer'] as $kind) {
+    $password = wp_generate_password(40, false);
+    $id = wp_insert_user(['user_login' => 'mol_editor_' . $kind, 'user_pass' => $password, 'role' => 'mol_member']);
+    if (is_wp_error($id)) { throw new RuntimeException('Could not create editor permission fixture.'); }
+    $user = new WP_User($id);
+    $user->add_cap('mol_use_editor');
+    if ($kind === 'writer') { $user->add_cap('mol_edit_translations'); }
+    wp_set_current_user($id);
+    $grants = EditorSite::context($work_slug, $reader_draft['slug']);
+    $check($grants['canEdit'] === ($kind === 'writer') && $grants['canDelete'] === false, 'individual ' . $kind . ' grants separate shell, edit and delete');
+    $http_fixture['editor_' . $kind . '_username'] = 'mol_editor_' . $kind;
+    $http_fixture['editor_' . $kind . '_password'] = $password;
+}
 wp_set_current_user($users['manager']);
