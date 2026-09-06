@@ -14,7 +14,7 @@ test('upload queue naturally sorts files and never exceeds two in-flight request
     return { id: Number(job.key) };
   });
   assert.equal(peak, 2);
-  assert.deepEqual(queue.jobs.map(job => job.result.id), [1, 2, 3]);
+  assert.deepEqual(queue.jobs.map(job => job.result?.id), [1, 2, 3]);
   assert.equal(queue.running, false);
 });
 

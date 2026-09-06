@@ -77,7 +77,7 @@ final class MediaService
 			}
 			return $sizes;
 		};
-		$output_format = static function (array $formats, string $filename, string $mime): array {
+		$output_format = static function (array $formats, ?string $filename, ?string $mime): array {
 			if (in_array($mime, ['image/jpeg', 'image/png', 'image/avif'], true) && wp_image_editor_supports(['mime_type' => 'image/webp'])) {
 				$formats[$mime] = get_option('mol_generate_avif', false) && wp_image_editor_supports(['mime_type' => 'image/avif']) ? 'image/avif' : 'image/webp';
 			}
