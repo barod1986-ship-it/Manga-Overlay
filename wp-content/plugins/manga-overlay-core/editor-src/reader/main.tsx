@@ -74,7 +74,7 @@ function start(boot: Bootstrap) {
     const entry = boot.pages.find(item => item.id === Number(page.dataset.pageId));
     if (!entry) return;
     const size = { width: page.clientWidth, height: page.clientWidth * entry.natural_height / entry.natural_width };
-    root.render(<>{(pageElements.get(entry.id) ?? []).map(element => <OverlayElement key={element.id} element={{ ...element, key: String(element.id) }} size={size} />)}</>);
+    root.render(<>{(pageElements.get(entry.id) ?? []).map(element => <OverlayElement key={element.id} element={{ ...element, rotation_mdeg: element.rotation_mdeg ?? 0, z_index: element.z_index ?? 0, key: String(element.id) }} size={size} />)}</>);
   };
   const observer = new ResizeObserver(entries => entries.forEach(entry => renderOverlay(entry.target as HTMLElement)));
   pages.forEach(page => observer.observe(page));
