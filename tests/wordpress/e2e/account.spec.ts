@@ -22,7 +22,9 @@ test('manager reorders pages numerically and reload proves persistence', async (
   await positions.first().fill('3');
   await positions.first().press('Tab');
   await expect(page.locator('#mol-save-order')).toBeEnabled();
+  const reorder = page.waitForResponse(response => response.url().includes('/pages/reorder') && response.request().method() === 'PATCH');
   await page.locator('#mol-save-order').click();
+  expect((await reorder).ok()).toBe(true);
   await expect(page.locator('#mol-save-order')).toBeDisabled();
   await page.goto(adminUrl);
   await page.locator('#mol-chapter').selectOption(String(fixture.reader_chapter_id));
@@ -30,23 +32,35 @@ test('manager reorders pages numerically and reload proves persistence', async (
   // Restore fixture order for the independent public-reader scenarios.
   await positions.last().fill('1');
   await positions.last().press('Tab');
+  const restore = page.waitForResponse(response => response.url().includes('/pages/reorder') && response.request().method() === 'PATCH');
   await page.locator('#mol-save-order').click();
+  expect((await restore).ok()).toBe(true);
   await expect(page.locator('#mol-save-order')).toBeDisabled();
 });
 
 test('signed-in reader persists progress to the current account and restores it', async ({ page }) => {
+  const savedPages: number[] = [];
+  page.on('response', async response => {
+    if (response.url().includes('/reading-progress') && response.ok()) {
+      const result = await response.json() as { data: { page_index: number } };
+      savedPages.push(result.data.page_index);
+    }
+  });
   await login(page);
   await page.goto(fixture.reader_url);
   await expect(page.locator('#mol-reader-toggle')).toBeEnabled();
   await page.locator('#mol-reader-mode').selectOption('paged');
   await page.locator('#mol-reader-page-select').selectOption('0');
   await page.locator('#mol-reader-page-select').selectOption('2');
+  await expect(page.locator('.mol-reader-page:visible')).toHaveAttribute('data-page-index', '2');
   await expect(page.locator('#mol-reader-status')).toHaveText('تم حفظ موضع القراءة', { timeout: 10000 });
+  expect(savedPages.at(-1)).toBe(2);
   await page.reload();
   await expect(page.locator('#mol-reader-mode')).toHaveValue('paged');
-  await expect(page.locator('.mol-reader-page:visible')).toHaveAttribute('data-page-index', '2');
   const stored = await page.locator('#mol-reader-data').textContent();
   const progress = JSON.parse(stored!).progress as { chapter_id: number; page_index: number };
+  console.log('Account progress indices:', JSON.stringify({ savedPages, restoredPage: progress?.page_index }));
   expect(progress.chapter_id).toBe(fixture.reader_chapter_id);
   expect(progress.page_index).toBe(2);
+  await expect(page.locator('.mol-reader-page:visible')).toHaveAttribute('data-page-index', '2');
 });

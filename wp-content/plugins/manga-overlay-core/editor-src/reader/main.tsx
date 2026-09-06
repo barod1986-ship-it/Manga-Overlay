@@ -131,7 +131,7 @@ function start(boot: Bootstrap) {
       const result = await response.json() as components['schemas']['ReadingProgressResponse'];
       if (!validProgress(result.data, boot.chapter.id, pages.length)) throw new Error('progress');
       lastSent = signature;
-      status.textContent = 'تم حفظ موضع القراءة';
+      status.textContent = pending && JSON.stringify(pending) !== signature ? 'جارٍ حفظ موضع القراءة…' : 'تم حفظ موضع القراءة';
     } catch {
       status.textContent = 'تعذر حفظ موضع القراءة في حسابك. ستُعاد المحاولة عند متابعة القراءة.';
       pending ??= outgoing;
@@ -148,6 +148,7 @@ function start(boot: Bootstrap) {
     const progress = positionProgress();
     if (boot.nonce) {
       pending = progress;
+      if (JSON.stringify(progress) !== lastSent) status.textContent = 'جارٍ حفظ موضع القراءة…';
       if (!saveTimer) saveTimer = window.setTimeout(() => { saveTimer = 0; void flush(); }, 1500);
     } else {
       const ok = writeLocal(progressKey, { ...progress, updated_at: new Date().toISOString() });
@@ -168,6 +169,8 @@ function start(boot: Bootstrap) {
   next.addEventListener('click', () => go(current + 1));
   pageSelect.addEventListener('change', () => go(Number(pageSelect.value)));
   modeSelect.addEventListener('change', () => {
+    window.clearTimeout(scrollTimer);
+    scrollTimer = 0;
     mode = modeSelect.value === 'paged' ? 'paged' : 'webtoon';
     rememberPreferences();
     go(current);
@@ -191,6 +194,8 @@ function start(boot: Bootstrap) {
     if (mode !== 'webtoon' || scrollTimer || !pages.length) return;
     scrollTimer = window.setTimeout(() => {
       scrollTimer = 0;
+      // A scroll queued in webtoon mode must not overwrite a later paged selection.
+      if (mode !== 'webtoon') return;
       const marker = Math.min(window.innerHeight * .3, 250);
       const visible = pages.findIndex(page => page.getBoundingClientRect().bottom > marker);
       current = visible < 0 ? pages.length - 1 : visible;
