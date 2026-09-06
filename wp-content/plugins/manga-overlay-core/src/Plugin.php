@@ -36,6 +36,8 @@ final class Plugin
 		global $wpdb;
 		$runtime = new Services\ContentRuntime($wpdb);
 		add_action('rest_api_init', [$runtime->controller, 'register']);
+		$library = new REST\LibraryController(new Database\WorkRepository($wpdb), new Database\ProfileRepository($wpdb));
+		add_action('rest_api_init', [$library, 'register']);
 		add_filter('rest_post_dispatch', [REST\ContentController::class, 'response_headers'], 10, 3);
 		new Admin\ContentScreen($runtime->chapters);
 		add_action('add_meta_boxes_mol_work', [Admin\WorkMetadata::class, 'register']);

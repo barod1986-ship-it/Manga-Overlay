@@ -27,6 +27,7 @@ if (!is_readable($mol_autoloader)) {
 	return;
 }
 require_once $mol_autoloader;
+require_once __DIR__ . '/src/Support/public-api.php';
 unset($mol_autoloader);
 
 register_activation_hook(__FILE__, [MOL\Activation\Activator::class, 'activate']);

@@ -36,7 +36,12 @@ $fault = static function (callable $operation, string $code) use ($check): void 
 	$check(false, 'expected ' . $code);
 };
 $request = static function (string $method, string $path, mixed $body = null, bool $nonce = true): WP_REST_Response {
-	$request = new WP_REST_Request($method, '/mol/v1' . $path);
+	$parsed = parse_url($path);
+	$request = new WP_REST_Request($method, '/mol/v1' . $parsed['path']);
+	if (isset($parsed['query'])) {
+		parse_str($parsed['query'], $query);
+		$request->set_query_params($query);
+	}
 	if ($nonce) {
 		$request->set_header('X-WP-Nonce', wp_create_nonce('wp_rest'));
 	}
@@ -205,6 +210,57 @@ $bundle = $expect($request('GET', '/chapters/' . $draft['id'] . '/elements'), 20
 $check($bundle['meta']->element_count === 1 && $bundle['meta']->page_count === 4, 'bundle includes empty pages and correct counts');
 $expect($request('GET', '/pages/' . $page_id . '/elements'), 200, 'page overlay typed response', 'PageElementsResponse');
 $expect($request('GET', '/chapters/' . $draft['id'] . '/contributors'), 200, 'contributors use unique element attribution', 'ContributorListResponse');
+$check(mol_get_chapter($draft['id']) === null && mol_get_chapter_pages($draft['id']) === [] && mol_get_page_elements($page_id) === [] && mol_get_chapter_contributors($draft['id']) === [], 'public PHP API never inherits manager draft visibility');
+$check(mol_user_can_edit_chapter($users['translator'], $draft['id']) && !mol_user_can_edit_chapter($users['member'], $draft['id']), 'PHP edit permission checks domain capabilities');
+$username = get_userdata($users['translator'])->user_nicename;
+$profile = $expect($request('GET', '/profiles/' . $username), 200, 'public profile hides draft-only attribution', 'ProfileResponse')['data'];
+$check($profile['stats']['elements'] === 0 && $profile['recent_contributions'] === [], 'draft statistics and recent activity are not leaked');
+$expect($request('GET', '/profiles/no-such-mol-user'), 404, 'unknown profile', 'ErrorResponse');
+
+wp_update_post(['ID' => $work, 'post_title' => 'Alpha content fixture', 'post_date' => '2024-01-01 00:00:00', 'post_date_gmt' => '2024-01-01 00:00:00']);
+update_post_meta($work, '_mol_alt_titles', ['اسم بديل فريد MOL alias']);
+wp_set_object_terms($work, 'manga', 'mol_work_type');
+wp_set_object_terms($work, 'mol-fixture-genre', 'mol_genre');
+wp_set_object_terms($work, 'ja', 'mol_source_language');
+wp_set_object_terms($work, 'ongoing', 'mol_work_status');
+$other_work = wp_insert_post(['post_type' => 'mol_work', 'post_status' => 'publish', 'post_title' => 'Zulu content fixture', 'post_date' => '2025-01-01 00:00:00', 'post_date_gmt' => '2025-01-01 00:00:00']);
+wp_set_object_terms($other_work, 'manhwa', 'mol_work_type');
+wp_set_object_terms($other_work, 'mol-fixture-genre', 'mol_genre');
+wp_set_object_terms($other_work, 'ko', 'mol_source_language');
+wp_set_object_terms($other_work, 'completed', 'mol_work_status');
+$other_chapter = $runtime->chapter_service->create((object) ['work_id' => $other_work, 'chapter_label' => '1', 'is_published' => true]);
+$runtime->chapters->update($other_chapter['id'], ['published_at' => '2020-01-01 00:00:00']);
+$runtime->chapter_service->create((object) ['work_id' => $other_work, 'chapter_label' => '2', 'translation_status' => 'completed']);
+$expect($request('PATCH', '/chapters/' . $draft['id'], ['is_published' => true]), 200, 'publish translation-bearing chapter', 'ChapterResponse');
+$profile = $expect($request('GET', '/profiles/' . $username), 200, 'profile resolves published contributions', 'ProfileResponse')['data'];
+$check($profile['stats'] === ['works' => 1, 'chapters' => 1, 'elements' => 1] && count($profile['recent_contributions']) === 1, 'public contribution statistics count unique elements');
+$check(mol_get_chapter($draft['id'])['id'] === $draft['id'] && count(mol_get_chapter_elements($draft['id'])) === 4, 'public PHP reader returns published DTOs');
+$work_response = $expect($request('GET', '/works/' . $work), 200, 'typed work detail', 'WorkResponse')['data'];
+$check($work_response['translation_summary']['total'] === 2 && $work_response['read_count'] === null, 'work summary uses published chapters and no invented read counter');
+$private_work = wp_insert_post(['post_type' => 'mol_work', 'post_status' => 'draft', 'post_title' => 'private work fixture']);
+$expect($request('GET', '/works/' . $private_work), 404, 'public work endpoint hides draft work', 'ErrorResponse');
+$library = static function (array $params) use ($request, $expect): array {
+	return $expect($request('GET', '/library?' . http_build_query($params)), 200, 'typed filtered library', 'WorkListResponse');
+};
+$alias = $library(['search' => 'اسم بديل فريد']);
+$check(array_column($alias['data'], 'id') === [$work], 'library searches alternative titles');
+$check($library(['search' => "' OR 1=1 --"])['data'] === [], 'library search safely handles SQL metacharacters');
+$filtered = $library(['genre' => ['mol-fixture-genre'], 'type' => 'manga', 'source_lang' => 'ja', 'work_status' => 'ongoing', 'translation_status' => 'completed']);
+$check(array_column($filtered['data'], 'id') === [$work], 'combined library filters use published translation status');
+foreach (['latest_chapter' => [$work, $other_work], 'latest_work' => [$other_work, $work], 'title_asc' => [$work, $other_work]] as $sort => $expected_ids) {
+	$listed = $library(['genre' => ['mol-fixture-genre'], 'sort' => $sort]);
+	$check(array_column($listed['data'], 'id') === $expected_ids, 'library order: ' . $sort);
+}
+$paginated = $library(['genre' => ['mol-fixture-genre'], 'sort' => 'title_asc', 'page' => 2, 'per_page' => 1]);
+$check(array_column($paginated['data'], 'id') === [$other_work] && $paginated['meta']->total === 2 && $paginated['meta']->total_pages === 2, 'library pagination metadata');
+$unsupported_sort = $expect($request('GET', '/library?sort=most_read'), 400, 'most-read without backend rejected', 'ErrorResponse');
+$check($unsupported_sort['code'] === 'mol_sort_unavailable', 'canonical unavailable-sort error');
+foreach (['per_page=101', 'page=0', 'sort=invalid', 'translation_status=invalid', 'search=' . str_repeat('a', 201)] as $invalid) {
+	$expect($request('GET', '/library?' . $invalid), 400, 'invalid library query rejected', 'ErrorResponse');
+}
+$expect($request('PATCH', '/chapters/' . $draft['id'], ['is_published' => false]), 200, 'unpublish translated chapter', 'ChapterResponse');
+$check($library(['genre' => ['mol-fixture-genre'], 'translation_status' => 'completed'])['data'] === [], 'chapter changes immediately invalidate library membership');
+$check($expect($request('GET', '/profiles/' . $username), 200, 'profile after unpublish', 'ProfileResponse')['data']['stats']['elements'] === 0, 'unpublishing removes public profile statistics');
 $original_path = get_attached_file($first['data']['image']['attachment_id']);
 $expect($request('DELETE', '/pages/' . $page_id), 204, 'delete page cascades dependent rows');
 foreach (['elements' => 'id', 'element_locks' => 'element_id', 'contributions' => 'element_id'] as $table => $column) {

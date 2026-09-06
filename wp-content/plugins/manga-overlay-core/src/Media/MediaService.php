@@ -70,19 +70,8 @@ final class MediaService
 		}
 		$created = ['attachment_id' => 0, 'files' => [$upload['file']], 'width' => $info['width'], 'height' => $info['height']];
 		$no_scale = static fn () => false;
-		$size_filter = static function (): array {
-			$sizes = [];
-			foreach ([480, 800, 1080, 1600] as $width) {
-				$sizes['mol-' . $width] = ['width' => $width, 'height' => 0, 'crop' => false];
-			}
-			return $sizes;
-		};
-		$output_format = static function (array $formats, ?string $filename, ?string $mime): array {
-			if (in_array($mime, ['image/jpeg', 'image/png', 'image/avif'], true) && wp_image_editor_supports(['mime_type' => 'image/webp'])) {
-				$formats[$mime] = get_option('mol_generate_avif', false) && wp_image_editor_supports(['mime_type' => 'image/avif']) ? 'image/avif' : 'image/webp';
-			}
-			return $formats;
-		};
+		$no_subsizes = static fn () => [];
+		$keep_format = static fn () => [];
 		try {
 			$id = wp_insert_attachment(['post_mime_type' => $info['mime'], 'post_title' => sanitize_text_field(pathinfo($file['name'], PATHINFO_FILENAME)), 'post_status' => 'inherit', 'post_parent' => $work_id], $upload['file'], $work_id, true);
 			if (is_wp_error($id)) {
@@ -90,23 +79,44 @@ final class MediaService
 			}
 			$created['attachment_id'] = (int) $id;
 			add_filter('big_image_size_threshold', $no_scale);
-			add_filter('intermediate_image_sizes_advanced', $size_filter);
-			add_filter('image_editor_output_format', $output_format, 10, 3);
+			add_filter('intermediate_image_sizes_advanced', $no_subsizes);
+			add_filter('image_editor_output_format', $keep_format, PHP_INT_MAX);
 			try {
 				$metadata = wp_generate_attachment_metadata($id, $upload['file']);
-				remove_filter('image_editor_output_format', $output_format, 10);
-				if (empty($metadata['sizes']) && $info['width'] > 480) {
-					$metadata = wp_generate_attachment_metadata($id, $upload['file']);
-				}
 			} finally {
 				remove_filter('big_image_size_threshold', $no_scale);
-				remove_filter('intermediate_image_sizes_advanced', $size_filter);
-				remove_filter('image_editor_output_format', $output_format, 10);
+				remove_filter('intermediate_image_sizes_advanced', $no_subsizes);
+				remove_filter('image_editor_output_format', $keep_format, PHP_INT_MAX);
+			}
+			$metadata['sizes'] = [];
+			$target = wp_image_editor_supports(['mime_type' => 'image/webp']) ? 'image/webp' : $info['mime'];
+			if (get_option('mol_generate_avif', false) && wp_image_editor_supports(['mime_type' => 'image/avif'])) {
+				$target = 'image/avif';
+			}
+			foreach ([480, 800, 1080, 1600] as $width) {
+				if ($width >= $info['width']) {
+					continue;
+				}
+				$editor = wp_get_image_editor($upload['file']);
+				if (is_wp_error($editor) || is_wp_error($editor->resize($width, 0, false))) {
+					continue;
+				}
+				// Save each derivative to its own file. A format filter on the full-size
+				// Core pipeline can replace the attachment source, so it is not used here.
+				$path = $editor->generate_filename('mol-' . $width, dirname($upload['file']), image_type_to_extension($target === 'image/avif' ? IMAGETYPE_AVIF : ($target === 'image/webp' ? IMAGETYPE_WEBP : ($target === 'image/png' ? IMAGETYPE_PNG : IMAGETYPE_JPEG)), false));
+				$path = dirname($path) . '/' . wp_unique_filename(dirname($path), wp_basename($path));
+				$saved = $editor->save($path, $target);
+				if (is_wp_error($saved)) {
+					$fallback = $editor->generate_filename('mol-' . $width);
+					$fallback = dirname($fallback) . '/' . wp_unique_filename(dirname($fallback), wp_basename($fallback));
+					$saved = $editor->save($fallback, $info['mime']);
+				}
+				if (!is_wp_error($saved)) {
+					$created['files'][] = $saved['path'];
+					$metadata['sizes']['mol-' . $width] = array_intersect_key($saved, array_flip(['file', 'width', 'height', 'mime-type', 'filesize']));
+				}
 			}
 			wp_update_attachment_metadata($id, $metadata);
-			foreach ($metadata['sizes'] ?? [] as $size) {
-				$created['files'][] = dirname($upload['file']) . '/' . wp_basename($size['file']);
-			}
 			return $created;
 		} catch (\Throwable $error) {
 			$this->cleanup($created);
