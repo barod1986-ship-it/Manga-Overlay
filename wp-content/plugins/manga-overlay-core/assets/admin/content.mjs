@@ -53,7 +53,8 @@ if (boot) {
     const editor = $('mol-open-editor');
     if (editor) {
       editor.hidden = !chapter || !config.editorBaseUrl;
-      if (!editor.hidden) editor.href = config.editorBaseUrl + encodeURIComponent(decodeURIComponent(chapter.slug)) + '/edit/';
+      // Chapter slugs are already canonical and URL-encoded by WordPress.
+      if (!editor.hidden) editor.href = config.editorBaseUrl + chapter.slug + '/edit/';
       else editor.removeAttribute('href');
     }
     for (const control of form.elements) {

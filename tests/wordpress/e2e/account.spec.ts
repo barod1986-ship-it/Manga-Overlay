@@ -8,8 +8,9 @@ async function login(page: Page) {
   await page.goto('/wp-login.php?redirect_to=' + encodeURIComponent(fixture.reader_url));
   await page.locator('#user_login').fill(fixture.username);
   await page.locator('#user_pass').fill(fixture.password);
+  const destination = new URL(fixture.reader_url);
   await Promise.all([
-    page.waitForURL(fixture.reader_url, { waitUntil: 'domcontentloaded' }),
+    page.waitForURL(url => url.origin === destination.origin && decodeURI(url.pathname) === decodeURI(destination.pathname), { waitUntil: 'domcontentloaded' }),
     page.locator('#wp-submit').click(),
   ]);
 }
@@ -18,6 +19,7 @@ test('manager reorders pages numerically and reload proves persistence', async (
   await login(page);
   const adminUrl = '/wp-admin/admin.php?page=manga-overlay&work_id=' + fixture.reader_work_id;
   await page.goto(adminUrl);
+  await expect(page.locator('#mol-open-editor')).toBeHidden();
   await page.locator('#mol-chapter').selectOption({ value: String(fixture.reader_chapter_id) });
   const positions = page.locator('#mol-pages input[type=number]');
   await expect(positions).toHaveCount(3);

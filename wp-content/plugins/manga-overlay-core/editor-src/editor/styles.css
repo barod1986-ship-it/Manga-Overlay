@@ -24,7 +24,7 @@ body.mol-editing { margin:0; background:#161d19; color:#eef0e8; overflow:hidden;
 .mol-editor-properties { border-inline-end:1px solid var(--mol-editor-line); }.mol-editor-layers { border-inline-start:1px solid var(--mol-editor-line); }
 .mol-editor-panel-title { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-block-end:18px; }
 .mol-editor-muted { color:var(--mol-editor-muted); line-height:1.9; }.mol-editor-type { color:#d8c794; margin-block-end:12px !important; }
-.mol-editor-properties label { display:grid; gap:8px; }.mol-editor textarea { width:100%; resize:vertical; min-height:120px; padding:12px; background:#152018; }
+.mol-editor-properties label { display:grid; gap:8px; }.mol-editor textarea { margin-block-start:8px; width:100%; resize:vertical; min-height:120px; padding:12px; background:#152018; }
 .mol-editor details { border-block-start:1px solid var(--mol-editor-line); margin-block-start:16px; }.mol-editor summary { cursor:pointer; min-height:44px; padding-block:12px; }
 .mol-editor dl { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px; }.mol-editor dt { color:var(--mol-editor-muted); }.mol-editor dd { margin:0; overflow-wrap:anywhere; }
 .mol-editor-layers details { margin:0; border:0; }.mol-editor-layers summary span { margin-inline-start:10px; color:var(--mol-editor-muted); }
@@ -41,7 +41,7 @@ body.mol-editing { margin:0; background:#161d19; color:#eef0e8; overflow:hidden;
 @media(max-width:1100px) { .mol-editor-workspace { grid-template-columns:230px minmax(0,1fr) 180px; }.mol-editor-properties,.mol-editor-layers { padding:12px; } }
 @media(max-width:800px) {
   .mol-editor-header { padding:8px 12px; gap:4px 10px; }.mol-editor-header>a { font-size:11px; max-width:78px; }.mol-editor h1 { font-size:14px; }.mol-editor-title p { font-size:10px; }.mol-editor-save-state { font-size:10px; }
-  .mol-editor-controls { gap:8px; padding:8px 12px; }.mol-editor-page-controls { width:100%; justify-content:space-between; }.mol-editor-page-controls label { flex:1; }.mol-editor-page-controls select { flex:1; min-width:0; font-size:16px; }
+  .mol-editor-controls { gap:8px; padding:8px 12px; }.mol-editor-page-controls { width:100%; justify-content:space-between; }.mol-editor-page-controls label { flex:none; }.mol-editor-page-controls select { flex:1; min-width:0; font-size:16px; }
   .mol-editor-workspace { grid-template-columns:minmax(0,1fr); }.mol-editor-properties,.mol-editor-layers { display:none; }
   .mol-editor-open-properties .mol-editor-properties,.mol-editor-open-layers .mol-editor-layers { display:block; position:fixed; inset-inline:0; inset-block-end:calc(62px + env(safe-area-inset-bottom)); height:45dvh; max-height:75dvh; z-index:20000; padding:16px; border-block-start:2px solid #83947b; }
   .mol-editor-properties textarea { font-size:16px; }.mol-editor-bottom { min-height:62px; padding:8px 12px max(8px,env(safe-area-inset-bottom)); }.mol-editor-bottom>span { margin-inline-end:auto; font-size:10px; max-width:130px; }

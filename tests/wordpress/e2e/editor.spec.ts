@@ -13,8 +13,9 @@ async function login(page: Page, member = false) {
   await page.goto('/wp-login.php?redirect_to=' + encodeURIComponent(fixture.editor_url));
   await page.locator('#user_login').fill(member ? fixture.member_username : fixture.editor_username);
   await page.locator('#user_pass').fill(member ? fixture.member_password : fixture.editor_password);
+  const destination = new URL(fixture.editor_url);
   await Promise.all([
-    page.waitForURL(fixture.editor_url, { waitUntil: 'domcontentloaded' }),
+    page.waitForURL(url => url.origin === destination.origin && decodeURI(url.pathname) === decodeURI(destination.pathname), { waitUntil: 'domcontentloaded' }),
     page.locator('#wp-submit').click(),
   ]);
 }
@@ -52,7 +53,7 @@ test('translator inspects live layers and properties, preview preserves the orig
   await page.locator('.mol-editor-layers button').filter({ hasText: 'نص خاص داخل المحرر' }).click();
   await expect(page.getByLabel('النص العربي', { exact: true })).toHaveValue('نص خاص داخل المحرر');
   await expect(page.getByLabel('النص العربي', { exact: true })).toHaveAttribute('readonly', '');
-  await expect(page).toHaveURL(fixture.editor_url + `#page=${firstPage}&element=${bubble}`);
+  await expect.poll(() => decodeURI(page.url())).toBe(decodeURI(fixture.editor_url + `#page=${firstPage}&element=${bubble}`));
   const image = page.locator('.mol-editor-stage img');
   await image.evaluate(node => node.setAttribute('data-original-node', 'retained'));
   await page.getByRole('button', { name: 'معاينة', exact: true }).click();
@@ -87,6 +88,7 @@ test('translator inspects live layers and properties, preview preserves the orig
 
 test('editor recovers a failed page read and handles empty chapters and removed page links', async ({ page }) => {
   await login(page);
+  await expect(page.locator('.mol-element')).toHaveCount(4);
   let first = true;
   await page.route(`**/pages/${firstPage}/elements`, async route => {
     if (first) { first = false; await route.fulfill({ status: 500, json: { code: 'internal_server_error', message: 'Temporary test failure', data: { status: 500 } } }); }
@@ -102,11 +104,12 @@ test('editor recovers a failed page read and handles empty chapters and removed 
   await expect(page.getByLabel('الصفحة', { exact: true })).toBeDisabled();
   await page.goto(fixture.editor_url + '#page=99999999&element=99999999');
   await expect(page.locator('.mol-editor-stage')).toHaveAttribute('data-page-id', String(firstPage));
-  await expect(page).toHaveURL(fixture.editor_url + '#page=' + firstPage);
+  await expect.poll(() => decodeURI(page.url())).toBe(decodeURI(fixture.editor_url + '#page=' + firstPage));
 });
 
 test('page navigation cancels a delayed old overlay response without displaying the wrong page layers', async ({ page }) => {
   await login(page);
+  await expect(page.locator('.mol-element')).toHaveCount(4);
   let release!: () => void;
   let started!: () => void;
   const gate = new Promise<void>(resolve => { release = resolve; });

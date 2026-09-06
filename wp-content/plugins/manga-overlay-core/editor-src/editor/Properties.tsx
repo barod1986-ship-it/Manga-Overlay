@@ -8,7 +8,7 @@ export function Properties({ element, onClose }: { element?: Element; onClose: (
     <div className="mol-editor-panel-title"><h2>خصائص العنصر</h2><button className="mol-editor-mobile" onClick={onClose}>إغلاق الخصائص</button></div>
     {!element || !style ? <p className="mol-editor-muted">حدد عنصرًا على الصفحة أو من قائمة الطبقات لفحص النص وخصائصه.</p> : <>
       <p className="mol-editor-type">{ELEMENT_LABELS[element.element_type]}</p>
-      <label>النص العربي<textarea value={element.content} readOnly rows={5} dir="rtl" /></label>
+      <label htmlFor="mol-editor-content">النص العربي</label><textarea id="mol-editor-content" value={element.content} readOnly rows={5} dir="rtl" />
       <details open><summary>الخط والمظهر</summary><dl>
         <dt>الخط</dt><dd dir="auto">{style.fontId ?? 'cairo'}</dd>
         <dt>حجم الخط</dt><dd>{percent(style.fontSizeUnit ?? 26000)}</dd>

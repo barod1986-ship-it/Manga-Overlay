@@ -59,9 +59,9 @@ export function App({ boot }: { boot: Bootstrap }) {
     <nav className="mol-editor-controls" aria-label="أدوات مساحة الترجمة">
       {!preview && <div className="mol-editor-page-controls">
         <button aria-label="الصفحة السابقة" disabled={pageIndex <= 0 || blocked} onClick={() => navigate({ pageId: pages[pageIndex - 1].id, elementId: null })}>السابق</button>
-        <label>الصفحة<select value={pageId ?? ''} disabled={!pages.length || blocked} onChange={event => navigate({ pageId: Number(event.target.value), elementId: null })}>
+        <label htmlFor="mol-editor-page">الصفحة</label><select id="mol-editor-page" value={pageId ?? ''} disabled={!pages.length || blocked} onChange={event => navigate({ pageId: Number(event.target.value), elementId: null })}>
           {!pages.length && <option value="">—</option>}{pages.map(item => <option key={item.id} value={item.id}>{item.page_index + 1} من {pages.length}</option>)}
-        </select></label>
+        </select>
         <button aria-label="الصفحة التالية" disabled={pageIndex < 0 || pageIndex >= pages.length - 1 || blocked} onClick={() => navigate({ pageId: pages[pageIndex + 1].id, elementId: null })}>التالي</button>
       </div>}
       <button onClick={() => setVisible(value => !value)} aria-pressed={visible} disabled={!page || !!error}>الترجمة العربية</button>
