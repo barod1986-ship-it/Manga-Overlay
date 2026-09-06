@@ -32,6 +32,9 @@ final class Plugin
 		add_filter('pre_insert_term', [WorkType::class, 'validate_type_term'], 10, 3);
 		add_filter('pre_delete_post', [WorkDeletionPolicy::class, 'guard'], 10, 2);
 		add_filter('pre_trash_post', [WorkDeletionPolicy::class, 'guard'], 10, 2);
+		add_action('after_delete_post', [Database\WorkMutationLock::class, 'release']);
+		add_action('trashed_post', [Database\WorkMutationLock::class, 'release']);
+		add_action('shutdown', [Database\WorkMutationLock::class, 'cleanup']);
 		add_filter('pre_delete_attachment', [Security\AttachmentDeletionPolicy::class, 'guard'], 10, 2);
 		global $wpdb;
 		$runtime = new Services\ContentRuntime($wpdb);

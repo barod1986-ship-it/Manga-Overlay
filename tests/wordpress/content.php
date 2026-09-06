@@ -51,7 +51,7 @@ $request = static function (string $method, string $path, mixed $body = null, bo
 	}
 	return rest_do_request($request);
 };
-$expect = static function (WP_REST_Response $response, int $status, string $label, ?string $schema = null) use ($check, $sample): array {
+$expect = static function (WP_REST_Response $response, int $status, string $label, ?string $schema = null) use ($check, $sample): mixed {
 	$data = $response->get_data();
 	$check($response->get_status() === $status, $label . ' (' . $response->get_status() . ($response->get_status() >= 400 ? ' ' . wp_json_encode($data) : '') . ')');
 	if ($schema) {
@@ -234,6 +234,16 @@ $runtime->chapter_service->create((object) ['work_id' => $other_work, 'chapter_l
 $expect($request('PATCH', '/chapters/' . $draft['id'], ['is_published' => true]), 200, 'publish translation-bearing chapter', 'ChapterResponse');
 $profile = $expect($request('GET', '/profiles/' . $username), 200, 'profile resolves published contributions', 'ProfileResponse')['data'];
 $check($profile['stats'] === ['works' => 1, 'chapters' => 1, 'elements' => 1] && count($profile['recent_contributions']) === 1, 'public contribution statistics count unique elements');
+// A public child must also have a publicly visible work, even in an admin session.
+wp_update_post(['ID' => $work, 'post_status' => 'draft']);
+$check(mol_get_chapter($draft['id']) === null && mol_get_chapter_pages($draft['id']) === [], 'public PHP hides published chapters under a draft work');
+wp_set_current_user(0);
+foreach (['/chapters/' . $draft['id'], '/chapters/' . $draft['id'] . '/pages', '/chapters/' . $draft['id'] . '/elements', '/chapters/' . $draft['id'] . '/contributors', '/pages/' . $page_id . '/elements'] as $path) {
+	$expect($request('GET', $path, null, false), 404, 'draft parent hides descendant ' . $path, 'ErrorResponse');
+}
+wp_set_current_user($users['manager']);
+$expect($request('GET', '/chapters/' . $draft['id']), 200, 'authenticated editor retains draft-parent access', 'ChapterResponse');
+wp_update_post(['ID' => $work, 'post_status' => 'publish']);
 $check(mol_get_chapter($draft['id'])['id'] === $draft['id'] && count(mol_get_chapter_elements($draft['id'])) === 4, 'public PHP reader returns published DTOs');
 $work_response = $expect($request('GET', '/works/' . $work), 200, 'typed work detail', 'WorkResponse')['data'];
 $check($work_response['translation_summary']['total'] === 2 && $work_response['read_count'] === null, 'work summary uses published chapters and no invented read counter');
