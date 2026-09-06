@@ -26,7 +26,7 @@ if (boot) {
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     let response;
     try {
-      response = await fetch(new URL(path, config.api), {
+      response = await fetch(config.api.replace(/\/$/, '') + '/' + path, {
         method, headers, credentials: 'same-origin', cache: 'no-store',
         body: body === undefined ? undefined : JSON.stringify(body),
       });
@@ -99,6 +99,24 @@ if (boot) {
           orderDirty = true;
           renderPages();
         };
+        const positionLabel = document.createElement('label');
+        positionLabel.textContent = 'الموضع';
+        const position = document.createElement('input');
+        position.type = 'number'; position.min = '1'; position.max = String(pages.length); position.step = '1';
+        position.value = String(index + 1); position.disabled = queue.running;
+        position.setAttribute('aria-label', 'موضع الصفحة ' + (index + 1));
+        position.style.inlineSize = '70px';
+        position.addEventListener('change', () => {
+          const target = Number(position.value);
+          if (!Number.isInteger(target) || target < 1 || target > pages.length) {
+            position.value = String(index + 1);
+            notice('اختر موضعًا من 1 إلى ' + pages.length + '.', true);
+            return;
+          }
+          move(target - 1);
+        });
+        positionLabel.append(position);
+        actions.append(positionLabel);
         const before = button('السابق', () => move(index - 1));
         const after = button('التالي', () => move(index + 1));
         before.disabled = index === 0 || queue.running;
@@ -258,7 +276,7 @@ if (boot) {
     $('mol-start-upload').disabled = !chapterId || queue.running || !queue.jobs.some(job => job.status === 'queued');
     $('mol-retry-upload').hidden = !queue.jobs.some(job => job.status === 'error');
     $('mol-retry-upload').disabled = queue.running || !chapterId;
-    if (queue.running) for (const control of document.querySelectorAll('#mol-pages button')) control.disabled = true;
+    if (queue.running) for (const control of document.querySelectorAll('#mol-pages button, #mol-pages input')) control.disabled = true;
     for (const id of ['mol-work', 'mol-chapter', 'mol-new-chapter', 'mol-images', 'mol-delete-chapter', 'mol-refresh-pages']) {
       const control = $(id);
       if (control) control.disabled = queue.running || (id === 'mol-delete-chapter' && !chapterId);
@@ -268,7 +286,7 @@ if (boot) {
   function upload(job, progress, id) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', new URL('chapters/' + id + '/pages', config.api));
+      xhr.open('POST', config.api.replace(/\/$/, '') + '/chapters/' + id + '/pages');
       xhr.setRequestHeader('X-WP-Nonce', config.nonce);
       xhr.setRequestHeader('MOL-Idempotency-Key', job.key);
       xhr.timeout = 120000;

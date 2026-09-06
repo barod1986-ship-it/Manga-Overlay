@@ -1,6 +1,6 @@
 # WordPress foundation
 
-The core plugin now contains the T-03 bootstrap, the nine canonical SQL tables from T-04, transaction ownership, a chapter DTO/repository, normalized geometry validation, and the T-05 work CPT/taxonomy/meta registrations. T-04 remains partial: the other repositories, style/request validators and content services still need implementation.
+The core plugin contains the T-03 bootstrap, all nine canonical SQL tables, transaction ownership, typed chapter/page/library/profile repositories, T-05 work registrations, T-06 content administration and T-07 public data APIs. The accompanying theme adds T-08 and the T-09 reader foundation. T-04 remains partial for translation mutation/locks/presets/report services and validators.
 
 ## Build and activate on development WordPress
 
@@ -30,7 +30,7 @@ The GitHub job `wordpress-foundation` runs PHP 8.4 and WordPress 7.1 against bot
 
 Tests cover the non-default `qa_` table prefix, nine InnoDB/utf8mb4 tables, idempotent migrations, permission grants/revocation, core REST work creation and protected metadata, the six work types, DECIMAL-to-float normalization, UTC dates, commit/rollback, nested-transaction rejection, geometry bounds, failed-migration version markers and data retention on deactivation.
 
-The job is not a deployment workflow. Tests do not prove production reverse-proxy behavior, mobile devices, performance or the future `/mol/v1` controllers. PHPStan/PHPCS and the remaining domain/REST tests are still outstanding gates.
+The job is not a deployment workflow. Tests do not prove production reverse-proxy behavior, mobile devices, performance or completion of the remaining translation-mutation `/mol/v1` controllers. PHPStan/PHPCS and the remaining domain/REST tests are still outstanding gates.
 
 Primary implementation references: [WordPress table creation](https://developer.wordpress.org/plugins/creating-tables-with-plugins/), [CPT registration](https://developer.wordpress.org/reference/functions/register_post_type/) and [registered metadata](https://developer.wordpress.org/reference/functions/register_meta/).
 

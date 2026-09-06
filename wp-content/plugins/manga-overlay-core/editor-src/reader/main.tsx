@@ -85,7 +85,7 @@ function start(boot: Bootstrap) {
     track.style.width = `${Math.min(viewport.clientWidth, 860) * zoom}px`;
     zoomReset.textContent = `${Math.round(zoom * 100)}%`;
     zoomOut.disabled = zoom <= 1;
-    zoomIn.disabled = zoom >= 3;
+    zoomIn.disabled = !pages.length || zoom >= 3;
     zoomReset.disabled = pages.length === 0;
   }
   new ResizeObserver(() => updateZoom(zoom)).observe(viewport);
@@ -101,6 +101,7 @@ function start(boot: Bootstrap) {
       renderOverlay(page);
     });
     modeSelect.value = mode;
+    modeSelect.disabled = !pages.length;
     pageSelect.value = String(current);
     previous.disabled = current === 0;
     next.disabled = current >= pages.length - 1;
