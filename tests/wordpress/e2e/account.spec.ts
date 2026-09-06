@@ -21,6 +21,7 @@ test('manager reorders pages numerically and reload proves persistence', async (
   await page.locator('#mol-chapter').selectOption({ value: String(fixture.reader_chapter_id) });
   const positions = page.locator('#mol-pages input[type=number]');
   await expect(positions).toHaveCount(3);
+  await expect(page.locator('#mol-open-editor')).toHaveAttribute('href', fixture.reader_url + 'edit/');
   const originalImage = await page.locator('#mol-pages img').first().getAttribute('src');
   await positions.first().fill('3');
   await positions.first().press('Tab');

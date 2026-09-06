@@ -7,7 +7,7 @@ add_action('after_setup_theme', static function (): void {
 	add_theme_support('html5', ['search-form', 'gallery', 'caption', 'style', 'script']);
 });
 add_action('wp_enqueue_scripts', static function (): void {
-	wp_enqueue_style('mol-site', get_stylesheet_uri(), [], '0.1.0');
+	wp_enqueue_style('mol-site', get_stylesheet_uri(), [], '0.1.1');
 });
 add_filter('body_class', static function (array $classes): array {
 	if (class_exists('MOL\\Frontend\\Routes') && MOL\Frontend\Routes::$chapter) {

@@ -1,11 +1,11 @@
 {
   "name": "@mol/core",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build && vite build --config vite.reader.config.ts"
+    "build": "vite build && vite build --config vite.reader.config.ts && vite build --config vite.editor.config.ts"
   },
   "dependencies": {
     "@fontsource-variable/cairo": "5.3.0",

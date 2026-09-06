@@ -13,6 +13,7 @@ final class Routes
 
 	public static function register(): void
 	{
+		add_rewrite_rule('^series/([^/]+)/chapter/([^/]+)/edit/?$', 'index.php?post_type=mol_work&name=$matches[1]&mol_chapter_slug=$matches[2]&mol_editor=1', 'top');
 		add_rewrite_rule('^series/([^/]+)/chapter/([^/]+)/?$', 'index.php?post_type=mol_work&name=$matches[1]&mol_chapter_slug=$matches[2]', 'top');
 		add_rewrite_rule('^u/([^/]+)/?$', 'index.php?mol_profile=$matches[1]', 'top');
 	}
@@ -21,12 +22,12 @@ final class Routes
 	{
 		add_action('init', static function (): void {
 			self::register();
-			if (get_option('mol_public_routes_version') !== '1') {
+			if (get_option('mol_public_routes_version') !== '2') {
 				flush_rewrite_rules(false);
-				update_option('mol_public_routes_version', '1');
+				update_option('mol_public_routes_version', '2');
 			}
 		}, 20);
-		add_filter('query_vars', static fn (array $vars): array => array_merge($vars, ['mol_chapter_slug', 'mol_profile']));
+		add_filter('query_vars', static fn (array $vars): array => array_merge($vars, ['mol_chapter_slug', 'mol_profile', 'mol_editor']));
 		add_action('template_redirect', [self::class, 'resolve'], 0);
 		add_filter('redirect_canonical', static fn ($url) => (self::$custom || is_post_type_archive('mol_work')) ? false : $url);
 		add_filter('template_include', [self::class, 'template']);
@@ -35,6 +36,11 @@ final class Routes
 
 	public static function resolve(): void
 	{
+		if ((string) get_query_var('mol_editor') === '1') {
+			self::$custom = true;
+			EditorSite::resolve();
+			return;
+		}
 		$slug = get_query_var('mol_chapter_slug');
 		$username = get_query_var('mol_profile');
 		self::$custom = (bool) ($slug || $username);
@@ -65,12 +71,19 @@ final class Routes
 
 	public static function template(string $template): string
 	{
+		if (EditorSite::$context) {
+			return dirname(__DIR__, 2) . '/templates/editor.php';
+		}
 		$name = self::$chapter ? 'templates/reader.php' : (self::$profile ? 'author.php' : (self::$custom ? '404.php' : ''));
 		return $name ? (locate_template($name) ?: $template) : $template;
 	}
 
 	public static function assets(): void
 	{
+		if (EditorSite::$context) {
+			EditorSite::assets();
+			return;
+		}
 		if (!self::$chapter) {
 			return;
 		}

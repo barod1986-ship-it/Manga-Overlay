@@ -54,6 +54,7 @@ final class ContentScreen
 		$data = [
 			'api' => esc_url_raw(rest_url('mol/v1/')), 'nonce' => wp_create_nonce('wp_rest'), 'workId' => $work_id,
 			'chapters' => $chapters, 'manage' => $manage, 'upload' => $upload, 'review' => $review,
+			'editorBaseUrl' => current_user_can('mol_use_editor') && $work_id ? home_url('/series/' . get_post_field('post_name', $work_id) . '/chapter/') : null,
 			'capabilities' => MediaService::capabilities(),
 		];
 		?>
@@ -65,6 +66,7 @@ final class ContentScreen
 			<div class="mol-selectors">
 				<label>العمل<select id="mol-work"><?php foreach ($works as $work) : ?><option value="<?php echo (int) $work->ID; ?>" <?php selected($work_id, $work->ID); ?>><?php echo esc_html($work->post_title); ?></option><?php endforeach; ?></select></label>
 				<label>الفصل<select id="mol-chapter"><option value="">اختر فصلًا</option></select></label>
+				<?php if (current_user_can('mol_use_editor')) : ?><a class="button" id="mol-open-editor" hidden>مساحة الترجمة</a><?php endif; ?>
 				<?php if ($manage) : ?><button type="button" class="button button-primary" id="mol-new-chapter" <?php disabled(!$work_id); ?>>فصل جديد</button><?php endif; ?>
 			</div>
 			<?php if (!$works) : ?><p class="mol-empty">لا توجد أعمال متاحة. أضف عملًا من إدارة الأعمال لبدء إنشاء الفصول.</p><?php endif; ?>

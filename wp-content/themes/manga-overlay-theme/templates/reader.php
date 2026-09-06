@@ -14,6 +14,7 @@ get_header();
 <header class="mol-reader-heading"><a href="<?php echo esc_url(mol_theme_work_url($work)); ?>" dir="auto"><?php echo esc_html($work['title']); ?></a><h1>الفصل <?php echo esc_html($chapter['chapter_label']); ?><?php if ($chapter['title']) : ?> · <bdi><?php echo esc_html($chapter['title']); ?></bdi><?php endif; ?></h1><p><?php echo esc_html(mol_theme_status($chapter['translation_status'])); ?></p></header>
 <button type="button" id="mol-show-toolbar" class="mol-show-toolbar" hidden>إظهار أدوات القراءة</button>
 <div class="mol-reader-toolbar" id="mol-reader-toolbar">
+<?php if (current_user_can('mol_use_editor')) : ?><a class="mol-editor-link" href="<?php echo esc_url(MOL\Frontend\PublicSite::chapter_url($chapter) . 'edit/'); ?>">مساحة الترجمة</a><?php endif; ?>
 <label>الفصل<select id="mol-reader-chapter"><?php foreach ($chapters as $item) : ?><option value="<?php echo esc_url(mol_theme_chapter_link($item)); ?>" <?php selected($item['id'], $chapter['id']); ?>><?php echo esc_html('الفصل ' . $item['chapter_label'] . ($item['title'] ? ' · ' . $item['title'] : '')); ?></option><?php endforeach; ?></select></label>
 <label>الوضع<select id="mol-reader-mode"><option value="webtoon">تمرير عمودي</option><option value="paged" <?php selected($chapter['reader_mode_override'] ?? $work['default_reader_mode'], 'paged'); ?>>صفحات</option></select></label>
 <button type="button" id="mol-reader-toggle" aria-pressed="true" disabled>الترجمة العربية</button>

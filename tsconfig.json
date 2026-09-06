@@ -15,5 +15,5 @@
     "noUnusedParameters": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["wp-content/plugins/manga-overlay-core/editor-src", "tests", "playwright.config.ts", "wp-content/plugins/manga-overlay-core/vite.config.ts"]
+  "include": ["wp-content/plugins/manga-overlay-core/editor-src", "tests", "playwright.config.ts", "playwright.wordpress.config.ts", "wp-content/plugins/manga-overlay-core/vite*.config.ts"]
 }

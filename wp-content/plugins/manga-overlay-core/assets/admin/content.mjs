@@ -50,6 +50,12 @@ if (boot) {
 
   function loadForm(chapter) {
     form.reset();
+    const editor = $('mol-open-editor');
+    if (editor) {
+      editor.hidden = !chapter || !config.editorBaseUrl;
+      if (!editor.hidden) editor.href = config.editorBaseUrl + encodeURIComponent(decodeURIComponent(chapter.slug)) + '/edit/';
+      else editor.removeAttribute('href');
+    }
     for (const control of form.elements) {
       if (!control.name) continue;
       if (control.type === 'checkbox') control.checked = chapter?.[control.name] ?? false;
