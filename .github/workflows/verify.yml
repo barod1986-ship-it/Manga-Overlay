@@ -114,8 +114,11 @@ jobs:
           MOL_TEST_ENV: '1'
           MOL_HTTP_FIXTURE: ${{ runner.temp }}/mol-http-fixture.json
           MOL_CONTENT_RESPONSES: ${{ runner.temp }}/mol-content-responses.json
+          MOL_ELEMENT_VECTORS: ${{ runner.temp }}/mol-element-vectors.json
         run: |
           wp plugin activate manga-overlay-core --path="$MOL_WP_ROOT"
+          python -m pip install -r requirements-dev.txt
+          python scripts/element-validation-vectors.py "$RUNNER_TEMP/mol-element-vectors.json"
           wp eval-file "$GITHUB_WORKSPACE/tests/wordpress/content.php" --use-include --path="$MOL_WP_ROOT"
           PHP_CLI_SERVER_WORKERS=4 wp server --host=127.0.0.1 --port=8080 --path="$MOL_WP_ROOT" > "$RUNNER_TEMP/mol-http-server.log" 2>&1 &
           python tests/wordpress/http_content.py

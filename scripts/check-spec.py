@@ -35,3 +35,9 @@ if contracts_path.exists():
     if set(contracts) != expected_names or any(contracts[name] != schemas[name] for name in expected_names):
         sys.exit('Content request schemas differ from frozen OpenAPI.')
     print('Content request schemas match frozen OpenAPI.', flush=True)
+
+contracts = json.loads((contracts_path.parent / 'element-contracts.json').read_text())
+expected_names = {'ElementCreate', 'ElementPatch', 'Geometry', 'ElementStyle', 'BubbleStyle', 'NarrationStyle', 'FreeTextStyle', 'SfxStyle'}
+if set(contracts) != expected_names or any(contracts[name] != schemas[name] for name in expected_names):
+    sys.exit('Element request schemas differ from frozen OpenAPI.')
+print('Element request schemas match frozen OpenAPI.', flush=True)

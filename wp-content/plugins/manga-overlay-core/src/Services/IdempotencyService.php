@@ -35,6 +35,9 @@ final class IdempotencyService
 					}
 					$response = json_decode($previous['response_json'], true, 512, JSON_THROW_ON_ERROR);
 					$response['meta'] = (object) $response['meta'];
+					if (isset($response['data']['style'])) {
+						$response['data']['style'] = json_decode($previous['response_json'], false, 512, JSON_THROW_ON_ERROR)->data->style;
+					}
 					return $response;
 				}
 				$response = $operation();

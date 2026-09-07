@@ -30,7 +30,7 @@ final class IdempotencyRepository extends Repository
 	{
 		$this->checked($this->db->insert($this->tables->name('idempotency_keys'), [
 			'user_id' => $user_id, 'scope' => $scope, 'idempotency_key' => $key, 'request_hash' => $hash,
-			'resource_type' => 'page', 'resource_id' => $response['data']['id'], 'response_code' => 201,
+			'resource_type' => $scope === 'element:create' ? 'element' : 'page', 'resource_id' => $response['data']['id'], 'response_code' => 201,
 			'response_json' => wp_json_encode($response, JSON_THROW_ON_ERROR),
 			'created_at' => current_time('mysql', true), 'expires_at' => gmdate('Y-m-d H:i:s', time() + DAY_IN_SECONDS),
 		]));

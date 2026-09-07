@@ -1,0 +1,708 @@
+{
+  "ElementCreate": {
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/Geometry"
+      },
+      {
+        "type": "object",
+        "required": [
+          "page_id",
+          "target_lang",
+          "element_type",
+          "content"
+        ],
+        "properties": {
+          "page_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "target_lang": {
+            "type": "string",
+            "default": "ar",
+            "maxLength": 255
+          },
+          "element_type": {
+            "type": "string",
+            "enum": [
+              "bubble",
+              "narration",
+              "free_text",
+              "sfx"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "style": {
+            "$ref": "#/components/schemas/ElementStyle",
+            "description": "Optional partial override merged onto the resolved preset/base style. The response always returns the resolved style."
+          },
+          "preset_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Optional preset selected explicitly for this element. If omitted, the server resolves the default preset chain."
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "element_type": {
+              "const": "bubble"
+            }
+          },
+          "required": [
+            "element_type"
+          ]
+        },
+        "then": {
+          "properties": {
+            "style": {
+              "$ref": "#/components/schemas/BubbleStyle"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "element_type": {
+              "const": "narration"
+            }
+          },
+          "required": [
+            "element_type"
+          ]
+        },
+        "then": {
+          "properties": {
+            "style": {
+              "$ref": "#/components/schemas/NarrationStyle"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "element_type": {
+              "const": "free_text"
+            }
+          },
+          "required": [
+            "element_type"
+          ]
+        },
+        "then": {
+          "properties": {
+            "style": {
+              "$ref": "#/components/schemas/FreeTextStyle"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "element_type": {
+              "const": "sfx"
+            }
+          },
+          "required": [
+            "element_type"
+          ]
+        },
+        "then": {
+          "properties": {
+            "style": {
+              "$ref": "#/components/schemas/SfxStyle"
+            }
+          }
+        }
+      }
+    ],
+    "unevaluatedProperties": false
+  },
+  "ElementPatch": {
+    "type": "object",
+    "additionalProperties": false,
+    "minProperties": 1,
+    "properties": {
+      "element_type": {
+        "type": "string",
+        "enum": [
+          "bubble",
+          "narration",
+          "free_text",
+          "sfx"
+        ],
+        "description": "Immutable discriminator. Required when style is patched and MUST equal the persisted element type; it is never changed by PATCH."
+      },
+      "x_unit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "y_unit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "w_unit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "h_unit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "rotation_mdeg": {
+        "type": "integer",
+        "minimum": -360000,
+        "maximum": 360000
+      },
+      "z_index": {
+        "type": "integer",
+        "minimum": -1000,
+        "maximum": 10000
+      },
+      "content": {
+        "type": "string",
+        "maxLength": 10000
+      },
+      "style": {
+        "$ref": "#/components/schemas/ElementStyle"
+      }
+    },
+    "dependentRequired": {
+      "style": [
+        "element_type"
+      ]
+    },
+    "anyOf": [
+      {
+        "required": [
+          "x_unit"
+        ]
+      },
+      {
+        "required": [
+          "y_unit"
+        ]
+      },
+      {
+        "required": [
+          "w_unit"
+        ]
+      },
+      {
+        "required": [
+          "h_unit"
+        ]
+      },
+      {
+        "required": [
+          "rotation_mdeg"
+        ]
+      },
+      {
+        "required": [
+          "z_index"
+        ]
+      },
+      {
+        "required": [
+          "content"
+        ]
+      },
+      {
+        "required": [
+          "style"
+        ]
+      }
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "element_type": {
+              "const": "bubble"
+            }
+          },
+          "required": [
+            "element_type"
+          ]
+        },
+        "then": {
+          "properties": {
+            "style": {
+              "$ref": "#/components/schemas/BubbleStyle"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "element_type": {
+              "const": "narration"
+            }
+          },
+          "required": [
+            "element_type"
+          ]
+        },
+        "then": {
+          "properties": {
+            "style": {
+              "$ref": "#/components/schemas/NarrationStyle"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "element_type": {
+              "const": "free_text"
+            }
+          },
+          "required": [
+            "element_type"
+          ]
+        },
+        "then": {
+          "properties": {
+            "style": {
+              "$ref": "#/components/schemas/FreeTextStyle"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "element_type": {
+              "const": "sfx"
+            }
+          },
+          "required": [
+            "element_type"
+          ]
+        },
+        "then": {
+          "properties": {
+            "style": {
+              "$ref": "#/components/schemas/SfxStyle"
+            }
+          }
+        }
+      }
+    ],
+    "description": "Partial mutable element update. Empty/no-op payloads are invalid. element_type is accepted only as an immutable discriminator for validating a style patch."
+  },
+  "Geometry": {
+    "type": "object",
+    "required": [
+      "x_unit",
+      "y_unit",
+      "w_unit",
+      "h_unit"
+    ],
+    "properties": {
+      "x_unit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "y_unit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "w_unit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "h_unit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000
+      },
+      "rotation_mdeg": {
+        "type": "integer",
+        "minimum": -360000,
+        "maximum": 360000
+      },
+      "z_index": {
+        "type": "integer",
+        "minimum": -1000,
+        "maximum": 10000
+      }
+    }
+  },
+  "ElementStyle": {
+    "title": "MOL Element Style",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "fontId": {
+        "type": "string",
+        "enum": [
+          "noto-sans-arabic",
+          "cairo",
+          "tajawal",
+          "noto-kufi-arabic",
+          "sfx-display-1"
+        ]
+      },
+      "fontSizeUnit": {
+        "type": "integer",
+        "minimum": 1000,
+        "maximum": 200000
+      },
+      "fontWeight": {
+        "type": "integer",
+        "enum": [
+          400,
+          500,
+          600,
+          700,
+          800,
+          900
+        ]
+      },
+      "lineHeight": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 2.5
+      },
+      "textAlign": {
+        "type": "string",
+        "enum": [
+          "start",
+          "center",
+          "end"
+        ]
+      },
+      "color": {
+        "type": "string",
+        "pattern": "^#[0-9A-Fa-f]{6}$"
+      },
+      "backgroundColor": {
+        "type": "string",
+        "pattern": "^#[0-9A-Fa-f]{6}$"
+      },
+      "backgroundOpacity": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "borderColor": {
+        "type": "string",
+        "pattern": "^#[0-9A-Fa-f]{6}$"
+      },
+      "borderWidthUnit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 50000
+      },
+      "borderRadiusUnit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 500000
+      },
+      "paddingUnit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100000
+      },
+      "shape": {
+        "type": "string",
+        "enum": [
+          "ellipse",
+          "rounded_rect",
+          "rect",
+          "cloud",
+          "none",
+          "burst",
+          "impact"
+        ]
+      },
+      "strokeColor": {
+        "type": "string",
+        "pattern": "^#[0-9A-Fa-f]{6}$"
+      },
+      "strokeWidthUnit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 50000
+      },
+      "shadow": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "xUnit": {
+            "type": "integer",
+            "minimum": -50000,
+            "maximum": 50000
+          },
+          "yUnit": {
+            "type": "integer",
+            "minimum": -50000,
+            "maximum": 50000
+          },
+          "blurUnit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50000
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "opacity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "tail": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "angleMdeg": {
+            "type": "integer",
+            "minimum": -360000,
+            "maximum": 360000
+          },
+          "lengthUnit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 300000
+          },
+          "widthUnit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 200000
+          }
+        }
+      },
+      "burst": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "points": {
+            "type": "integer",
+            "enum": [
+              8,
+              12,
+              16,
+              24
+            ]
+          },
+          "depth": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "scaleX": {
+        "type": "number",
+        "minimum": 0.5,
+        "maximum": 2
+      },
+      "scaleY": {
+        "type": "number",
+        "minimum": 0.5,
+        "maximum": 2
+      },
+      "autoFit": {
+        "type": "boolean"
+      },
+      "minFontSizeUnit": {
+        "type": "integer",
+        "minimum": 1000,
+        "maximum": 100000
+      }
+    }
+  },
+  "BubbleStyle": {
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/ElementStyle"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "type": "string",
+            "enum": [
+              "ellipse",
+              "rounded_rect",
+              "rect",
+              "cloud"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "burst"
+              ]
+            },
+            {
+              "required": [
+                "scaleX"
+              ]
+            },
+            {
+              "required": [
+                "scaleY"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "NarrationStyle": {
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/ElementStyle"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "type": "string",
+            "enum": [
+              "rect",
+              "rounded_rect"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "tail"
+              ]
+            },
+            {
+              "required": [
+                "burst"
+              ]
+            },
+            {
+              "required": [
+                "scaleX"
+              ]
+            },
+            {
+              "required": [
+                "scaleY"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "FreeTextStyle": {
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/ElementStyle"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "type": "string",
+            "enum": [
+              "none",
+              "rect",
+              "rounded_rect"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "tail"
+              ]
+            },
+            {
+              "required": [
+                "burst"
+              ]
+            },
+            {
+              "required": [
+                "scaleX"
+              ]
+            },
+            {
+              "required": [
+                "scaleY"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "SfxStyle": {
+    "allOf": [
+      {
+        "$ref": "#/components/schemas/ElementStyle"
+      },
+      {
+        "type": "object",
+        "properties": {
+          "shape": {
+            "type": "string",
+            "enum": [
+              "none",
+              "burst",
+              "impact"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "tail"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

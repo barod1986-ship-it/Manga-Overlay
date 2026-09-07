@@ -42,6 +42,8 @@ final class Plugin
 		add_action('rest_api_init', [$runtime->controller, 'register']);
 		$library = new REST\LibraryController(new Database\WorkRepository($wpdb), new Database\ProfileRepository($wpdb));
 		add_action('rest_api_init', [$library, 'register']);
+		$elements = new REST\ElementsController(new Services\ElementService($wpdb));
+		add_action('rest_api_init', [$elements, 'register']);
 		$progress = new REST\ProgressController(new Services\ProgressService($wpdb));
 		add_action('rest_api_init', [$progress, 'register']);
 		add_filter('rest_post_dispatch', [REST\ContentController::class, 'response_headers'], 10, 3);
