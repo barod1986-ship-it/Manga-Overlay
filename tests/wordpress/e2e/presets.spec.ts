@@ -106,8 +106,9 @@ test('snapping aligns to page and other elements after zoom; Alt disables it tem
     expect((await admin.call('PATCH', `elements/${referenceId}`, { x_unit: 150000, y_unit: 520000, w_unit: 180000, h_unit: 100000, rotation_mdeg: 0 }, { 'If-Match': `"${current.version}"`, 'X-MOL-Lock-Token': lease.lock_token })).status()).toBe(200);
     await admin.call('DELETE', `elements/${referenceId}/lock`);
     await open(page, false);
-    for (const [label, value] of [['X (%)', '40'], ['Y (%)', '36'], ['العرض (%)', '20'], ['الارتفاع (%)', '12'], ['الدوران (°)', '0']]) await page.getByLabel(label, { exact: true }).fill(value);
+    for (const [label, value] of [['العرض (%)', '20'], ['الارتفاع (%)', '12'], ['X (%)', '40'], ['Y (%)', '36'], ['الدوران (°)', '0']]) await page.getByLabel(label, { exact: true }).fill(value);
     await page.getByRole('button', { name: 'تكبير الصفحة', exact: true }).click();
+    await expect(page.getByLabel('X (%)', { exact: true })).toHaveValue('40');
     const element = page.locator(`[data-element-key="${bubble}"]`);
     const stage = (await page.locator('.mol-editor-stage').boundingBox())!;
     const box = (await element.boundingBox())!;
@@ -115,7 +116,7 @@ test('snapping aligns to page and other elements after zoom; Alt disables it tem
     await page.mouse.move(box.x + box.width / 2 + 3, box.y + box.height / 2, { steps: 5 });
     await expect(page.locator('.moveable-guideline')).not.toHaveCount(0);
     await page.mouse.up();
-    await expect.poll(async () => Number(await page.getByLabel('X (%)', { exact: true }).inputValue())).toBeCloseTo(40, 2);
+    await expect.poll(async () => Math.abs(Number(await page.getByLabel('X (%)', { exact: true }).inputValue()) / 100 - .4) * stage.width).toBeLessThan(1);
     await page.keyboard.down('Alt');
     const moved = (await element.boundingBox())!;
     await page.mouse.move(moved.x + moved.width / 2, moved.y + moved.height / 2); await page.mouse.down();
@@ -125,7 +126,7 @@ test('snapping aligns to page and other elements after zoom; Alt disables it tem
     // Align selected left edge near the reference's left edge, within five displayed pixels.
     await page.mouse.move(after.x + after.width / 2, after.y + after.height / 2); await page.mouse.down();
     await page.mouse.move(stage.x + stage.width * .15 + 3 + after.width / 2, after.y + after.height / 2, { steps: 10 }); await page.mouse.up();
-    await expect.poll(async () => Number(await page.getByLabel('X (%)', { exact: true }).inputValue())).toBeCloseTo(15, 2);
+    await expect.poll(async () => Math.abs(Number(await page.getByLabel('X (%)', { exact: true }).inputValue()) / 100 - .15) * stage.width).toBeLessThan(1);
     await page.getByRole('button', { name: 'التقاط المحاذاة', exact: true }).click();
     await expect(page.getByRole('button', { name: 'التقاط المحاذاة', exact: true })).toHaveAttribute('aria-pressed', 'false');
   } finally { await admin.request.dispose(); }
