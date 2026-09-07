@@ -33,10 +33,11 @@ test('autosave confirms the server version and survives reload; new element retr
     if (!lost) { lost = true; const committed = await route.fetch(); expect(committed.status()).toBe(201); await route.abort('failed'); }
     else await route.continue();
   });
-  if (isMobile) await page.getByRole('button', { name: 'إغلاق الخصائص', exact: true }).click();
+  if (isMobile) await expect(page.getByRole('button', { name: 'الخصائص', exact: true })).toHaveAttribute('aria-expanded', 'false');
   await page.getByRole('button', { name: 'إضافة سرد', exact: true }).click();
   await page.getByLabel('النص العربي', { exact: true }).fill('إنشاء واحد رغم انقطاع الرد');
   await expect(page.locator('.mol-editor-save-state')).toContainText('غير متصل');
+  if (isMobile) await expect(page.getByRole('button', { name: 'الخصائص', exact: true })).toHaveAttribute('aria-expanded', 'false');
   await page.getByRole('button', { name: 'إعادة المحاولة', exact: true }).click();
   await expect(page.locator('.mol-editor-save-state')).toContainText('تم الحفظ');
   expect(posts).toHaveLength(2); expect(posts[1]).toEqual(posts[0]);
@@ -53,6 +54,7 @@ test('an occupied element is read-only; losing its lease and version opens expli
     await expect(page.getByLabel('النص العربي', { exact: true })).not.toBeEditable();
     await admin.call('DELETE', `elements/${bubble}/lock`);
     await page.getByRole('button', { name: 'إعادة المحاولة', exact: true }).click();
+    if (isMobile) await page.getByRole('button', { name: 'الخصائص', exact: true }).click();
     await expect(page.getByLabel('النص العربي', { exact: true })).toBeEditable();
     await page.getByLabel('النص العربي', { exact: true }).fill('نسختي عند التعارض');
     await admin.call('DELETE', `elements/${bubble}/lock`);
@@ -61,6 +63,7 @@ test('an occupied element is read-only; losing its lease and version opens expli
     expect((await admin.call('PATCH', `elements/${bubble}`, { content: 'تعديل المراجع', x_unit: 220000 }, { 'X-MOL-Lock-Token': lease.lock_token, 'If-Match': `"${current.version}"` })).status()).toBe(200);
     await admin.call('DELETE', `elements/${bubble}/lock`);
     await expect(page.locator('.mol-editor-save-state')).toContainText('مقفل');
+    if (isMobile) await expect(page.getByRole('button', { name: 'الخصائص', exact: true })).toHaveAttribute('aria-expanded', 'false');
     await page.getByRole('button', { name: 'إعادة المحاولة', exact: true }).click();
     await expect(page.locator('.mol-editor-comparison')).toContainText('نسختي عند التعارض');
     await expect(page.locator('.mol-editor-comparison')).toContainText('تعديل المراجع');

@@ -53,6 +53,13 @@ export function App({ boot }: { boot: Bootstrap }) {
   const dirty = session.dirty;
   const deleted = deletedKey ? session.records.get(deletedKey) : undefined;
   useEffect(() => { session.select(selected?.key ?? null, boot.canEdit && !preview && visible && !blocked); }, [session, selected?.key, boot.canEdit, preview, visible, blocked]);
+  useEffect(() => {
+    if (selectedRecord && ['locked', 'conflict', 'error', 'offline'].includes(selectedRecord.state) && window.matchMedia('(max-width:800px)').matches) {
+      // Expose recovery actions above the canvas without discarding the local edit.
+      textRef.current?.blur();
+      setPanel(null);
+    }
+  }, [selected?.key, selectedRecord?.state]);
 
   const navigate = useCallback((next: EditorRoute, replace = false) => {
     const hash = routeHash(next);
