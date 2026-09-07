@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Manga Overlay Core
  * Description: البنية الأساسية لمنصة القصص المصورة والترجمة العربية فوق الصور.
- * Version: 0.6.0
+ * Version: 0.7.0
  * Requires at least: 7.1
  * Requires PHP: 8.4
  * Text Domain: manga-overlay-core

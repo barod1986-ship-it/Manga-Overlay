@@ -187,7 +187,7 @@ for result in results:
 check(results[0][1]['data']['id'] == results[1][1]['data']['id'], 'parallel element retries create one element')
 element = results[0][1]['data']; element_path = '/elements/' + str(element['id'])
 check(next((value for name, value in results[0][2].items() if name.lower() == 'etag'), '') == '"1"', 'HTTP create preserves quoted ETag')
-lease = expect(api('POST', element_path + '/lock'), 200, 'HTTP lease acquisition', 'LockLeaseResponse')['data']
+lease = expect(api('POST', element_path + '/lock'), 200, 'HTTP lease acquisition', 'LockLeaseResponse')[1]['data']
 headers = {'X-MOL-Lock-Token': lease['lock_token'], 'If-Match': '"1"'}
 expect(api('PATCH', element_path, {'content': 'missing version'}, {'X-MOL-Lock-Token': lease['lock_token']}), 428, 'HTTP missing version fails', 'ErrorResponse')
 with ThreadPoolExecutor(max_workers=2) as pool:

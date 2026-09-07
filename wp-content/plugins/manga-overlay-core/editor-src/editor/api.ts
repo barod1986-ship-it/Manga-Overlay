@@ -38,7 +38,7 @@ export class EditorApi {
   }
 
   private async write<T>(path: string, method: string, body?: unknown, headers: Record<string, string> = {}): Promise<T> {
-    const response = await fetch(this.boot.api.replace(/\/$/, '') + '/' + path, { method, credentials: 'same-origin', cache: 'no-store',
+    const response = await fetch(this.boot.api.replace(/\/$/, '') + '/' + path, { method, credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(20000),
       headers: { 'X-WP-Nonce': this.boot.nonce, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers },
       body: body === undefined ? undefined : JSON.stringify(body) });
     const result = response.status === 204 ? null : await response.json();

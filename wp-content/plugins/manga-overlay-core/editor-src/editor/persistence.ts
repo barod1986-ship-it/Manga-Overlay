@@ -27,13 +27,31 @@ export interface RecordState {
 }
 const fields = ['x_unit', 'y_unit', 'w_unit', 'h_unit', 'rotation_mdeg', 'z_index', 'content', 'style'] as const;
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-export function patchFor(value: WorkingElement): PatchBody {
-  const patch: Record<string, unknown> = {};
-  for (const field of fields) {
-    if (!value.source || !equal(value[field], value.source[field] ?? (field === 'rotation_mdeg' || field === 'z_index' ? 0 : undefined))) patch[field] = value[field];
+function styleDifference(value: Record<string, unknown>, base: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, next] of Object.entries(value)) {
+    const previous = base[key];
+    if (next && typeof next === 'object' && previous && typeof previous === 'object') {
+      const nested = styleDifference(next as Record<string, unknown>, previous as Record<string, unknown>);
+      if (Object.keys(nested).length) result[key] = nested;
+    } else if (!equal(next, previous)) result[key] = next;
   }
-  if ('style' in patch) patch.element_type = value.element_type;
-  return patch as PatchBody;
+  return result;
+}
+export function patchFor(value: WorkingElement): PatchBody {
+  const patch: PatchBody = {};
+  for (const field of fields) {
+    if (field === 'style') {
+      const style = styleDifference(value.style, value.source?.style ?? {});
+      if (Object.keys(style).length) { patch.style = style; patch.element_type = value.element_type; }
+    } else if (!value.source || !equal(value[field], value.source[field] ?? (field === 'rotation_mdeg' || field === 'z_index' ? 0 : undefined))) Object.assign(patch, { [field]: value[field] });
+  }
+  return patch;
+}
+function mergeStyle(base: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+  const result = structuredClone(base);
+  for (const [key, value] of Object.entries(patch)) result[key] = value && typeof value === 'object' && result[key] && typeof result[key] === 'object' ? mergeStyle(result[key] as Record<string, unknown>, value as Record<string, unknown>) : value;
+  return result;
 }
 export const SAVE_LABELS: Record<SaveState, string> = {
   clean: 'جاهز للتحرير', dirty: 'تغييرات غير محفوظة', locking: 'جارٍ حجز العنصر…', saving: 'جارٍ الحفظ…', saved: 'تم الحفظ',
@@ -194,7 +212,7 @@ export class EditorSession {
     if (!record.current) { if (!reapply) { record.state = 'removed'; record.dirty = false; record.deleting = true; this.emit(); } return; }
     const patch = patchFor(record.value);
     record.value = { ...workingCopy(record.current), key };
-    if (reapply) record.value = changeElement(record.value, patch as ElementChange);
+    if (reapply) record.value = changeElement(record.value, { ...patch, ...(patch.style ? { style: mergeStyle(record.value.style, patch.style) } : {}) } as ElementChange);
     record.dirty = reapply; ++record.revision; record.current = undefined; record.error = undefined;
     record.state = reapply ? 'dirty' : 'saved'; this.schedule(record); this.emit();
   }
@@ -227,6 +245,11 @@ export class EditorSession {
       else if (online && record.state === 'offline') void this.retry(record.value.key);
     }
     this.emit();
+  }
+  block(status: number) {
+    if (this.sessionError) return;
+    this.sessionError = new SaveError(status, 'انتهت الجلسة أو تغيرت الصلاحيات.');
+    for (const record of this.records.values()) clearTimeout(record.timer); this.emit();
   }
   dispose() { this.disposed = true; clearInterval(this.interval); for (const record of this.records.values()) { clearTimeout(record.timer); if (!record.busy) void this.release(record); } }
 }

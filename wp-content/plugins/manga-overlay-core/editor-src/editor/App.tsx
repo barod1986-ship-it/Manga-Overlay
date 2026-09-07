@@ -64,8 +64,8 @@ export function App({ boot }: { boot: Bootstrap }) {
     window.addEventListener('popstate', restore); window.addEventListener('hashchange', restore);
     return () => { window.removeEventListener('popstate', restore); window.removeEventListener('hashchange', restore); };
   }, []);
-  useEffect(() => { setZoom(1); setPanel(null); setLocalSelection(null); }, [pageId]);
-  useEffect(() => { if (blocked) { setLocalSelection(null); setPanel(null); } }, [blocked]);
+  useEffect(() => { setZoom(1); setPanel(null); setLocalSelection(current => current?.pageId === pageId ? current : null); }, [pageId]);
+  useEffect(() => { if (blocked) { session.block(error!.status); setLocalSelection(null); setPanel(null); } }, [blocked, session, error]);
   useEffect(() => {
     if (chapterLoad.status !== 'ready') return;
     if (pageId !== route.pageId) navigate({ pageId, elementId: null }, true);
