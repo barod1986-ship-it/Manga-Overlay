@@ -11,7 +11,7 @@ use MOL\Security\WorkDeletionPolicy;
 
 final class Plugin
 {
-	public const VERSION = '0.7.0';
+	public const VERSION = '0.7.1';
 
 	public static function boot(): void
 	{

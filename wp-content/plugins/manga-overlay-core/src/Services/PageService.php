@@ -78,11 +78,12 @@ final class PageService
 		Access::capability('mol_manage_content');
 		$this->transaction->run(function () use ($id): void {
 			$page = $this->pages->find($id);
-			if (!$page || !$this->chapters->lock((int) $page['chapter_id']) || !$this->pages->find($id)) {
+			if (!$page || !$this->chapters->lock((int) $page['chapter_id']) || !$this->pages->find($id, true)) {
 				throw Fault::missing();
 			}
 			$this->pages->delete($id);
-			$remaining = $this->pages->for_chapter((int) $page['chapter_id']);
+			// Read current rows after the chapter lock, not the earlier transaction snapshot.
+			$remaining = $this->pages->for_chapter((int) $page['chapter_id'], true);
 			if ($remaining) {
 				$this->pages->reorder((int) $page['chapter_id'], array_map('intval', array_column($remaining, 'id')));
 			}

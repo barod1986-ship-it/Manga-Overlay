@@ -8,9 +8,9 @@ use MOL\Media\ImageResource;
 
 final class PageRepository extends Repository
 {
-	public function find(int $id): ?array
+	public function find(int $id, bool $lock = false): ?array
 	{
-		$rows = $this->rows($this->db->prepare('SELECT * FROM %i WHERE id = %d', $this->tables->name('pages'), $id));
+		$rows = $this->rows($this->db->prepare('SELECT * FROM %i WHERE id = %d' . ($lock ? ' FOR UPDATE' : ''), $this->tables->name('pages'), $id));
 		return $rows[0] ?? null;
 	}
 

@@ -128,6 +128,7 @@ update_option('mol_lock_acquires_per_minute', 1);
 $expect($element_request('POST', $path . '/lock'), 429, 'lock acquisition has enforceable limiter', 'ErrorResponse');
 $expect($element_request('PUT', $path . '/lock'), 404, 'lock renew has no acquisition rate limit', 'ErrorResponse');
 delete_option('mol_lock_acquires_per_minute');
+require __DIR__ . '/page-mutation-race.php';
 $runtime->page_service->delete_chapter($element_chapter['id']);
 
 $vector_count = 0;

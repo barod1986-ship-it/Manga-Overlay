@@ -157,7 +157,8 @@ final class ElementService
 	{
 		$page = $this->pages->find($page_id);
 		$chapter = $page ? $this->chapters->lock((int) $page['chapter_id']) : null;
-		if (!$chapter || !($page = $this->pages->find($page_id))) {
+		// A normal SELECT here can reuse the pre-lock REPEATABLE READ snapshot.
+		if (!$chapter || !($page = $this->pages->find($page_id, true))) {
 			throw Fault::missing();
 		}
 		return [$page, $chapter];
