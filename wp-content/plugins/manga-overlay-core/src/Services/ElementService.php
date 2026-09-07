@@ -32,10 +32,11 @@ final class ElementService
 
 	public function create(mixed $body, string $key): array
 	{
+		Access::capability('mol_use_editor');
 		Access::capability('mol_edit_translations');
 		$this->limiter->element();
 		$data = ElementInput::validate('ElementCreate', $body);
-		$hash = hash('sha256', wp_json_encode($body, JSON_THROW_ON_ERROR));
+		$hash = hash('sha256', wp_json_encode(self::canonical($body), JSON_THROW_ON_ERROR));
 		$created = null;
 		$response = $this->idempotency->run('element:create', $key, $hash, function () use ($data, &$created): array {
 			try {
@@ -61,8 +62,19 @@ final class ElementService
 		return $response;
 	}
 
+	private static function canonical(mixed $value): mixed
+	{
+		if ($value instanceof \stdClass) {
+			$properties = get_object_vars($value);
+			ksort($properties);
+			return (object) array_map([self::class, 'canonical'], $properties);
+		}
+		return $value;
+	}
+
 	public function change(int $id, mixed $body, string $match, string $token, bool $delete = false): ?array
 	{
+		Access::capability('mol_use_editor');
 		Access::capability($delete ? 'mol_delete_translation_elements' : 'mol_edit_translations');
 		$this->limiter->element();
 		$data = $delete ? [] : ElementInput::validate('ElementPatch', $body);
@@ -106,6 +118,7 @@ final class ElementService
 	public function lease(int $id, string $method, string $token): ?array
 	{
 		if ($method !== 'DELETE') {
+			Access::capability('mol_use_editor');
 			Access::capability('mol_edit_translations');
 		}
 		if ($method === 'POST') {
@@ -124,6 +137,9 @@ final class ElementService
 				}
 				$active = $lease && $lease['expires_at'] > current_time('mysql', true);
 				return $this->locks->save($id, get_current_user_id(), $active ? $lease['lock_token'] : bin2hex(random_bytes(32)), (bool) $active);
+			}
+			if ($method === 'DELETE' && $lease && $lease['expires_at'] > current_time('mysql', true) && (int) $lease['user_id'] !== get_current_user_id()) {
+				throw new Fault('mol_forbidden', 'لا تملك صلاحية تحرير قفل مستخدم آخر.', 403);
 			}
 			if (!$this->owns($lease, $token)) {
 				throw new Fault('mol_lock_lost', 'انتهى قفل العنصر أو تغير. استعد القفل قبل المتابعة.', 409);

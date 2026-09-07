@@ -121,6 +121,7 @@ jobs:
           python scripts/element-validation-vectors.py "$RUNNER_TEMP/mol-element-vectors.json"
           wp eval-file "$GITHUB_WORKSPACE/tests/wordpress/content.php" --use-include --path="$MOL_WP_ROOT"
           PHP_CLI_SERVER_WORKERS=4 wp server --host=127.0.0.1 --port=8080 --path="$MOL_WP_ROOT" > "$RUNNER_TEMP/mol-http-server.log" 2>&1 &
+          trap 'tail -n 80 "$RUNNER_TEMP/mol-http-server.log"' ERR
           python tests/wordpress/http_content.py
           python -m pip install -r requirements-dev.txt
           python scripts/check-content-responses.py "$MOL_CONTENT_RESPONSES"

@@ -86,3 +86,15 @@ test('lost leases block edits and writes until explicit reacquisition', async ()
     await f.session.save('7'); assert.equal(f.writes.length, 1); f.fail(); await f.session.retry('7'); assert.equal(f.server().content, 'mine');
   } finally { f.session.dispose(); }
 });
+
+ test('style conflict recovery preserves unrelated properties and nested siblings from the latest version', async () => {
+  const f = fixture(); try {
+    f.session.observe(1, [f.initial]); f.session.select('7'); await tick();
+    f.session.change('7', { style: { ...f.initial.style, fontWeight: 900 } });
+    f.replace({ style: { ...f.initial.style, color: '#123456' }, version: 2 });
+    await f.session.save('7'); f.session.resolve('7', true);
+    assert.equal(f.session.records.get('7')!.value.style.color, '#123456');
+    assert.equal(f.session.records.get('7')!.value.style.fontWeight, 900);
+    assert.deepEqual((f.writes[0].body as any).style, { fontWeight: 900 });
+  } finally { f.session.dispose(); }
+});

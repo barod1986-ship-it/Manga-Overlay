@@ -22,6 +22,9 @@ $expect($create($base_element, 'guest'), 401, 'guest cannot create element', 'Er
 wp_set_current_user($users['member']);
 $expect($create($base_element, 'member'), 403, 'member cannot create element', 'ErrorResponse');
 wp_set_current_user($users['translator']);
+(new WP_User($users['translator']))->add_cap('mol_use_editor', false);
+$expect($create($base_element, 'revoked-shell'), 403, 'revoking shell access stops element writes even with edit grant', 'ErrorResponse');
+(new WP_User($users['translator']))->remove_cap('mol_use_editor');
 $expect($create($base_element), 400, 'element creation requires retry key', 'ErrorResponse');
 $expect($create($base_element + ['unexpected' => true], 'invalid'), 400, 'element create closes allOf fields', 'ErrorResponse');
 $expect($create(array_replace($base_element, ['x_unit' => 950000]), 'bounds'), 400, 'combined geometry stays inside image', 'ErrorResponse');
@@ -31,6 +34,7 @@ $saved = $expect($one, 201, 'create resolved element', 'ElementResponse')['data'
 $id = $saved['id'];
 $check(($one->get_headers()['ETag'] ?? null) === '"1"' && $saved['version'] === 1 && $saved['style']->fontId === 'cairo', 'strong ETag and resolved base style');
 $check($expect($create($base_element, 'first-element'), 201, 'safe element replay', 'ElementResponse')['data'] == $saved, 'element replay preserves identity and response');
+$check($expect($create(array_reverse($base_element, true), 'first-element'), 201, 'retry is independent of JSON property order', 'ElementResponse')['data']['id'] === $id, 'canonical JSON hash preserves request identity');
 $expect($create(array_replace($base_element, ['content' => 'different']), 'first-element'), 409, 'element retry hash mismatch', 'ErrorResponse');
 $check((int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM %i WHERE element_id = %d', $tables->name('contributions'), $id)) === 1, 'create replay does not duplicate contribution');
 $check($wpdb->get_var($wpdb->prepare('SELECT resource_type FROM %i WHERE resource_id = %d AND scope = %s', $tables->name('idempotency_keys'), $id, 'element:create')) === 'element', 'retry journal records element resource type');
@@ -40,6 +44,16 @@ $lease = $expect($element_request('POST', $path . '/lock'), 200, 'acquire elemen
 $token = $lease['lock_token'];
 $check(strlen($token) === 64 && strtotime($lease['expires_at']) - time() >= 43 && strtotime($lease['expires_at']) - time() <= 45, 'random 256-bit token and 45 second lease');
 $headers = ['X-MOL-Lock-Token' => $token, 'If-Match' => '"1"'];
+foreach ([['POST', '/elements', (object) $base_element], ['PATCH', $path, (object) ['content' => 'denied']], ['DELETE', $path, null], ['POST', $path . '/lock', null], ['PUT', $path . '/lock', null], ['DELETE', $path . '/lock', null]] as [$method, $endpoint, $body]) {
+    wp_set_current_user(0);
+    $expect($element_request($method, $endpoint, $body), 401, 'every editor write authenticates: ' . $method . $endpoint, 'ErrorResponse');
+    wp_set_current_user($users['translator']);
+    $expect($element_request($method, $endpoint, $body, ['X-WP-Nonce' => 'invalid']), 403, 'every editor write enforces nonce: ' . $method . $endpoint, 'ErrorResponse');
+}
+wp_set_current_user($users['member']);
+$expect($element_request('DELETE', $path . '/lock'), 403, 'member cannot release another user lease', 'ErrorResponse');
+wp_set_current_user($users['translator']);
+
 $expect($element_request('PATCH', $path, (object) ['content' => 'no version'], ['X-MOL-Lock-Token' => $token]), 428, 'missing If-Match rejected', 'ErrorResponse');
 foreach ([new stdClass(), (object) ['element_type' => 'bubble'], (object) ['element_type' => 'narration', 'style' => new stdClass()], (object) ['style' => (object) ['color' => '#FFFFFF']], (object) ['element_type' => 'bubble', 'style' => (object) ['tail' => (object) ['evil' => 1]]], (object) ['element_type' => 'bubble', 'style' => (object) ['burst' => null]], (object) ['element_type' => 'bubble', 'style' => (object) ['color' => 'url(javascript:alert(1))']]] as $invalid_patch) {
     $expect($element_request('PATCH', $path, $invalid_patch, $headers), 400, 'strict immutable type and style patch', 'ErrorResponse');

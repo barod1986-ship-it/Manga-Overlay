@@ -209,7 +209,7 @@ export class EditorSession {
   resolve(key: string, reapply: boolean) {
     const record = this.records.get(key);
     if (!record || record.state !== 'conflict' || record.current === undefined) return;
-    if (!record.current) { if (!reapply) { record.state = 'removed'; record.dirty = false; record.deleting = true; this.emit(); } return; }
+    if (!record.current) { if (!reapply) { record.state = 'removed'; record.dirty = false; record.deleting = true; record.error = undefined; this.emit(); } return; }
     const patch = patchFor(record.value);
     record.value = { ...workingCopy(record.current), key };
     if (reapply) record.value = changeElement(record.value, { ...patch, ...(patch.style ? { style: mergeStyle(record.value.style, patch.style) } : {}) } as ElementChange);

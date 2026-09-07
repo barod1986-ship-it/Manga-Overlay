@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from html.parser import HTMLParser
 from http.cookiejar import CookieJar
+from http.client import RemoteDisconnected
 import json
 import os
 from pathlib import Path
@@ -29,20 +30,30 @@ def check(value, label):
 
 for attempt in range(40):
     try:
-        urlopen(base + '/wp-login.php', timeout=2).close()
+        urlopen(base + '/wp-login.php', timeout=5).read()
         break
-    except (URLError, TimeoutError):
+    except (URLError, TimeoutError, RemoteDisconnected):
         if attempt == 39:
             raise
         time.sleep(0.25)
 
 jar = CookieJar()
 opener = build_opener(HTTPCookieProcessor(jar))
-opener.open(base + '/wp-login.php').close()
+
+# A readiness probe may reach one worker before all PHP CLI workers settle. Retry GET only.
+for attempt in range(4):
+    try:
+        with opener.open(base + '/wp-login.php', timeout=10) as response:
+            response.read()
+        break
+    except (URLError, TimeoutError, RemoteDisconnected):
+        if attempt == 3:
+            raise
+        time.sleep(.25 * (attempt + 1))
 opener.open(Request(base + '/wp-login.php', data=urlencode({
     'log': fixture['username'], 'pwd': fixture['password'], 'wp-submit': 'Log In',
     'redirect_to': base + '/wp-admin/admin.php?page=manga-overlay', 'testcookie': '1',
-}).encode())).close()
+}).encode())).read()
 admin_html = opener.open(base + '/wp-admin/admin.php?page=manga-overlay').read().decode()
 
 
@@ -187,7 +198,8 @@ for result in results:
 check(results[0][1]['data']['id'] == results[1][1]['data']['id'], 'parallel element retries create one element')
 element = results[0][1]['data']; element_path = '/elements/' + str(element['id'])
 check(next((value for name, value in results[0][2].items() if name.lower() == 'etag'), '') == '"1"', 'HTTP create preserves quoted ETag')
-lease = expect(api('POST', element_path + '/lock'), 200, 'HTTP lease acquisition', 'LockLeaseResponse')[1]['data']
+lease_response, _ = expect(api('POST', element_path + '/lock'), 200, 'HTTP lease acquisition', 'LockLeaseResponse')
+lease = lease_response['data']
 headers = {'X-MOL-Lock-Token': lease['lock_token'], 'If-Match': '"1"'}
 expect(api('PATCH', element_path, {'content': 'missing version'}, {'X-MOL-Lock-Token': lease['lock_token']}), 428, 'HTTP missing version fails', 'ErrorResponse')
 with ThreadPoolExecutor(max_workers=2) as pool:
