@@ -15,14 +15,14 @@ final class ElementsController
 	public function register(): void
 	{
 		$this->route('/elements', 'POST', 'mol_edit_translations', function ($request) {
-			$result = $this->service->create(ContentController::body($request), $request->get_header('MOL-Idempotency-Key'));
+			$result = $this->service->create(ContentController::body($request), (string) $request->get_header('MOL-Idempotency-Key'));
 			$response = new \WP_REST_Response($result, 201);
 			$response->header('ETag', '"' . $result['data']['version'] . '"');
 			return $response;
 		});
 		foreach (['PATCH', 'DELETE'] as $method) {
 			$this->route('/elements/(?P<id>[1-9][0-9]*)', $method, $method === 'PATCH' ? 'mol_edit_translations' : 'mol_delete_translation_elements', function ($request) use ($method) {
-				$result = $this->service->change((int) $request['id'], $method === 'PATCH' ? ContentController::body($request) : null, $request->get_header('If-Match'), $request->get_header('X-MOL-Lock-Token'), $method === 'DELETE');
+				$result = $this->service->change((int) $request['id'], $method === 'PATCH' ? ContentController::body($request) : null, (string) $request->get_header('If-Match'), (string) $request->get_header('X-MOL-Lock-Token'), $method === 'DELETE');
 				$response = $result === null ? new \WP_REST_Response(null, 204) : ContentController::response($result);
 				if ($result !== null) {
 					$response->header('ETag', '"' . $result['version'] . '"');
@@ -32,7 +32,7 @@ final class ElementsController
 		}
 		foreach (['POST', 'PUT', 'DELETE'] as $method) {
 			$this->route('/elements/(?P<id>[1-9][0-9]*)/lock', $method, $method === 'DELETE' ? 'authenticated_user' : 'mol_edit_translations', function ($request) use ($method) {
-				$result = $this->service->lease((int) $request['id'], $method, $request->get_header('X-MOL-Lock-Token'));
+				$result = $this->service->lease((int) $request['id'], $method, (string) $request->get_header('X-MOL-Lock-Token'));
 				return $result === null ? new \WP_REST_Response(null, 204) : ContentController::response($result);
 			});
 		}

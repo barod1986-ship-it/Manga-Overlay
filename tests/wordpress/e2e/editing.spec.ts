@@ -1,6 +1,9 @@
+import { resetEditor } from './editor-fixture';
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 const fixture = JSON.parse(readFileSync(process.env.MOL_HTTP_FIXTURE!, 'utf8')) as Record<string, any>;
+test.beforeEach(async ({ playwright }) => resetEditor(playwright));
+test.beforeEach(async ({ page }) => { page.on('dialog', dialog => void dialog.accept()); });
 const [firstPage, secondPage] = fixture.editor_page_ids as number[];
 const bubble = fixture.editor_element_ids[0] as number;
 const originalText = 'نص خاص داخل المحرر';
@@ -31,18 +34,15 @@ async function serverElements(page: Page) {
   return (await response.json()).data;
 }
 
-test('four types edit as plain Arabic, duplicate/delete/undo locally and keep page drafts until a guarded reload', async ({ page, isMobile }, testInfo) => {
-  const writes: string[] = [], errors: string[] = [];
-  page.on('request', request => { if (request.url().includes('/mol/v1/') && request.method() !== 'GET') writes.push(request.method()); });
+test('four types edit as plain Arabic, duplicate/delete/undo and keep page drafts after confirmed autosave and reload', async ({ page, isMobile }, testInfo) => {
+  const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await login(page);
-  const baseline = await serverElements(page);
   const injected = 'ترجمة عربية <img src=x onerror="window.molInjected=true">';
   for (const label of ['فقاعة', 'سرد', 'نص حر', 'مؤثر صوتي']) {
     await page.getByRole('button', { name: 'إضافة ' + label, exact: true }).click();
     await page.getByLabel('النص العربي', { exact: true }).fill(label + ' ' + injected);
     await expect(page.locator('.mol-element-selected .mol-element-text')).toHaveText(label + ' ' + injected);
-    await expect(page.locator('.mol-element-selected')).toHaveAttribute('data-element-key', /^draft:/);
     expect(new URL(page.url()).hash).not.toContain('draft');
     await closeProperties(page, isMobile);
   }
@@ -59,21 +59,18 @@ test('four types edit as plain Arabic, duplicate/delete/undo locally and keep pa
   await expect(page.locator('.mol-element-text')).toHaveText('الصفحة العريضة');
   await page.getByRole('button', { name: 'الصفحة السابقة', exact: true }).click();
   await expect(page.locator('.mol-element')).toHaveCount(9);
-  await expect(page.locator('.mol-editor-save-state')).toContainText('غير محفوظ');
-  expect(await serverElements(page)).toEqual(baseline);
+  await expect.poll(async () => (await serverElements(page)).length).toBe(9);
+  await expect(page.locator('.mol-editor-save-state')).toContainText('تم الحفظ');
   await expect(page.locator('.mol-element img')).toHaveCount(0);
   expect(await page.evaluate(() => 'molInjected' in window)).toBe(false);
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => key.includes('editor')))).toEqual([]);
   expect(await page.evaluate(() => Object.keys(sessionStorage).filter(key => key.includes('editor')))).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('connected-element-editing.png') });
-  const dialog = page.waitForEvent('dialog');
-  const reloading = page.reload();
-  const warning = await dialog;
-  expect(warning.type()).toBe('beforeunload'); await warning.accept(); await reloading;
-  await expect(page.locator('.mol-element')).toHaveCount(4);
-  expect(await serverElements(page)).toEqual(baseline);
-  expect(writes).toEqual([]); expect(errors).toEqual([]);
+  await page.reload();
+  await expect(page.locator('.mol-element')).toHaveCount(9);
+  expect((await serverElements(page)).length).toBe(9);
+  expect(errors).toEqual([]);
 });
 
 test('numeric transforms, step buttons, layer order and shortcuts survive preview and page navigation', async ({ page, isMobile }) => {

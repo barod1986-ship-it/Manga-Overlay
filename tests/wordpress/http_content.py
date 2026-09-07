@@ -175,6 +175,30 @@ with ThreadPoolExecutor(max_workers=2) as pool:
     check(deleting.result()[0] == 200, 'parent deletion completes without an orphan chapter')
 marker.unlink(missing_ok=True)
 
+# Actual HTTP headers and simultaneous element creation use the same hardened path.
+page_id = fixture['editor_page_ids'][0]
+element_body = {'page_id': page_id, 'target_lang': 'ar', 'element_type': 'free_text',
+                'content': 'HTTP concurrent element', 'x_unit': 0, 'y_unit': 0, 'w_unit': 100000, 'h_unit': 100000}
+key = str(uuid4())
+with ThreadPoolExecutor(max_workers=2) as pool:
+    results = list(pool.map(lambda _: api('POST', '/elements', element_body, {'MOL-Idempotency-Key': key}), range(2)))
+for result in results:
+    expect(result, 201, 'parallel element create validates response', 'ElementResponse')
+check(results[0][1]['data']['id'] == results[1][1]['data']['id'], 'parallel element retries create one element')
+element = results[0][1]['data']; element_path = '/elements/' + str(element['id'])
+check(next((value for name, value in results[0][2].items() if name.lower() == 'etag'), '') == '"1"', 'HTTP create preserves quoted ETag')
+lease = expect(api('POST', element_path + '/lock'), 200, 'HTTP lease acquisition', 'LockLeaseResponse')['data']
+headers = {'X-MOL-Lock-Token': lease['lock_token'], 'If-Match': '"1"'}
+expect(api('PATCH', element_path, {'content': 'missing version'}, {'X-MOL-Lock-Token': lease['lock_token']}), 428, 'HTTP missing version fails', 'ErrorResponse')
+with ThreadPoolExecutor(max_workers=2) as pool:
+    updates = list(pool.map(lambda text: api('PATCH', element_path, {'content': text}, headers), ['first', 'second']))
+check(sorted(item[0] for item in updates) == [200, 412], 'concurrent same-version saves commit once and conflict once')
+for item in updates:
+    expect(item, item[0], 'HTTP conditional update response', 'ElementResponse' if item[0] == 200 else 'ErrorResponse')
+updated = next(item for item in updates if item[0] == 200)
+check(next((value for name, value in updated[2].items() if name.lower() == 'etag'), '') == '"2"', 'HTTP update preserves quoted ETag')
+expect(api('DELETE', element_path, headers=headers | {'If-Match': '"2"'}), 204, 'HTTP conditional delete')
+
 # Public HTML never inherits draft access from the manager cookie.
 try:
     response = opener.open(fixture['draft_reader_url'])

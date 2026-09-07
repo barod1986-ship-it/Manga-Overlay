@@ -68,3 +68,5 @@ body.mol-editing { margin:0; background:#161d19; color:#eef0e8; overflow:hidden;
   .mol-editor-open-properties .mol-editor-sheet-expanded { height:65dvh; max-height:calc(100dvh - 240px); }
   .mol-editor-properties input,.mol-editor-properties select { font-size:16px; }.mol-editor-panel-title { position:sticky; top:-16px; background:#202b23; z-index:1; padding-block:8px; }
 }
+
+.mol-editor-recovery{padding:12px 20px;background:#40282a;color:#fff;border-block-end:1px solid #ba6970}.mol-editor-recovery button{margin:4px}.mol-editor-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mol-editor-comparison pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;font-size:12px;direction:ltr}.mol-editor-comparison h2{font-size:16px}.mol-editor-comparison p{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:600px){.mol-editor-comparison{grid-template-columns:1fr}}

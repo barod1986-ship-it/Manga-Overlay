@@ -23,7 +23,7 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
       <fieldset disabled={!editable}>
         <label htmlFor="mol-editor-content">النص العربي</label><textarea ref={textRef} id="mol-editor-content" value={element.content} readOnly={!editable} rows={4} maxLength={10000} dir="rtl"
           onChange={event => onChange({ content: event.target.value })} onFocus={() => { setExpanded(true); }} />
-        <p className="mol-editor-muted">النص فوق الصورة الأصلية. لا تُرسل هذه التغييرات بعد.</p>
+        <p className="mol-editor-muted">تُحفظ التغييرات تلقائيًا بعد التوقف عن الكتابة.</p>
         <details open><summary>الخط والمحاذاة</summary><div className="mol-editor-fields">
           <Choice label="الخط" value={style.fontId ?? 'cairo'} onChange={value => setStyle({ fontId: value as ElementStyle['fontId'] })}>{[['cairo', 'القاهرة — Cairo'], ['noto-sans-arabic', 'Noto Sans Arabic'], ['tajawal', 'تجوال — Tajawal'], ['noto-kufi-arabic', 'Noto Kufi Arabic'], ['sfx-display-1', 'خط المؤثر التجريبي']].map(([value, text]) => <option key={value} value={value}>{text}</option>)}</Choice>
           <NumberField label="حجم الخط (% عرض الصفحة)" value={(style.fontSizeUnit ?? 26000) / 10000} min={.1} max={20} step={.1} onChange={value => setStyle({ fontSizeUnit: Math.round(value * 10000) })} />

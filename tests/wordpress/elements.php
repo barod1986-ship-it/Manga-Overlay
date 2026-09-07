@@ -122,3 +122,11 @@ foreach (json_decode(file_get_contents(getenv('MOL_ELEMENT_VECTORS')), false, 51
     ++$vector_count;
 }
 $check($vector_count > 1000, $vector_count . ' independent element schema vectors agree');
+
+$http_fixture['editor_original_elements'] = [];
+foreach ($http_fixture['editor_page_ids'] as $page_id) {
+    $http_fixture['editor_original_elements'] = array_merge($http_fixture['editor_original_elements'], (new MOL\Database\OverlayReadRepository($wpdb))->for_page((int) $page_id, 'ar'));
+}
+// UI scenarios perform many independent resets in the disposable application.
+update_option('mol_element_writes_per_minute', 10000);
+update_option('mol_lock_acquires_per_minute', 10000);

@@ -1,3 +1,4 @@
+import { resetEditor } from './editor-fixture';
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
@@ -7,6 +8,7 @@ const fixture = JSON.parse(readFileSync(process.env.MOL_HTTP_FIXTURE!, 'utf8')) 
   editor_username: string; editor_password: string; member_username: string; member_password: string;
   editor_page_ids: number[]; editor_element_ids: number[];
 };
+test.beforeEach(async ({ playwright }) => resetEditor(playwright));
 const [firstPage, secondPage] = fixture.editor_page_ids;
 const [bubble] = fixture.editor_element_ids;
 async function login(page: Page, member = false) {
@@ -38,7 +40,7 @@ test('editor route authenticates before disclosure and denies a member without t
 test('translator inspects live layers and properties, preview preserves the original and page links restore selection', async ({ page, isMobile }, testInfo) => {
   const writes: string[] = [];
   const errors: string[] = [];
-  page.on('request', request => { if (request.url().includes('/mol/v1/') && request.method() !== 'GET') writes.push(request.method()); });
+  page.on('request', request => { if (request.url().includes('/mol/v1/') && !request.url().endsWith('/lock') && request.method() !== 'GET') writes.push(request.method()); });
   page.on('pageerror', error => errors.push(error.message));
   await login(page);
   await expect(page.locator('.mol-editor-stage')).toHaveAttribute('data-page-id', String(firstPage));
@@ -78,7 +80,7 @@ test('translator inspects live layers and properties, preview preserves the orig
   await expect(page.locator('.mol-element-selected')).toHaveAttribute('data-element-key', String(bubble));
   await page.reload();
   await expect(page.locator('.mol-element-selected')).toHaveAttribute('data-element-key', String(bubble));
-  await expect(page.locator('.mol-editor-save-state')).toContainText('الحفظ والنشر غير متاحين');
+  await expect(page.locator('.mol-editor-save-state')).toContainText('جاهز للتحرير');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   expect(await page.evaluate(() => Object.keys(localStorage).filter(key => key.includes('editor')))).toEqual([]);
   expect(writes).toEqual([]); expect(errors).toEqual([]);

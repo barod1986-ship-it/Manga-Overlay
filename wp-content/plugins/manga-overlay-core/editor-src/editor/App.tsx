@@ -3,7 +3,8 @@ import { ELEMENT_LABELS } from '../domain/baseStyles';
 import type { ElementType } from '../domain/types';
 import { EditorApi, EditorError } from './api';
 import { activePage, parseRoute, routeHash, type Bootstrap, type EditorRoute } from './state';
-import { changeElement, createElement, duplicateElement, workingCopy, workingLayers, type Drafts, type ElementChange, type PageDraft } from './drafts';
+import { createElement, duplicateElement, workingCopy, workingLayers, type ElementChange } from './drafts';
+import { EditorSession, SAVE_LABELS } from './persistence';
 import { useResource } from './useResource';
 import { Stage } from './Stage';
 import { Properties } from './Properties';
@@ -18,7 +19,15 @@ export function App({ boot }: { boot: Bootstrap }) {
   const [visible, setVisible] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [panel, setPanel] = useState<'layers' | 'properties' | null>(null);
-  const [drafts, setDrafts] = useState<Drafts>({});
+  const session = useMemo(() => new EditorSession(api), [api]);
+  const [, renderSession] = useState(0);
+  const [deletedKey, setDeletedKey] = useState<string | null>(null);
+  useEffect(() => session.subscribe(() => renderSession(value => value + 1)), [session]);
+  useEffect(() => {
+    const online = () => session.setOnline(navigator.onLine); online();
+    window.addEventListener('online', online); window.addEventListener('offline', online);
+    return () => { window.removeEventListener('online', online); window.removeEventListener('offline', online); session.dispose(); };
+  }, [session]);
   const [localSelection, setLocalSelection] = useState<{ pageId: number; key: string } | null>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const propertiesButton = useRef<HTMLButtonElement>(null);
@@ -29,17 +38,21 @@ export function App({ boot }: { boot: Bootstrap }) {
   const elementLoad = useResource(pageId === null ? null : `${pageId}-${attempt}-${pageAttempt}`,
     useCallback((signal: AbortSignal) => api.elements(pageId!, signal), [api, pageId]));
   const sourceElements = useMemo(() => elementLoad.status === 'ready' ? elementLoad.data.map(workingCopy) : [], [elementLoad]);
-  const pageDraft = pageId !== null ? drafts[pageId] : undefined;
+  useEffect(() => { if (pageId !== null && elementLoad.status === 'ready') session.observe(pageId, elementLoad.data); }, [session, pageId, elementLoad]);
   // Never display a cached draft over a loading/error response, especially after access is lost.
-  const elements = elementLoad.status === 'ready' ? pageDraft?.elements ?? sourceElements : [];
-  const selectedKey = localSelection?.pageId === pageId ? localSelection.key : route.elementId === null ? null : String(route.elementId);
+  const elements = elementLoad.status === 'ready' ? pageId !== null && session.observed(pageId) ? session.elements(pageId) : sourceElements : [];
+  const selectedKey = localSelection?.pageId === pageId ? localSelection.key : route.elementId === null ? null : elements.find(element => element.source?.id === route.elementId)?.key ?? String(route.elementId);
   const selected = elements.find(element => element.key === selectedKey);
   const chapter = chapterLoad.status === 'ready' ? chapterLoad.data.chapter : null;
-  const error = chapterLoad.status === 'error' ? chapterLoad.error : elementLoad.status === 'error' ? elementLoad.error : null;
+  const error = session.sessionError ? new EditorError(session.sessionError.status) : chapterLoad.status === 'error' ? chapterLoad.error : elementLoad.status === 'error' ? elementLoad.error : null;
   const blocked = error?.status === 401 || error?.status === 403;
   const canEdit = boot.canEdit === true && !!page && elementLoad.status === 'ready' && !error;
   const editing = canEdit && !preview && visible;
-  const dirty = Object.keys(drafts).length > 0;
+  const selectedRecord = selected ? session.records.get(selected.key) : undefined;
+  const selectedEditable = editing && !!selected && session.editable(selected.key);
+  const dirty = session.dirty;
+  const deleted = deletedKey ? session.records.get(deletedKey) : undefined;
+  useEffect(() => { session.select(selected?.key ?? null, boot.canEdit && !preview && visible && !blocked); }, [session, selected?.key, boot.canEdit, preview, visible, blocked]);
 
   const navigate = useCallback((next: EditorRoute, replace = false) => {
     const hash = routeHash(next);
@@ -52,7 +65,7 @@ export function App({ boot }: { boot: Bootstrap }) {
     return () => { window.removeEventListener('popstate', restore); window.removeEventListener('hashchange', restore); };
   }, []);
   useEffect(() => { setZoom(1); setPanel(null); setLocalSelection(null); }, [pageId]);
-  useEffect(() => { if (blocked) { setDrafts({}); setLocalSelection(null); setPanel(null); } }, [blocked]);
+  useEffect(() => { if (blocked) { setLocalSelection(null); setPanel(null); } }, [blocked]);
   useEffect(() => {
     if (chapterLoad.status !== 'ready') return;
     if (pageId !== route.pageId) navigate({ pageId, elementId: null }, true);
@@ -67,49 +80,43 @@ export function App({ boot }: { boot: Bootstrap }) {
 
   function select(key: string | null, open = true) {
     const element = elements.find(item => item.key === key);
-    setLocalSelection(key !== null && !element?.source && pageId !== null ? { pageId, key } : null);
+    setLocalSelection(key !== null && pageId !== null ? { pageId, key } : null);
     navigate({ pageId, elementId: element?.source?.id ?? null });
     if (key !== null && open) setPanel('properties');
     else if (key === null) setPanel(null);
   }
-  function update(action: (draft: PageDraft) => PageDraft) {
-    if (!editing || pageId === null) return;
-    setDrafts(previous => ({ ...previous, [pageId]: action(previous[pageId] ?? { elements: sourceElements, deleted: null }) }));
-  }
-  function change(key: string, patch: ElementChange) {
-    update(draft => ({ ...draft, elements: draft.elements.map(element => element.key === key ? changeElement(element, patch) : element) }));
+  function change(key: string, patch: ElementChange, immediate = false) {
+    if (editing) session.change(key, patch, immediate);
   }
   function focusText() { window.setTimeout(() => textRef.current?.focus(), 0); }
   function add(type: ElementType) {
     if (!editing || pageId === null) return;
     const element = createElement(type, elements, 'draft:' + crypto.randomUUID());
-    update(draft => ({ ...draft, elements: [...draft.elements, element] }));
+    session.add(pageId, element);
     setLocalSelection({ pageId, key: element.key }); navigate({ pageId, elementId: null }); setPanel('properties'); focusText();
   }
   function duplicate() {
-    if (!editing || !selected || pageId === null) return;
+    if (!selectedEditable || !selected || pageId === null) return;
     const copy = duplicateElement(selected, elements, 'draft:' + crypto.randomUUID());
-    update(draft => ({ ...draft, elements: [...draft.elements, copy] }));
+    session.add(pageId, copy);
     setLocalSelection({ pageId, key: copy.key }); navigate({ pageId, elementId: null }); setPanel('properties');
   }
   function remove() {
-    if (!editing || !selected || !boot.canDelete) return;
-    update(draft => ({ elements: draft.elements.filter(element => element.key !== selected.key), deleted: selected }));
-    select(null);
+    if (!selectedEditable || !selected || !boot.canDelete) return;
+    if (selected.source && !window.confirm('حذف هذا العنصر من الترجمة؟')) return;
+    session.delete(selected.key); setDeletedKey(selected.key); select(null);
   }
   function undoDelete() {
-    if (!pageDraft?.deleted || !editing || pageId === null) return;
-    const element = pageDraft.deleted;
-    update(draft => ({ elements: [...draft.elements, element], deleted: null }));
-    setLocalSelection(element.source ? null : { pageId, key: element.key });
-    navigate({ pageId, elementId: element.source?.id ?? null }); setPanel('properties');
+    if (!deletedKey || !deleted || !session.undo(deletedKey)) return;
+    setLocalSelection({ pageId: deleted.pageId, key: deletedKey });
+    navigate({ pageId: deleted.pageId, elementId: deleted.value.source?.id ?? null }); setPanel('properties'); setDeletedKey(null);
   }
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (event.isComposing || event.defaultPrevented || event.target instanceof HTMLElement && event.target.closest('input, textarea, select, button, a, [contenteditable]')) return;
       if (preview || !visible || error) return;
       if (event.key === 'Escape') { event.preventDefault(); select(null); return; }
-      if (!selected || !editing) return;
+      if (!selected || !selectedEditable) return;
       if (event.key === 'Delete' && boot.canDelete) { event.preventDefault(); remove(); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') { event.preventDefault(); duplicate(); }
       if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -126,8 +133,21 @@ export function App({ boot }: { boot: Bootstrap }) {
       <a href={boot.backUrl}>{boot.backLabel}</a>
       <div className="mol-editor-title"><p dir="auto">{boot.workTitle}</p><h1>{chapter ? `الفصل ${chapter.chapter_label}${chapter.title ? ' · ' + chapter.title : ''}` : 'محرر الترجمة'}</h1></div>
       <button onClick={() => { setPreview(value => !value); setPanel(null); }} aria-pressed={preview} disabled={!page || !!error}>{preview ? 'إغلاق المعاينة' : 'معاينة'}</button>
-      <p className="mol-editor-save-state" role="status">{blocked ? 'توقفت الجلسة — حدّث الصفحة' : !boot.canEdit ? 'عرض فقط — ليست لديك صلاحية تعديل الترجمة' : dirty ? 'غير محفوظ — تغييرات هذه الجلسة لم تُرسل وتُفقد عند المغادرة' : 'تحرير تجريبي — الحفظ والنشر غير متاحين بعد'}</p>
+      <p className="mol-editor-save-state" role="status">{blocked ? 'توقفت الجلسة — حدّث الصفحة' : !boot.canEdit ? 'عرض فقط — ليست لديك صلاحية تعديل الترجمة' : SAVE_LABELS[session.state]}</p>
     </header>
+    {!error && [...session.records.values()].some(record => record.error) && <nav className="mol-editor-recovery" aria-label="عناصر تحتاج إلى مراجعة">
+      {[...session.records.values()].filter(record => record.error && !record.deleting).map(record => <button key={record.value.key} onClick={() => { setLocalSelection({ pageId: record.pageId, key: record.value.key }); navigate({ pageId: record.pageId, elementId: record.value.source?.id ?? null }); }}>مراجعة العنصر: {record.value.content.slice(0, 30) || 'بلا نص'}</button>)}
+    </nav>}
+    {!error && selectedRecord && ['locked', 'conflict', 'error', 'offline'].includes(selectedRecord.state) && <section className="mol-editor-recovery" role="alert">
+      <p>{selectedRecord.error?.message || SAVE_LABELS[selectedRecord.state]}</p>
+      {selectedRecord.state === 'conflict' && selectedRecord.current !== undefined ? <>
+        <div className="mol-editor-comparison"><div><h2>نسختك</h2><p dir="auto">{selectedRecord.value.content}</p><details><summary>الموضع والنمط</summary><pre>{JSON.stringify({ x: selectedRecord.value.x_unit, y: selectedRecord.value.y_unit, width: selectedRecord.value.w_unit, height: selectedRecord.value.h_unit, rotation: selectedRecord.value.rotation_mdeg, style: selectedRecord.value.style }, null, 2)}</pre></details></div>
+          <div><h2>النسخة الحالية</h2><p dir="auto">{selectedRecord.current?.content ?? 'حُذف العنصر'}</p><details><summary>الموضع والنمط</summary><pre>{JSON.stringify(selectedRecord.current, null, 2)}</pre></details></div></div>
+        <button onClick={() => session.resolve(selectedRecord.value.key, false)}>استخدام الحالية</button>
+        {selectedRecord.current && <button onClick={() => session.resolve(selectedRecord.value.key, true)}>إعادة تطبيق تغييري على الحالية ثم الحفظ</button>}
+      </> : <button onClick={() => void session.retry(selectedRecord.value.key)}>إعادة المحاولة</button>}
+    </section>}
+    {!error && session.dirty && !selectedRecord?.error && ['error', 'offline', 'locked'].includes(session.state) && <button className="mol-editor-recovery" onClick={() => { for (const record of session.records.values()) if (record.dirty) void session.retry(record.value.key); }}>إعادة محاولة حفظ التغييرات</button>}
     <nav className="mol-editor-controls" aria-label="أدوات مساحة الترجمة">
       {!preview && <div className="mol-editor-page-controls">
         <button aria-label="الصفحة السابقة" disabled={pageIndex <= 0 || blocked} onClick={() => navigate({ pageId: pages[pageIndex - 1].id, elementId: null })}>السابق</button>
@@ -143,13 +163,13 @@ export function App({ boot }: { boot: Bootstrap }) {
       : error && (chapterLoad.status === 'error' || blocked) ? <ErrorMessage error={error} retry={() => setAttempt(value => value + 1)} />
         : !page ? <Message text="لم تُرفع صفحات لهذا الفصل بعد." />
           : <main className="mol-editor-workspace" aria-label="محرر الترجمة">
-            {!preview && <Properties key={selected?.key ?? 'empty'} element={selected} editable={editing} canDelete={editing && boot.canDelete} textRef={textRef}
+            {!preview && <Properties key={selected?.key ?? 'empty'} element={selected} editable={selectedEditable} canDelete={selectedEditable && boot.canDelete} textRef={textRef}
               onChange={patch => { if (selected) change(selected.key, patch); }} onDuplicate={duplicate} onDelete={remove}
               onClose={() => { setPanel(null); propertiesButton.current?.focus(); }} />}
             <section className="mol-editor-page-area" aria-label="الصفحة الحالية" aria-busy={elementLoad.status === 'loading'}>
               {elementLoad.status === 'loading' ? <Message text="جارٍ تحميل طبقات الصفحة…" /> : elementLoad.status === 'error' ? <ErrorMessage error={elementLoad.error} retry={() => setPageAttempt(value => value + 1)} />
-                : <Stage key={page.id} page={page} elements={elements} selectedKey={selected?.key ?? null} preview={preview} visible={visible} zoom={zoom} canEdit={editing}
-                  onSelect={key => select(key, false)} onEditText={key => { select(key); if (editing) focusText(); }} onTransform={change} />}
+                : <Stage key={page.id} page={page} elements={elements} selectedKey={selected?.key ?? null} preview={preview} visible={visible} zoom={zoom} canEdit={selectedEditable}
+                  onSelect={key => select(key, false)} onEditText={key => { select(key); if (selectedEditable) focusText(); }} onTransform={(key, geometry) => change(key, geometry, true)} />}
             </section>
             {!preview && <aside className="mol-editor-layers" aria-label="طبقات الصفحة">
               <details open><summary>الطبقات <span>{elements.length}</span></summary>
@@ -162,7 +182,7 @@ export function App({ boot }: { boot: Bootstrap }) {
     {!preview && <footer className="mol-editor-bottom">
       {boot.canEdit && <nav className="mol-editor-tools" aria-label="إضافة عناصر الترجمة"><button disabled={!editing} onClick={() => select(null)}>تحديد</button>{types.map(type => <button key={type} disabled={!editing} onClick={() => add(type)} aria-label={'إضافة ' + ELEMENT_LABELS[type]}>{ELEMENT_LABELS[type]}</button>)}</nav>}
       <div className="mol-editor-panel-buttons"><button className="mol-editor-mobile" disabled={!!error} aria-expanded={panel === 'layers'} onClick={() => setPanel(value => value === 'layers' ? null : 'layers')}>الطبقات</button><button ref={propertiesButton} className="mol-editor-mobile" disabled={!selected} aria-expanded={panel === 'properties'} onClick={() => setPanel(value => value === 'properties' ? null : 'properties')}>الخصائص</button>
-        {pageDraft?.deleted && !error && <button disabled={!editing} onClick={undoDelete}>تراجع عن حذف العنصر</button>}</div>
+        {deleted?.deleting && deleted.state !== 'removed' && !deleted.busy && !error && <button disabled={!editing} onClick={undoDelete}>تراجع عن حذف العنصر</button>}</div>
     </footer>}
   </div>;
 }

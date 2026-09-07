@@ -1,4 +1,5 @@
 import type { components } from '../generated/api';
+import { SaveError, type CreateBody, type PatchBody, type Lease } from './persistence';
 import type { Bootstrap, Chapter, Page, Element } from './state';
 
 export class EditorError extends Error {
@@ -35,4 +36,21 @@ export class EditorApi {
     if (!Array.isArray(response.data) || response.data.some(element => element.page_id !== pageId)) throw new EditorError(500);
     return response.data;
   }
+
+  private async write<T>(path: string, method: string, body?: unknown, headers: Record<string, string> = {}): Promise<T> {
+    const response = await fetch(this.boot.api.replace(/\/$/, '') + '/' + path, { method, credentials: 'same-origin', cache: 'no-store',
+      headers: { 'X-WP-Nonce': this.boot.nonce, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers },
+      body: body === undefined ? undefined : JSON.stringify(body) });
+    const result = response.status === 204 ? null : await response.json();
+    if (!response.ok) throw new SaveError(response.status, result?.message || 'تعذر إكمال الحفظ.', result?.code || '', Number(response.headers.get('Retry-After') || 0));
+    if (result?.data?.version !== undefined && response.headers.get('ETag') !== `"${result.data.version}"`) throw new SaveError(500, 'تعذر تأكيد نسخة الحفظ. أعد تحميل بيانات العنصر قبل المحاولة.');
+    return result?.data as T;
+  }
+  create(body: CreateBody, key: string) { return this.write<Element>('elements', 'POST', body, { 'MOL-Idempotency-Key': key }); }
+  patch(id: number, body: PatchBody, version: number, token: string) { return this.write<Element>('elements/' + id, 'PATCH', body, { 'If-Match': `"${version}"`, 'X-MOL-Lock-Token': token }); }
+  remove(id: number, version: number, token: string) { return this.write<void>('elements/' + id, 'DELETE', undefined, { 'If-Match': `"${version}"`, 'X-MOL-Lock-Token': token }); }
+  acquire(id: number) { return this.write<Lease>('elements/' + id + '/lock', 'POST'); }
+  renew(id: number, token: string) { return this.write<Lease>('elements/' + id + '/lock', 'PUT', undefined, { 'X-MOL-Lock-Token': token }); }
+  release(id: number, token: string) { return this.write<void>('elements/' + id + '/lock', 'DELETE', undefined, { 'X-MOL-Lock-Token': token }); }
+
 }
