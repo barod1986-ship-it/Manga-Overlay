@@ -11,7 +11,7 @@ use MOL\Security\WorkDeletionPolicy;
 
 final class Plugin
 {
-	public const VERSION = '0.7.1';
+	public const VERSION = '0.8.0';
 
 	public static function boot(): void
 	{
@@ -33,6 +33,7 @@ final class Plugin
 		add_filter('pre_insert_term', [WorkType::class, 'validate_type_term'], 10, 3);
 		add_filter('pre_delete_post', [WorkDeletionPolicy::class, 'guard'], 10, 2);
 		add_filter('pre_trash_post', [WorkDeletionPolicy::class, 'guard'], 10, 2);
+		add_action('after_delete_post', [Database\PresetRepository::class, 'deleted_work'], 9, 2);
 		add_action('after_delete_post', [Database\WorkMutationLock::class, 'release']);
 		add_action('trashed_post', [Database\WorkMutationLock::class, 'release']);
 		add_action('shutdown', [Database\WorkMutationLock::class, 'cleanup']);
@@ -42,6 +43,8 @@ final class Plugin
 		add_action('rest_api_init', [$runtime->controller, 'register']);
 		$library = new REST\LibraryController(new Database\WorkRepository($wpdb), new Database\ProfileRepository($wpdb));
 		add_action('rest_api_init', [$library, 'register']);
+		$presets = new REST\PresetsController(new Services\PresetService($wpdb));
+		add_action('rest_api_init', [$presets, 'register']);
 		$elements = new REST\ElementsController(new Services\ElementService($wpdb));
 		add_action('rest_api_init', [$elements, 'register']);
 		$progress = new REST\ProgressController(new Services\ProgressService($wpdb));

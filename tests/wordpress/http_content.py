@@ -211,6 +211,29 @@ updated = next(item for item in updates if item[0] == 200)
 check(next((value for name, value in updated[2].items() if name.lower() == 'etag'), '') == '"2"', 'HTTP update preserves quoted ETag')
 expect(api('DELETE', element_path, headers=headers | {'If-Match': '"2"'}), 204, 'HTTP conditional delete')
 
+# Concurrent creation into an empty preset scope and later competing default switches.
+preset_ids = []
+try:
+    preset_body = {'scope': 'global', 'element_type': 'sfx', 'name': 'HTTP default', 'style': {'color': '#123456'}, 'is_default': True}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda i: api('POST', '/presets', preset_body | {'name': f'HTTP default {i}'}), range(2)))
+    for result in results:
+        body, _ = expect(result, 201, 'simultaneous first preset creation', 'PresetResponse')
+        preset_ids.append(body['data']['id'])
+    query = '/presets' + separator + 'type=sfx'
+    body, headers = expect(api('GET', query), 200, 'list defaults after concurrent create', 'PresetListResponse')
+    check(sum(p['is_default'] for p in body['data'] if p['scope'] == 'global') == 1, 'empty global scope gets exactly one default')
+    check('no-store' in headers.get('Cache-Control', ''), 'personalized preset list prohibits shared caching')
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda pid: api('PATCH', '/presets/' + str(pid), {'is_default': True}), preset_ids))
+    for result in results:
+        expect(result, 200, 'simultaneous preset default switch', 'PresetResponse')
+    body, _ = expect(api('GET', query), 200, 'list after concurrent default switch', 'PresetListResponse')
+    check(sum(p['is_default'] for p in body['data'] if p['scope'] == 'global') == 1, 'competing updates retain a single default')
+finally:
+    for pid in preset_ids:
+        expect(api('DELETE', '/presets/' + str(pid)), 204, 'remove HTTP preset fixture')
+
 # Public HTML never inherits draft access from the manager cookie.
 try:
     response = opener.open(fixture['draft_reader_url'])

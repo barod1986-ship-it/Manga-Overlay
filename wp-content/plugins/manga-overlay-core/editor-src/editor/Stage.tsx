@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Moveable from 'react-moveable';
 import { fromPixels, toPixels, type ImageSize, type PixelBox } from '../domain/geometry';
 import type { Geometry } from '../domain/types';
@@ -7,15 +7,24 @@ import type { Page } from './state';
 import type { WorkingElement } from './drafts';
 
 interface Props {
-  page: Page; elements: WorkingElement[]; selectedKey: string | null; preview: boolean; visible: boolean; zoom: number; canEdit: boolean;
+  page: Page; elements: WorkingElement[]; selectedKey: string | null; preview: boolean; visible: boolean; zoom: number; snapping: boolean; canEdit: boolean;
   onSelect: (key: string | null) => void; onEditText: (key: string) => void; onTransform: (key: string, geometry: Geometry) => void;
 }
 interface Interaction { key: string; node: HTMLElement; box: PixelBox; size: ImageSize; z: number; css: string; changed: boolean }
-export function Stage({ page, elements, selectedKey, preview, visible, zoom, canEdit, onSelect, onEditText, onTransform }: Props) {
+export function Stage({ page, elements, selectedKey, preview, visible, zoom, snapping, canEdit, onSelect, onEditText, onTransform }: Props) {
   const viewport = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const moveable = useRef<Moveable>(null);
   const interaction = useRef<Interaction | null>(null);
+  const [modifier, setModifier] = useState(false);
+  const [guidelines, setGuidelines] = useState<HTMLElement[]>([]);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => setModifier(event.altKey);
+    const reset = () => setModifier(false);
+    window.addEventListener('keydown', key); window.addEventListener('keyup', key); window.addEventListener('blur', reset);
+    return () => { window.removeEventListener('keydown', key); window.removeEventListener('keyup', key); window.removeEventListener('blur', reset); };
+  }, []);
+  useLayoutEffect(() => { setGuidelines(Array.from(stage.current?.querySelectorAll<HTMLElement>('[data-element-key]') ?? []).filter(node => node.dataset.elementKey !== selectedKey)); }, [elements, selectedKey]);
   const [target, setTarget] = useState<HTMLElement | null>(null);
   const [available, setAvailable] = useState(1);
   const [imageState, setImageState] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -81,7 +90,12 @@ export function Stage({ page, elements, selectedKey, preview, visible, zoom, can
             onSelect={onSelect} onEditText={onEditText} />)}
         </div>
         {enabled && <Moveable ref={moveable} target={target} container={stage.current} origin={false}
-          draggable resizable rotatable pinchable={false} snappable={false} keepRatio={false} checkInput
+          draggable resizable rotatable pinchable={false} snappable={snapping && !modifier} snapContainer={stage.current} snapGap={false}
+          snapHorizontalThreshold={5} snapVerticalThreshold={5} isDisplaySnapDigit={false}
+          snapDirections={{ left: true, right: true, top: true, bottom: true, center: true, middle: true }}
+          elementSnapDirections={{ left: true, right: true, top: true, bottom: true, center: true, middle: true }}
+          verticalGuidelines={[0, width / 2, width]} horizontalGuidelines={[0, size.height / 2, size.height]}
+          elementGuidelines={guidelines.map(element => ({ element, refresh: true }))} keepRatio={false} checkInput
           rotationPosition="top" throttleDrag={0} throttleResize={0} throttleRotate={.1}
           renderDirections={['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se']}
           onDragStart={event => { const box = begin(); if (box) event.set([box.x, box.y]); else moveable.current?.stopDrag(); }}

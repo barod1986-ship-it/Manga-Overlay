@@ -32,5 +32,16 @@ for kind in ['bubble', 'narration', 'free_text', 'sfx']:
             add('ElementCreate', base | {key: value})
     add('ElementCreate', base | {'evil': True})
     add('ElementCreate', base | {'style': {'shadow': {'color': '#FFFFFF', 'evil': True}}})
+# Preset envelopes use the generic style schema; stored type restrictions are tested in REST.
+for scope in ['personal', 'work', 'global']:
+    base = dict(scope=scope, name='نمط', element_type='bubble', style={})
+    for key, values in {'scope': [None, 'unknown', False], 'name': ['', 'ن' * 101, 12], 'work_id': [None, 1, 0, '1', [], 1.5], 'is_default': [True, False, None, 1], 'style': [None, [], {}, {'tail': {'enabled': True}}, {'evil': True}, {'fontSizeUnit': 200001}]}.items():
+        for value in values:
+            add('PresetCreate', base | {key: value})
+            add('PresetPatch', {key: value})
+    for key in base:
+        missing = deepcopy(base); del missing[key]; add('PresetCreate', missing)
+    add('PresetCreate', base | {'owner_user_id': 99})
+for value in [{}, [], None, {'name': 'صحيح'}, {'style': {}}, {'style': {'shadow': {'evil': True}}}]: add('PresetPatch', value)
 Path(sys.argv[1]).write_text(json.dumps(vectors, ensure_ascii=False))
 print(f'{len(vectors)} independent element contract vectors generated.')

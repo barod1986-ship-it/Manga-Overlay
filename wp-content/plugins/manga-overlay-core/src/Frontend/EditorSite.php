@@ -30,6 +30,7 @@ final class EditorSite
 				return [
 					'chapterId' => $chapter['id'], 'workTitle' => $work->post_title,
 					'api' => rest_url('mol/v1/'), 'nonce' => wp_create_nonce('wp_rest'),
+					'userId' => get_current_user_id(), 'canManageWorkPresets' => current_user_can('mol_manage_work_presets'), 'canManageGlobalPresets' => current_user_can('mol_manage_global_presets'),
 					'canEdit' => current_user_can('mol_edit_translations'),
 					'canDelete' => current_user_can('mol_edit_translations') && current_user_can('mol_delete_translation_elements'),
 					'backUrl' => $chapter['is_published'] && $work->post_status === 'publish' ? PublicSite::chapter_url($chapter) : home_url('/library/'),

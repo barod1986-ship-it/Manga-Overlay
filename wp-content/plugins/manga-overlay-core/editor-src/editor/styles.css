@@ -70,3 +70,7 @@ body.mol-editing { margin:0; background:#161d19; color:#eef0e8; overflow:hidden;
 }
 
 .mol-editor-recovery{padding:12px 20px;background:#40282a;color:#fff;border-block-end:1px solid #ba6970}.mol-editor-recovery button{margin:4px}.mol-editor-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mol-editor-comparison pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;font-size:12px;direction:ltr}.mol-editor-comparison h2{font-size:16px}.mol-editor-comparison p{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:600px){.mol-editor-comparison{grid-template-columns:1fr}}
+
+.mol-editor-presets { border-block:1px solid var(--mol-editor-line,#c9cfc5); padding-block:12px; margin-block:12px; }
+.mol-editor-presets h3 { font-size:14px; margin:0 0 8px; }.mol-editor-presets label { display:grid; gap:5px; margin-block:8px; }.mol-editor-presets button { margin-block:4px; max-width:100%; }.mol-editor-presets .mol-editor-check { display:flex; align-items:center; }.mol-editor-presets input:not([type=checkbox]),.mol-editor-presets select { width:100%; min-width:0; }
+.mol-editor-presets fieldset { min-width:0; }.mol-editor .moveable-guideline { --moveable-color:#b45309; }

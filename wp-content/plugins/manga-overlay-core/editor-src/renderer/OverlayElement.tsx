@@ -35,6 +35,8 @@ export function OverlayElement({ element, size, selected = false, editable = fal
         };
         node.style.fontSize = `${fitFont(fontSize, stylePixels(style.minFontSizeUnit ?? 1000, size.width), fits)}px`;
       }
+      node.dataset.fittedFontUnit = String(parseFloat(node.style.fontSize) / size.width * 1000000);
+      node.dataset.overflow = String(node.scrollHeight > node.clientHeight + .5 || node.scrollWidth > node.clientWidth + .5);
     };
     fit();
     void document.fonts.ready.then(fit);

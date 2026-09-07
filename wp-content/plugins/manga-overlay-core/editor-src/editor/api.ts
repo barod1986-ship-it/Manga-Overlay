@@ -1,3 +1,4 @@
+import type { Preset, PresetCreate, PresetPatch } from './presets';
 import type { components } from '../generated/api';
 import { SaveError, type CreateBody, type PatchBody, type Lease } from './persistence';
 import type { Bootstrap, Chapter, Page, Element } from './state';
@@ -46,6 +47,14 @@ export class EditorApi {
     if (result?.data?.version !== undefined && response.headers.get('ETag') !== `"${result.data.version}"`) throw new SaveError(500, 'تعذر تأكيد نسخة الحفظ. أعد تحميل بيانات العنصر قبل المحاولة.');
     return result?.data as T;
   }
+  async presets(workId: number, signal: AbortSignal): Promise<Preset[]> {
+    const query = new URLSearchParams({ work_id: String(workId) });
+    const response = await this.get<components['schemas']['PresetListResponse']>('presets' + (this.boot.api.includes('?') ? '&' : '?') + query, signal);
+    return response.data;
+  }
+  createPreset(body: PresetCreate) { return this.write<Preset>('presets', 'POST', body); }
+  updatePreset(id: number, body: PresetPatch) { return this.write<Preset>('presets/' + id, 'PATCH', body); }
+  deletePreset(id: number) { return this.write<void>('presets/' + id, 'DELETE'); }
   create(body: CreateBody, key: string) { return this.write<Element>('elements', 'POST', body, { 'MOL-Idempotency-Key': key }); }
   patch(id: number, body: PatchBody, version: number, token: string) { return this.write<Element>('elements/' + id, 'PATCH', body, { 'If-Match': `"${version}"`, 'X-MOL-Lock-Token': token }); }
   remove(id: number, version: number, token: string) { return this.write<void>('elements/' + id, 'DELETE', undefined, { 'If-Match': `"${version}"`, 'X-MOL-Lock-Token': token }); }

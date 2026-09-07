@@ -704,5 +704,71 @@
         }
       }
     ]
+  },
+  "PresetCreate": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "scope",
+      "name",
+      "element_type",
+      "style"
+    ],
+    "properties": {
+      "scope": {
+        "type": "string",
+        "enum": [
+          "personal",
+          "work",
+          "global"
+        ]
+      },
+      "work_id": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 1
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "element_type": {
+        "type": "string",
+        "enum": [
+          "bubble",
+          "narration",
+          "free_text",
+          "sfx"
+        ]
+      },
+      "style": {
+        "$ref": "#/components/schemas/ElementStyle"
+      },
+      "is_default": {
+        "type": "boolean",
+        "default": false
+      }
+    }
+  },
+  "PresetPatch": {
+    "type": "object",
+    "additionalProperties": false,
+    "minProperties": 1,
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "style": {
+        "$ref": "#/components/schemas/ElementStyle"
+      },
+      "is_default": {
+        "type": "boolean"
+      }
+    }
   }
 }

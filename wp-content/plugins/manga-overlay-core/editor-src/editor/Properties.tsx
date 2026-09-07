@@ -4,11 +4,20 @@ import type { ElementStyle, Geometry } from '../domain/types';
 import type { ElementChange, WorkingElement } from './drafts';
 
 interface Props {
+  presets?: ReactNode; onFreezeFit?: () => void;
   element?: WorkingElement; editable: boolean; canDelete: boolean; textRef: RefObject<HTMLTextAreaElement | null>;
   onChange: (patch: ElementChange) => void; onDuplicate: () => void; onDelete: () => void; onClose: () => void;
 }
-export function Properties({ element, editable, canDelete, textRef, onChange, onDuplicate, onDelete, onClose }: Props) {
+export function Properties({ element, editable, canDelete, textRef, onChange, onDuplicate, onDelete, onClose, presets, onFreezeFit }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [fitOverflow, setFitOverflow] = useState(false);
+  useEffect(() => {
+    const node = element ? document.querySelector<HTMLElement>(`[data-element-key="${CSS.escape(element.key)}"] .mol-element-text`) : null;
+    const update = () => setFitOverflow(node?.dataset.overflow === 'true');
+    const observer = new MutationObserver(update);
+    if (node) observer.observe(node, { attributes: true, attributeFilter: ['data-overflow'] });
+    update(); return () => observer.disconnect();
+  }, [element?.key]);
   const style = element?.style;
   const setStyle = (patch: Partial<ElementStyle>) => onChange({ style: { ...style, ...patch } });
   const shapeNames = { ellipse: 'بيضاوي', rounded_rect: 'مستطيل مستدير', rect: 'مستطيل', cloud: 'سحابة', none: 'بلا شكل', burst: 'انفجار', impact: 'صدمة' };
@@ -20,6 +29,7 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
     <div className="mol-editor-panel-title"><h2>خصائص العنصر</h2><button className="mol-editor-mobile" onClick={() => setExpanded(value => !value)} aria-expanded={expanded}>{expanded ? 'تصغير الخصائص' : 'توسيع الخصائص'}</button><button className="mol-editor-mobile" onClick={onClose}>إغلاق الخصائص</button></div>
     {!element || !style ? <p className="mol-editor-muted">حدد عنصرًا على الصفحة أو من قائمة الطبقات، أو أضف عنصر ترجمة.</p> : <>
       <p className="mol-editor-type">{ELEMENT_LABELS[element.element_type]}{element.source ? '' : ' · جديد في هذه الجلسة'}</p>
+      {presets}
       <fieldset disabled={!editable}>
         <label htmlFor="mol-editor-content">النص العربي</label><textarea ref={textRef} id="mol-editor-content" value={element.content} readOnly={!editable} rows={4} maxLength={10000} dir="rtl"
           onChange={event => onChange({ content: event.target.value })} onFocus={() => { setExpanded(true); }} />
@@ -31,7 +41,8 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
           <NumberField label="ارتفاع السطر" value={style.lineHeight ?? 1.35} min={1} max={2.5} step={.05} onChange={lineHeight => setStyle({ lineHeight })} />
           <Choice label="المحاذاة" value={style.textAlign ?? 'center'} onChange={value => setStyle({ textAlign: value as ElementStyle['textAlign'] })}><option value="start">بداية</option><option value="center">وسط</option><option value="end">نهاية</option></Choice>
           <Color label="لون النص" value={style.color ?? '#111111'} onChange={color => setStyle({ color })} />
-          <Check label="ملاءمة النص تلقائيًا" checked={style.autoFit ?? false} onChange={autoFit => setStyle({ autoFit })} />
+          <Check label="ملاءمة النص تلقائيًا" checked={style.autoFit ?? false} onChange={autoFit => { if (!autoFit && onFreezeFit) onFreezeFit(); else setStyle({ autoFit }); }} />
+          {style.autoFit && fitOverflow && <p role="status">بلغ النص الحد الأدنى للحجم وما زال يتجاوز المساحة؛ كبّر الصندوق أو اختصر النص.</p>}
           {style.autoFit && <NumberField label="أقل حجم (% عرض الصفحة)" value={(style.minFontSizeUnit ?? 1000) / 10000} min={.1} max={10} step={.1} onChange={value => setStyle({ minFontSizeUnit: Math.round(value * 10000) })} />}
         </div></details>
         <details><summary>الشكل والخلفية</summary><div className="mol-editor-fields">
@@ -58,6 +69,7 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
           <NumberField label="الارتفاع (%)" value={element.h_unit / 10000} min={.0001} max={100} step={.1} onChange={value => geometry({ h_unit: value * 10000 })} />
           <NumberField label="الدوران (°)" value={element.rotation_mdeg / 1000} min={-360} max={360} step={1} onChange={value => geometry({ rotation_mdeg: value * 1000 })} />
           <NumberField label="ترتيب الطبقة" value={element.z_index} min={-1000} max={10000} step={1} onChange={z_index => geometry({ z_index })} />
+          <div className="mol-editor-steps"><button type="button" onClick={() => geometry({ x_unit: (1000000 - element.w_unit) / 2 })}>توسيط أفقي في الصفحة</button><button type="button" onClick={() => geometry({ y_unit: (1000000 - element.h_unit) / 2 })}>توسيط عمودي في الصفحة</button></div>
           <div className="mol-editor-steps" dir="ltr">
             <button type="button" aria-label="نقل لليسار" onClick={() => geometry({ x_unit: element.x_unit - 1000 })}>←</button><button type="button" aria-label="نقل للأعلى" onClick={() => geometry({ y_unit: element.y_unit - 1000 })}>↑</button><button type="button" aria-label="نقل للأسفل" onClick={() => geometry({ y_unit: element.y_unit + 1000 })}>↓</button><button type="button" aria-label="نقل لليمين" onClick={() => geometry({ x_unit: element.x_unit + 1000 })}>→</button>
           </div>

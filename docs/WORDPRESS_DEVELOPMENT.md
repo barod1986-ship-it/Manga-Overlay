@@ -1,6 +1,6 @@
 # WordPress foundation
 
-The core plugin contains the T-03 bootstrap, all nine canonical SQL tables, transaction ownership, typed chapter/page/library/profile repositories, T-05 work registrations, T-06 content administration and T-07 public data APIs. The accompanying theme adds T-08 and the T-09 reader foundation. T-04 remains partial for preset management and report services. Element mutations, validation, locks and contributions are implemented in Core 0.7.0.
+The core plugin contains the T-03 bootstrap, all nine canonical SQL tables, transaction ownership, typed chapter/page/library/profile repositories, T-05 work registrations, T-06 content administration and T-07 public data APIs. The accompanying theme adds T-08 and the T-09 reader foundation. T-04 remains partial for report services; T-15 adds preset management. Element mutations, validation, locks and contributions are implemented in Core 0.7.0.
 
 ## Build and activate on development WordPress
 
@@ -20,7 +20,7 @@ Work deletion/trashing is blocked when chapter rows exist, so core WordPress del
 
 ## Installable development ZIP
 
-After all required checks pass, the `development-package` GitHub job builds `manga-overlay-core-development.zip` and its SHA256 checksum, then installs and activates that exact ZIP on a fresh WordPress 7.1 application. Download the `manga-overlay-development-package` Actions artifact, extract the artifact wrapper, and select the inner plugin ZIP in WordPress Plugins → Add New → Upload Plugin on a development site. The dependency autoloader and built PoC are included; Node and Composer are not needed on that site. The package now includes public reader assets. Install the accompanying `manga-overlay-theme-development.zip` through Appearance → Themes to enable the Arabic library/work/profile/reader screens. Core 0.7.1 persists translation edits, leases, versions and contributions; account reading progress is also implemented.
+After all required checks pass, the `development-package` GitHub job builds `manga-overlay-core-development.zip` and its SHA256 checksum, then installs and activates that exact ZIP on a fresh WordPress 7.1 application. Download the `manga-overlay-development-package` Actions artifact, extract the artifact wrapper, and select the inner plugin ZIP in WordPress Plugins → Add New → Upload Plugin on a development site. The dependency autoloader and built PoC are included; Node and Composer are not needed on that site. The package now includes public reader assets. Install the accompanying `manga-overlay-theme-development.zip` through Appearance → Themes to enable the Arabic library/work/profile/reader screens. Core 0.8.0 persists translation edits, leases, versions and contributions; account reading progress is also implemented.
 
 For a local package, first build the frontend and Composer autoloader, then run `python scripts/package-development.py`. Output goes to `build/`, which is excluded from git.
 
@@ -81,3 +81,14 @@ Element creation and page deletion first discover the parent through an ordinary
 The disposable WordPress content harness adds two real database connections and deterministic transaction interleaving. Its control shows that an ordinary read retains the deleted page while a locking read sees its deletion. Regression cases require failed creation to leave no element, contribution or successful idempotency journal entry, and require competing page deletes to use current page IDs. The session isolation level is restored after the test. All verification for this correction runs in GitHub CI; xCloud/NGINX and physical-device acceptance remain deferred.
 
 Reference: [MySQL consistent nonlocking reads](https://dev.mysql.com/doc/refman/8.4/en/innodb-consistent-read.html).
+
+
+## Presets, fitting and snapping T-15 (Core 0.8.0)
+
+The authenticated preset API implements the frozen three scopes and immutable type/scope, with additional work/global capabilities and private personal ownership. Preset styles are validated against the stored element type. A scope advisory lock serializes empty-set creation before the transaction locks matching rows and replaces the default. Work mutations also use the existing parent-deletion lock; permanent work deletion removes its presets before releasing that lock. Invalid GET filters return an empty list within the frozen GET's declared status set.
+
+The properties strip applies styles through ordinary element autosave, saves named presets in permitted scopes, updates a selected preset from the current style and deletes it independently of saved elements. Default style resolution is shared with the editor preview; stale optional effects are explicitly cleared during application. Failed writes require refreshing the list before repeating a preset mutation, since this route has no idempotency contract.
+
+The shared renderer records its measured fitted size; disabling auto-fit freezes that size while retaining box geometry. A minimum-size overflow message asks for more space or shorter text. Page/element edges and centers are Moveable guidelines, with a constant five displayed-pixel threshold, Alt bypass, and numeric centering alternatives. See [Moveable Snappable API](https://daybrush.com/moveable/release/latest/doc/Moveable.Snappable.html).
+
+CI includes two-request concurrent default creation/switching, scope privacy and capability revocation, transaction rollback and schema conformance, and connected browser scenarios for the Arabic preset flow, fitting/freezing and snapping after zoom. This is development verification, not physical-device, manual SFX visual or xCloud/NGINX acceptance.
