@@ -54,9 +54,9 @@ $user = new WP_User($users['translator']); $user->add_cap('mol_manage_work_prese
 $expect($request('PATCH', '/presets/' . $shared['id'], (object) ['name' => 'مخول فرديًا']), 200, 'individual work capability allows update', 'PresetResponse');
 $user->remove_cap('mol_manage_work_presets'); wp_set_current_user(0); wp_set_current_user($users['translator']);
 $expect($request('PATCH', '/presets/' . $shared['id'], (object) ['name' => 'revoked']), 403, 'individual work capability revocation applies next request', 'ErrorResponse');
-$user->remove_cap('mol_use_editor'); wp_set_current_user(0); wp_set_current_user($users['translator']);
+$user->add_cap('mol_use_editor', false); wp_set_current_user(0); wp_set_current_user($users['translator']);
 $expect($request('DELETE', '/presets/' . $mine['id']), 403, 'editor revocation blocks own preset deletion', 'ErrorResponse');
-$user->add_cap('mol_use_editor'); wp_set_current_user(0); wp_set_current_user($users['translator']);
+$user->remove_cap('mol_use_editor'); wp_set_current_user(0); wp_set_current_user($users['translator']);
 foreach ([$mine['id'], $next['id']] as $preset_id) { $expect($request('DELETE', '/presets/' . $preset_id), 204, 'owner deletes personal preset'); }
 $expect($request('DELETE', '/presets/' . $mine['id']), 404, 'repeat deletion reports missing preset', 'ErrorResponse');
 $expect($request('PATCH', '/presets/' . $mine['id'], (object) ['name' => 'missing']), 404, 'patch missing preset reports 404', 'ErrorResponse');
