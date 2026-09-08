@@ -234,6 +234,22 @@ finally:
     for pid in preset_ids:
         expect(api('DELETE', '/presets/' + str(pid)), 204, 'remove HTTP preset fixture')
 
+# Report routes use the same real cookie/nonce boundary; moderation serializes row updates.
+report_body = {'chapter_id': fixture['reader_chapter_id'], 'report_type': 'other', 'message': 'HTTP report fixture'}
+expect(api('POST', '/reports', report_body, auth=False, nonce=False), 401, 'anonymous HTTP report denied', 'ErrorResponse')
+expect(api('GET', '/reports', nonce=False), 401, 'report list cannot use cookie without nonce', 'ErrorResponse')
+expect(api('GET', '/reports', headers={'X-WP-Nonce': 'invalid'}, nonce=False), 403, 'report list rejects invalid nonce', 'ErrorResponse')
+report, headers = expect(api('POST', '/reports', report_body), 201, 'real HTTP report create', 'ReportResponse')
+check('no-store' in headers.get('Cache-Control', ''), 'report creation response is private')
+report_id = report['data']['id']
+with ThreadPoolExecutor(max_workers=2) as pool:
+    updates = list(pool.map(lambda status: api('PATCH', '/reports/' + str(report_id), {'status': status}), ['resolved', 'rejected']))
+for result in updates: expect(result, 200, 'concurrent moderation is serialized', 'ReportResponse')
+reports, headers = expect(api('GET', '/reports' + separator + 'chapter_id=' + str(fixture['reader_chapter_id'])), 200, 'private HTTP report listing', 'ReportListResponse')
+final_report = next(r for r in reports['data'] if r['id'] == report_id)
+check(final_report['status'] in ['resolved', 'rejected'] and final_report['resolved_by'] is not None and final_report['resolved_at'] is not None, 'concurrent moderation retains a complete terminal state')
+check('no-store' in headers.get('Cache-Control', ''), 'moderator report list cannot enter shared caches')
+
 # Public HTML never inherits draft access from the manager cookie.
 try:
     response = opener.open(fixture['draft_reader_url'])

@@ -31,6 +31,11 @@ final class RateLimiter
 		$this->limit('lock_acquire', 'mol_lock_acquires_per_minute', 120);
 	}
 
+	public function report(): void
+	{
+		$this->limit('report_create', 'mol_reports_per_minute', 10);
+	}
+
 	private function limit(string $scope, string $option, int $default): void
 	{
 		$result = $this->repository->increment($scope, get_current_user_id(), 60);

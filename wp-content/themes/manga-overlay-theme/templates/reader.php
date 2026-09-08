@@ -7,6 +7,8 @@ $contributors = mol_get_chapter_contributors($chapter['id']);
 global $wpdb;
 $progress = is_user_logged_in() ? (new MOL\Database\ProgressRepository($wpdb))->find(get_current_user_id(), $chapter['id']) : null;
 $boot = ['work' => $work, 'chapter' => $chapter, 'pages' => $pages, 'overlays' => mol_get_chapter_elements($chapter['id']), 'progress' => $progress, 'api' => rest_url('mol/v1/'), 'nonce' => is_user_logged_in() ? wp_create_nonce('wp_rest') : null];
+$boot['canReport'] = current_user_can('mol_report_issue');
+$boot['loginUrl'] = wp_login_url(MOL\Frontend\PublicSite::chapter_url($chapter));
 $position = array_search($chapter['id'], array_column($chapters, 'id'), true);
 get_header();
 ?>
@@ -20,6 +22,7 @@ get_header();
 <button type="button" id="mol-reader-toggle" aria-pressed="true" disabled>الترجمة العربية</button>
 <div class="mol-reader-zoom"><button type="button" id="mol-zoom-out" aria-label="تصغير الصورة" disabled>−</button><button type="button" id="mol-zoom-reset" aria-label="إعادة التكبير" disabled>100%</button><button type="button" id="mol-zoom-in" aria-label="تكبير الصورة" disabled>+</button></div>
 <button type="button" id="mol-hide-toolbar" aria-label="إخفاء أدوات القراءة">إخفاء الأدوات</button>
+<div id="mol-report-root"></div>
 </div>
 <div class="mol-page-navigation" id="mol-page-navigation" hidden><button type="button" id="mol-page-previous">الصفحة السابقة</button><label>الصفحة<select id="mol-reader-page-select"><?php foreach ($pages as $page) : ?><option value="<?php echo (int) $page['page_index']; ?>"><?php echo (int) $page['page_index'] + 1; ?></option><?php endforeach; ?></select></label><button type="button" id="mol-page-next">الصفحة التالية</button></div>
 <p class="mol-reader-feedback" role="status" id="mol-reader-status"></p>

@@ -6,7 +6,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 root = Path(__file__).resolve().parents[1]
 plugin = root / 'wp-content/plugins/manga-overlay-core'
-required = ['manga-overlay-core.php', 'vendor/autoload.php', 'database/schema.sql', 'templates/editor.php', 'assets/dist/poc/index.html', 'assets/dist/reader/reader.js', 'assets/dist/reader/reader.css', 'assets/dist/editor/editor.js', 'assets/dist/editor/editor.css']
+required = ['manga-overlay-core.php', 'vendor/autoload.php', 'database/schema.sql', 'templates/editor.php', 'assets/admin/reports.mjs', 'assets/admin/reports.css', 'assets/dist/poc/index.html', 'assets/dist/reader/reader.js', 'assets/dist/reader/reader.css', 'assets/dist/editor/editor.js', 'assets/dist/editor/editor.css']
 for name in required:
     if not (plugin / name).is_file():
         raise SystemExit(f'Missing build input: {name}; build Composer and the frontend first.')
@@ -26,7 +26,7 @@ files['manga-overlay-core/DEVELOPMENT.md'] = (root / 'docs/WORDPRESS_DEVELOPMENT
 files['manga-overlay-core/build-info.json'] = json.dumps({
     'version': json.loads((plugin / 'package.json').read_text())['version'],
     'spec_version': '1.1.3',
-    'stage': 'development-editor-mobile',
+    'stage': 'development-reports',
     'editor_persistence': True,
 }, indent=2).encode() + b'\n'
 

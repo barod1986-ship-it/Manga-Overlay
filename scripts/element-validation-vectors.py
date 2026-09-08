@@ -43,5 +43,13 @@ for scope in ['personal', 'work', 'global']:
         missing = deepcopy(base); del missing[key]; add('PresetCreate', missing)
     add('PresetCreate', base | {'owner_user_id': 99})
 for value in [{}, [], None, {'name': 'صحيح'}, {'style': {}}, {'style': {'shadow': {'evil': True}}}]: add('PresetPatch', value)
+# Reports are strict envelopes too; resource membership is a service check.
+base = dict(chapter_id=1, report_type='translation', message='بلاغ عربي')
+for key, values in {'chapter_id': [None, '1', True, 1.0, 1.5, 0, -1], 'page_id': [None, 1, 0, '1', []], 'element_id': [None, 1, False, {}, -1], 'report_type': ['translation', 'placement', 'style', 'missing', 'other', '', None, []], 'message': ['', 'ن' * 4000, 'ن' * 4001, None, 1, {}]}.items():
+    for value in values: add('ReportCreate', base | {key: value})
+for key in base:
+    missing = deepcopy(base); del missing[key]; add('ReportCreate', missing)
+for key in ['id', 'reporter_id', 'resolved_by', 'status', 'resolved_at']: add('ReportCreate', base | {key: 1})
+for value in [{}, [], None, {'status':'open'}, {'status':'in_review'}, {'status':'resolved'}, {'status':'rejected'}, {'status':'unknown'}, {'status':False}, {'status':'resolved','resolved_by':1}]: add('ReportPatch', value)
 Path(sys.argv[1]).write_text(json.dumps(vectors, ensure_ascii=False))
 print(f'{len(vectors)} independent element contract vectors generated.')

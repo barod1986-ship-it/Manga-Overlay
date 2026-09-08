@@ -11,6 +11,7 @@ import { OverlayElement } from '../renderer/OverlayElement';
 import type { components } from '../generated/api';
 import { pageDelta, readerMode, readLocal, validProgress, writeLocal, type Progress, type ProgressUpdate, type ReaderPreferences } from './state';
 import './reader.css';
+import { ReportForm } from './ReportForm';
 
 interface Bootstrap {
   chapter: components['schemas']['Chapter'];
@@ -20,6 +21,8 @@ interface Bootstrap {
   progress: Progress | null;
   api: string;
   nonce: string | null;
+  canReport: boolean;
+  loginUrl: string;
 }
 const data = document.getElementById('mol-reader-data');
 if (data?.textContent) start(JSON.parse(data.textContent) as Bootstrap);
@@ -54,6 +57,9 @@ function start(boot: Bootstrap) {
   let mode = readerMode(preferences.mode ?? saved?.reader_mode, boot.chapter.reader_mode_override, boot.work.default_reader_mode);
   const direction = boot.chapter.direction_override ?? boot.work.reading_direction;
   let current = saved?.page_index ?? 0;
+  const linkedPage = /^#mol-page-([1-9][0-9]*)$/.exec(location.hash);
+  const linkedIndex = linkedPage ? boot.pages.findIndex(page => page.id === Number(linkedPage[1])) : -1;
+  if (linkedIndex >= 0) current = linkedIndex;
   let translation = typeof preferences.translation === 'boolean' ? preferences.translation : boot.overlays.some(p => p.elements.length > 0);
   let zoom = 1;
   let interacted = false;
@@ -208,8 +214,10 @@ function start(boot: Bootstrap) {
   document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); void flush(true); } });
   display();
   updateZoom(1);
-  if (saved && mode === 'webtoon') requestAnimationFrame(() => {
+  const reportHost = document.getElementById('mol-report-root');
+  if (reportHost) createRoot(reportHost).render(<ReportForm chapterId={boot.chapter.id} pages={boot.pages} overlays={boot.overlays} api={boot.api} nonce={boot.nonce} canReport={boot.canReport} loginUrl={boot.loginUrl} currentPage={() => boot.pages[current]?.id} />);
+  if ((saved || linkedIndex >= 0) && mode === 'webtoon') requestAnimationFrame(() => {
     const page = pages[current];
-    window.scrollTo({ top: page.getBoundingClientRect().top + window.scrollY + page.clientHeight * saved.progress_unit / 1_000_000 - 100 });
+    window.scrollTo({ top: page.getBoundingClientRect().top + window.scrollY + page.clientHeight * (linkedIndex >= 0 ? 0 : saved?.progress_unit ?? 0) / 1_000_000 - 100 });
   });
 }

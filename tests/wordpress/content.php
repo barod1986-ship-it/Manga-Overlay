@@ -303,6 +303,7 @@ require __DIR__ . '/reader.php';
 require __DIR__ . '/editor.php';
 require __DIR__ . '/elements.php';
 require __DIR__ . '/presets.php';
+require __DIR__ . '/reports.php';
 $fixture_path = getenv('MOL_HTTP_FIXTURE');
 $samples_path = getenv('MOL_CONTENT_RESPONSES');
 if (!$fixture_path || !$samples_path) {

@@ -11,7 +11,7 @@ use MOL\Security\WorkDeletionPolicy;
 
 final class Plugin
 {
-	public const VERSION = '0.9.0';
+	public const VERSION = '0.10.0';
 
 	public static function boot(): void
 	{
@@ -45,12 +45,15 @@ final class Plugin
 		add_action('rest_api_init', [$library, 'register']);
 		$presets = new REST\PresetsController(new Services\PresetService($wpdb));
 		add_action('rest_api_init', [$presets, 'register']);
+		$reports = new REST\ReportsController(new Services\ReportService($wpdb));
+		add_action('rest_api_init', [$reports, 'register']);
 		$elements = new REST\ElementsController(new Services\ElementService($wpdb));
 		add_action('rest_api_init', [$elements, 'register']);
 		$progress = new REST\ProgressController(new Services\ProgressService($wpdb));
 		add_action('rest_api_init', [$progress, 'register']);
 		add_filter('rest_post_dispatch', [REST\ContentController::class, 'response_headers'], 10, 3);
 		new Admin\ContentScreen($runtime->chapters);
+		new Admin\ReportsScreen();
 		add_action('add_meta_boxes_mol_work', [Admin\WorkMetadata::class, 'register']);
 		add_action('save_post_mol_work', [Admin\WorkMetadata::class, 'save']);
 		add_action('mol_cleanup_temporary_data', [Services\ContentRuntime::class, 'cleanup']);
