@@ -43,7 +43,7 @@ body.mol-editing { margin:0; background:#161d19; color:#eef0e8; overflow:hidden;
   .mol-editor-header { padding:8px 12px; gap:4px 10px; }.mol-editor-header>a { font-size:11px; max-width:78px; }.mol-editor h1 { font-size:14px; }.mol-editor-title p { font-size:10px; }.mol-editor-save-state { font-size:10px; }
   .mol-editor-controls { gap:8px; padding:8px 12px; }.mol-editor-page-controls { width:100%; justify-content:space-between; }.mol-editor-page-controls label { flex:none; }.mol-editor-page-controls select { flex:1; min-width:0; font-size:16px; }
   .mol-editor-workspace { grid-template-columns:minmax(0,1fr); }.mol-editor-properties,.mol-editor-layers { display:none; }
-  .mol-editor-open-properties .mol-editor-properties,.mol-editor-open-layers .mol-editor-layers { display:block; position:fixed; inset-inline:0; inset-block-end:calc(62px + env(safe-area-inset-bottom)); height:45dvh; max-height:75dvh; z-index:20000; padding:16px; border-block-start:2px solid #83947b; }
+  .mol-editor-open-properties .mol-editor-properties,.mol-editor-open-layers .mol-editor-layers { display:block; position:fixed; inset-inline:0; inset-block-end:var(--mol-toolbar-height,112px); height:calc(var(--mol-visual-height,100dvh) * .45); max-height:calc(var(--mol-visual-height,100dvh) - var(--mol-toolbar-height,112px) - 8px); z-index:20000; padding:16px; border-block-start:2px solid #83947b; }
   .mol-editor-properties textarea { font-size:16px; }.mol-editor-bottom { min-height:62px; padding:8px 12px max(8px,env(safe-area-inset-bottom)); }.mol-editor-bottom>span { margin-inline-end:auto; font-size:10px; max-width:130px; }
   .mol-editor-mobile { display:inline-flex !important; align-items:center; justify-content:center; }.mol-editor-panel-title { margin-block-end:10px; }
 }
@@ -64,8 +64,7 @@ body.mol-editing { margin:0; background:#161d19; color:#eef0e8; overflow:hidden;
 @media(max-width:800px) {
   .mol-editor-tools { width:100%; overflow-x:auto; }.mol-editor-tools button { flex:1; padding:7px; white-space:nowrap; }
   .mol-editor-bottom { flex:none; min-height:112px; }.mol-editor-panel-buttons { width:100%; justify-content:flex-end; }
-  .mol-editor-open-properties .mol-editor-properties,.mol-editor-open-layers .mol-editor-layers { inset-block-end:calc(112px + env(safe-area-inset-bottom)); }
-  .mol-editor-open-properties .mol-editor-sheet-expanded { height:65dvh; max-height:calc(100dvh - 240px); }
+  .mol-editor-open-properties .mol-editor-sheet-expanded { height:calc(var(--mol-visual-height,100dvh) * .85); }
   .mol-editor-properties input,.mol-editor-properties select { font-size:16px; }.mol-editor-panel-title { position:sticky; top:-16px; background:#202b23; z-index:1; padding-block:8px; }
 }
 
@@ -74,3 +73,20 @@ body.mol-editing { margin:0; background:#161d19; color:#eef0e8; overflow:hidden;
 .mol-editor-presets { border-block:1px solid var(--mol-editor-line,#c9cfc5); padding-block:12px; margin-block:12px; }
 .mol-editor-presets h3 { font-size:14px; margin:0 0 8px; }.mol-editor-presets label { display:grid; gap:5px; margin-block:8px; }.mol-editor-presets button { margin-block:4px; max-width:100%; }.mol-editor-presets .mol-editor-check { display:flex; align-items:center; }.mol-editor-presets input:not([type=checkbox]),.mol-editor-presets select { width:100%; min-width:0; }
 .mol-editor-presets fieldset { min-width:0; }.mol-editor .moveable-guideline { --moveable-color:#b45309; }
+
+/* Touch arbitration is confined to the page viewport; sheets retain native scrolling. */
+.mol-editor-touch-stage { touch-action:none; }
+.mol-editor-touch-help { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+@media(max-width:800px) {
+  .mol-editor { position:fixed; inset-inline:0; top:var(--mol-visual-top,0px); height:var(--mol-visual-height,100dvh); }
+  .mol-editor-header,.mol-editor-controls { flex:none; }
+  .mol-editor-open-properties .mol-editor-properties,.mol-editor-open-layers .mol-editor-layers { position:absolute; overscroll-behavior:contain; scroll-padding-block:80px 16px; }
+  .mol-editor-properties textarea { min-height:88px; height:110px; max-height:30vh; resize:vertical; }
+  .mol-editor-properties .mol-editor-panel-title { gap:6px; }
+  .mol-editor-properties .mol-editor-panel-title h2 { font-size:12px; }
+  .mol-editor-properties .mol-editor-panel-title button { min-width:44px; padding-inline:8px; font-size:12px; }
+  .mol-editor .moveable-control { width:20px; height:20px; margin-left:-10px; margin-top:-10px; border-width:2px; }
+  .mol-editor .moveable-rotation-control { background:#efc875; border-color:#493917; }
+  .mol-editor .moveable-rotation-line { height:36px; }
+  .mol-editor-panel-buttons { align-items:center; }
+}

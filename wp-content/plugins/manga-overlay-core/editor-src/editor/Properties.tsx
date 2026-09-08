@@ -29,12 +29,11 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
     <div className="mol-editor-panel-title"><h2>خصائص العنصر</h2><button className="mol-editor-mobile" onClick={() => setExpanded(value => !value)} aria-expanded={expanded}>{expanded ? 'تصغير الخصائص' : 'توسيع الخصائص'}</button><button className="mol-editor-mobile" onClick={onClose}>إغلاق الخصائص</button></div>
     {!element || !style ? <p className="mol-editor-muted">حدد عنصرًا على الصفحة أو من قائمة الطبقات، أو أضف عنصر ترجمة.</p> : <>
       <p className="mol-editor-type">{ELEMENT_LABELS[element.element_type]}{element.source ? '' : ' · جديد في هذه الجلسة'}</p>
-      {presets}
       <fieldset disabled={!editable}>
         <label htmlFor="mol-editor-content">النص العربي</label><textarea ref={textRef} id="mol-editor-content" value={element.content} readOnly={!editable} rows={4} maxLength={10000} dir="rtl"
           onChange={event => onChange({ content: event.target.value })} onFocus={() => { setExpanded(true); }} />
         <p className="mol-editor-muted">تُحفظ التغييرات تلقائيًا بعد التوقف عن الكتابة.</p>
-        <details open><summary>الخط والمحاذاة</summary><div className="mol-editor-fields">
+        <PropertySection initiallyOpen><summary>الخط والمحاذاة</summary><div className="mol-editor-fields">
           <Choice label="الخط" value={style.fontId ?? 'cairo'} onChange={value => setStyle({ fontId: value as ElementStyle['fontId'] })}>{[['cairo', 'القاهرة — Cairo'], ['noto-sans-arabic', 'Noto Sans Arabic'], ['tajawal', 'تجوال — Tajawal'], ['noto-kufi-arabic', 'Noto Kufi Arabic'], ['sfx-display-1', 'خط المؤثر التجريبي']].map(([value, text]) => <option key={value} value={value}>{text}</option>)}</Choice>
           <NumberField label="حجم الخط (% عرض الصفحة)" value={(style.fontSizeUnit ?? 26000) / 10000} min={.1} max={20} step={.1} onChange={value => setStyle({ fontSizeUnit: Math.round(value * 10000) })} />
           <Choice label="وزن الخط" value={String(style.fontWeight ?? 700)} onChange={value => setStyle({ fontWeight: Number(value) as ElementStyle['fontWeight'] })}>{[400, 500, 600, 700, 800, 900].map(value => <option key={value}>{value}</option>)}</Choice>
@@ -44,8 +43,8 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
           <Check label="ملاءمة النص تلقائيًا" checked={style.autoFit ?? false} onChange={autoFit => { if (!autoFit && onFreezeFit) onFreezeFit(); else setStyle({ autoFit }); }} />
           {style.autoFit && fitOverflow && <p role="status">بلغ النص الحد الأدنى للحجم وما زال يتجاوز المساحة؛ كبّر الصندوق أو اختصر النص.</p>}
           {style.autoFit && <NumberField label="أقل حجم (% عرض الصفحة)" value={(style.minFontSizeUnit ?? 1000) / 10000} min={.1} max={10} step={.1} onChange={value => setStyle({ minFontSizeUnit: Math.round(value * 10000) })} />}
-        </div></details>
-        <details><summary>الشكل والخلفية</summary><div className="mol-editor-fields">
+        </div></PropertySection>
+        <PropertySection><summary>الشكل والخلفية</summary><div className="mol-editor-fields">
           <Choice label="الشكل" value={style.shape ?? shapes[0]} onChange={value => setStyle({ shape: value as ElementStyle['shape'] })}>{shapes.map(value => <option key={value} value={value}>{shapeNames[value]}</option>)}</Choice>
           <Color label="لون الخلفية" value={style.backgroundColor ?? '#FFFFFF'} onChange={backgroundColor => setStyle({ backgroundColor })} />
           <NumberField label="عتامة الخلفية" value={style.backgroundOpacity ?? 0} min={0} max={1} step={.05} onChange={backgroundOpacity => setStyle({ backgroundOpacity })} />
@@ -61,8 +60,8 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
               <NumberField label="عرض الذيل (% عرض الصفحة)" value={(style.tail.widthUnit ?? 30000) / 10000} min={0} max={20} step={.1} onChange={value => setStyle({ tail: { ...style.tail, widthUnit: Math.round(value * 10000) } })} />
             </>}
           </>}
-        </div></details>
-        <details open><summary>الموضع والحجم</summary><div className="mol-editor-fields mol-editor-transform-fields">
+        </div></PropertySection>
+        <PropertySection initiallyOpen><summary>الموضع والحجم</summary><div className="mol-editor-fields mol-editor-transform-fields">
           <NumberField label="X (%)" value={element.x_unit / 10000} min={0} max={100} step={.1} onChange={value => geometry({ x_unit: value * 10000 })} />
           <NumberField label="Y (%)" value={element.y_unit / 10000} min={0} max={100} step={.1} onChange={value => geometry({ y_unit: value * 10000 })} />
           <NumberField label="العرض (%)" value={element.w_unit / 10000} min={.0001} max={100} step={.1} onChange={value => geometry({ w_unit: value * 10000 })} />
@@ -78,8 +77,8 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
             <button type="button" onClick={() => geometry({ h_unit: element.h_unit + 1000 })}>زيادة الارتفاع</button><button type="button" onClick={() => geometry({ h_unit: element.h_unit - 1000 })}>تقليل الارتفاع</button>
             <button type="button" onClick={() => geometry({ rotation_mdeg: element.rotation_mdeg + 1000 })}>دوران +1°</button><button type="button" onClick={() => geometry({ rotation_mdeg: element.rotation_mdeg - 1000 })}>دوران −1°</button>
           </div>
-        </div></details>
-        <details><summary>حدود النص والظل</summary><div className="mol-editor-fields">
+        </div></PropertySection>
+        <PropertySection><summary>حدود النص والظل</summary><div className="mol-editor-fields">
           <Color label="لون حدود النص" value={style.strokeColor ?? '#111111'} onChange={strokeColor => setStyle({ strokeColor })} />
           <NumberField label="سماكة النص (% عرض الصفحة)" value={(style.strokeWidthUnit ?? 0) / 10000} min={0} max={5} step={.05} onChange={value => setStyle({ strokeWidthUnit: Math.round(value * 10000) })} />
           <Check label="ظل النص" checked={!!style.shadow} onChange={enabled => setStyle({ shadow: enabled ? { xUnit: 1000, yUnit: 1000, blurUnit: 2000, color: '#111111', opacity: .5 } : null })} />
@@ -90,17 +89,22 @@ export function Properties({ element, editable, canDelete, textRef, onChange, on
             <NumberField label="تمويه الظل (% عرض الصفحة)" value={(style.shadow.blurUnit ?? 0) / 10000} min={0} max={5} step={.1} onChange={value => setStyle({ shadow: { ...style.shadow, blurUnit: Math.round(value * 10000) } })} />
             <NumberField label="عتامة الظل" value={style.shadow.opacity ?? 1} min={0} max={1} step={.05} onChange={opacity => setStyle({ shadow: { ...style.shadow, opacity } })} />
           </>}
-        </div></details>
-        {element.element_type === 'sfx' && <details open><summary>المؤثر الصوتي</summary><div className="mol-editor-fields">
+        </div></PropertySection>
+        {element.element_type === 'sfx' && <PropertySection initiallyOpen><summary>المؤثر الصوتي</summary><div className="mol-editor-fields">
           <NumberField label="مقياس X" value={style.scaleX ?? 1} min={.5} max={2} step={.1} onChange={scaleX => setStyle({ scaleX })} />
           <NumberField label="مقياس Y" value={style.scaleY ?? 1} min={.5} max={2} step={.1} onChange={scaleY => setStyle({ scaleY })} />
           <Choice label="رؤوس الانفجار" value={String(style.burst?.points ?? (style.shape === 'impact' ? 8 : 16))} onChange={value => setStyle({ burst: { ...style.burst, points: Number(value) as 8 | 12 | 16 | 24 } })}>{[8, 12, 16, 24].map(value => <option key={value}>{value}</option>)}</Choice>
           <NumberField label="عمق الانفجار" value={style.burst?.depth ?? .35} min={0} max={1} step={.05} onChange={depth => setStyle({ burst: { ...style.burst, depth } })} />
-        </div></details>}
+        </div></PropertySection>}
         <div className="mol-editor-actions"><button type="button" onClick={onDuplicate}>نسخ العنصر</button><button type="button" disabled={!canDelete} onClick={onDelete}>حذف العنصر</button></div>
       </fieldset>
+      {presets && <PropertySection initiallyOpen><summary>الأنماط المحفوظة</summary>{presets}</PropertySection>}
     </>}
   </aside>;
+}
+function PropertySection({ children, initiallyOpen = false }: { children: ReactNode; initiallyOpen?: boolean }) {
+  const [open, setOpen] = useState(() => initiallyOpen && !window.matchMedia('(max-width:800px)').matches);
+  return <details data-property-section open={open} onToggle={event => setOpen(event.currentTarget.open)}>{children}</details>;
 }
 function NumberField({ label, value, min, max, step, onChange }: { label: string; value: number; min: number; max: number; step: number; onChange: (value: number) => void }) {
   const id = useId();

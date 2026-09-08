@@ -5,13 +5,15 @@ import type { Geometry } from '../domain/types';
 import { OverlayElement } from '../renderer/OverlayElement';
 import type { Page } from './state';
 import type { WorkingElement } from './drafts';
+import { useStageTouch } from './useStageTouch';
 
 interface Props {
   page: Page; elements: WorkingElement[]; selectedKey: string | null; preview: boolean; visible: boolean; zoom: number; snapping: boolean; canEdit: boolean;
   onSelect: (key: string | null) => void; onEditText: (key: string) => void; onTransform: (key: string, geometry: Geometry) => void;
+  onZoom: (zoom: number) => void;
 }
 interface Interaction { key: string; node: HTMLElement; box: PixelBox; size: ImageSize; z: number; css: string; changed: boolean }
-export function Stage({ page, elements, selectedKey, preview, visible, zoom, snapping, canEdit, onSelect, onEditText, onTransform }: Props) {
+export function Stage({ page, elements, selectedKey, preview, visible, zoom, snapping, canEdit, onSelect, onEditText, onTransform, onZoom }: Props) {
   const viewport = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const moveable = useRef<Moveable>(null);
@@ -45,7 +47,9 @@ export function Stage({ page, elements, selectedKey, preview, visible, zoom, sna
     interaction.current = null;
     if (active) active.node.style.cssText = active.css;
     moveable.current?.stopDrag();
+    if (active) moveable.current?.updateRect();
   }
+  const viewportGesture = useStageTouch({ viewport, stage, zoom, width, preview, onZoom, cancel });
   useLayoutEffect(() => {
     // A resize, selection change, overlay toggle or unmount cannot commit stale gesture pixels.
     setTarget(enabled && selectedKey ? stage.current?.querySelector<HTMLElement>(`[data-element-key="${CSS.escape(selectedKey)}"]`) ?? null : null);
@@ -53,7 +57,7 @@ export function Stage({ page, elements, selectedKey, preview, visible, zoom, sna
   }, [enabled, selectedKey, width, size.height]);
   useLayoutEffect(() => { if (!interaction.current) moveable.current?.updateRect(); }, [selected, target, width]);
   function begin() {
-    if (!enabled || !selected || !target) return null;
+    if (viewportGesture.current || !enabled || !selected || !target) return null;
     interaction.current = { key: selected.key, node: target, box: toPixels(selected, size), size, z: selected.z_index, css: target.style.cssText, changed: false };
     return interaction.current.box;
   }
@@ -69,13 +73,13 @@ export function Stage({ page, elements, selectedKey, preview, visible, zoom, sna
     interaction.current = null;
     if (!active) return;
     active.node.style.cssText = active.css;
-    if (!enabled || !active.changed || inputEvent?.type.endsWith('cancel')) { moveable.current?.updateRect(); return; }
+    if (viewportGesture.current || !enabled || !active.changed || inputEvent?.type.endsWith('cancel')) { moveable.current?.updateRect(); return; }
     const geometry = fromPixels(active.box, active.size, active.z);
     // Restore normalized CSS even when clamping resolves to the same React value.
     Object.assign(active.node.style, { left: `${geometry.x_unit / 10000}%`, top: `${geometry.y_unit / 10000}%`, width: `${geometry.w_unit / 10000}%`, height: `${geometry.h_unit / 10000}%`, transform: `rotate(${geometry.rotation_mdeg / 1000}deg)` });
     onTransform(active.key, geometry);
   }
-  return <div className={`mol-editor-viewport${enabled ? ' mol-editor-transforming' : ''}`} ref={viewport} aria-label="مساحة الصفحة">
+  return <div className={`mol-editor-viewport${enabled ? ' mol-editor-transforming' : ''}${!preview ? ' mol-editor-touch-stage' : ''}`} ref={viewport} aria-label="مساحة الصفحة" aria-describedby={!preview ? 'mol-editor-touch-help' : undefined}>
     <div className="mol-editor-stage-wrap" style={{ width }}>
       <div className="mol-editor-page-caption"><span>الصفحة {page.page_index + 1}</span><span dir="ltr">{page.natural_width} × {page.natural_height}</span></div>
       {imageState === 'error' && <div className="mol-editor-message" role="alert"><p>تعذر تحميل صورة الصفحة.</p><button onClick={() => { setImageState('loading'); setImageAttempt(value => value + 1); }}>إعادة تحميل الصورة</button></div>}

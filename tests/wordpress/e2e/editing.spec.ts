@@ -1,4 +1,4 @@
-import { resetEditor } from './editor-fixture';
+import { resetEditor, openPropertySection } from './editor-fixture';
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 const fixture = JSON.parse(readFileSync(process.env.MOL_HTTP_FIXTURE!, 'utf8')) as Record<string, any>;
@@ -75,6 +75,7 @@ test('four types edit as plain Arabic, duplicate/delete/undo and keep page draft
 
 test('numeric transforms, step buttons, layer order and shortcuts survive preview and page navigation', async ({ page, isMobile }) => {
   await login(page); await selectBubble(page, isMobile);
+  await openPropertySection(page, 'الموضع والحجم');
   await page.getByLabel('العرض (%)', { exact: true }).fill('20');
   await page.getByLabel('X (%)', { exact: true }).fill('40');
   await page.getByLabel('Y (%)', { exact: true }).fill('15');
@@ -129,6 +130,7 @@ test('shape options are specific to bubble/narration/text/SFX and render structu
   await page.getByRole('button', { name: 'إضافة مؤثر صوتي', exact: true }).click();
   await page.getByText('الشكل والخلفية', { exact: true }).click();
   await page.getByLabel('الشكل', { exact: true }).selectOption('impact');
+  await openPropertySection(page, 'المؤثر الصوتي');
   await page.getByLabel('رؤوس الانفجار', { exact: true }).selectOption('12');
   await page.getByLabel('مقياس X', { exact: true }).fill('1.5');
   await page.getByLabel('عمق الانفجار', { exact: true }).fill('0.6');

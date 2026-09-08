@@ -10,6 +10,7 @@ import { Stage } from './Stage';
 import { Presets } from './Presets';
 import { defaultPreset, presetStyle } from './presets';
 import { Properties } from './Properties';
+import { useMobileViewport } from './useMobileViewport';
 
 const types: ElementType[] = ['bubble', 'narration', 'free_text', 'sfx'];
 export function App({ boot }: { boot: Bootstrap }) {
@@ -18,6 +19,8 @@ export function App({ boot }: { boot: Bootstrap }) {
   const [attempt, setAttempt] = useState(0);
   const [pageAttempt, setPageAttempt] = useState(0);
   const [preview, setPreview] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useMobileViewport(root, preview);
   const [visible, setVisible] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [snapping, setSnapping] = useState(true);
@@ -143,7 +146,7 @@ export function App({ boot }: { boot: Bootstrap }) {
     return () => window.removeEventListener('keydown', keydown);
   });
   const pageIndex = pages.findIndex(item => item.id === pageId);
-  return <div className={`mol-editor${preview ? ' mol-editor-preview' : ''}${panel ? ' mol-editor-open-' + panel : ''}`} dir="rtl">
+  return <div ref={root} className={`mol-editor${preview ? ' mol-editor-preview' : ''}${panel ? ' mol-editor-open-' + panel : ''}`} dir="rtl">
     <header className="mol-editor-header">
       <a href={boot.backUrl}>{boot.backLabel}</a>
       <div className="mol-editor-title"><p dir="auto">{boot.workTitle}</p><h1>{chapter ? `الفصل ${chapter.chapter_label}${chapter.title ? ' · ' + chapter.title : ''}` : 'محرر الترجمة'}</h1></div>
@@ -186,7 +189,7 @@ export function App({ boot }: { boot: Bootstrap }) {
               onClose={() => { setPanel(null); propertiesButton.current?.focus(); }} />}
             <section className="mol-editor-page-area" aria-label="الصفحة الحالية" aria-busy={elementLoad.status === 'loading'}>
               {elementLoad.status === 'loading' ? <Message text="جارٍ تحميل طبقات الصفحة…" /> : elementLoad.status === 'error' ? <ErrorMessage error={elementLoad.error} retry={() => setPageAttempt(value => value + 1)} />
-                : <Stage key={page.id} page={page} elements={elements} selectedKey={selected?.key ?? null} preview={preview} visible={visible} zoom={zoom} snapping={snapping} canEdit={selectedEditable}
+                : <Stage key={page.id} page={page} elements={elements} selectedKey={selected?.key ?? null} preview={preview} visible={visible} zoom={zoom} onZoom={setZoom} snapping={snapping} canEdit={selectedEditable}
                   onSelect={key => select(key, false)} onEditText={key => { select(key); if (selectedEditable) focusText(); }} onTransform={(key, geometry) => change(key, geometry, true)} />}
             </section>
             {!preview && <aside className="mol-editor-layers" aria-label="طبقات الصفحة">
@@ -199,6 +202,7 @@ export function App({ boot }: { boot: Bootstrap }) {
           </main>}
     {!preview && !selected && presetLoad.status === 'error' && <div role="alert" className="mol-editor-message"><p>{presetLoad.error.message}</p><button onClick={() => setPresetAttempt(value => value + 1)}>إعادة تحميل الأنماط</button></div>}
     {!preview && <footer className="mol-editor-bottom">
+      <span id="mol-editor-touch-help" className="mol-editor-touch-help">إصبعان للتكبير؛ اسحب المساحة الفارغة لتحريك الصفحة.</span>
       {boot.canEdit && <nav className="mol-editor-tools" aria-label="إضافة عناصر الترجمة"><button disabled={!editing} onClick={() => select(null)}>تحديد</button>{types.map(type => <button key={type} disabled={!editing || presetLoad.status !== 'ready'} onClick={() => add(type)} aria-label={'إضافة ' + ELEMENT_LABELS[type]}>{ELEMENT_LABELS[type]}</button>)}</nav>}
       <div className="mol-editor-panel-buttons"><button className="mol-editor-mobile" disabled={!!error} aria-expanded={panel === 'layers'} onClick={() => setPanel(value => value === 'layers' ? null : 'layers')}>الطبقات</button><button ref={propertiesButton} className="mol-editor-mobile" disabled={!selected} aria-expanded={panel === 'properties'} onClick={() => setPanel(value => value === 'properties' ? null : 'properties')}>الخصائص</button>
         {deleted?.deleting && deleted.state !== 'removed' && !deleted.busy && !error && <button disabled={!editing} onClick={undoDelete}>تراجع عن حذف العنصر</button>}</div>

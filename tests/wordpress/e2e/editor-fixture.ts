@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type APIRequest } from '@playwright/test';
+import { expect, type APIRequestContext, type APIRequest, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 export const fixture = JSON.parse(readFileSync(process.env.MOL_HTTP_FIXTURE!, 'utf8')) as Record<string, any>;
 export async function managerApi(playwright: { request: APIRequest }) {
@@ -34,4 +34,9 @@ export async function resetEditor(playwright: { request: APIRequest }) {
 export async function readElements(request: APIRequestContext, api: string, nonce: string, pageId: number) {
   const response = await request.get(api + 'pages/' + pageId + '/elements', { headers: { 'X-WP-Nonce': nonce } });
   expect(response.status()).toBe(200); return (await response.json()).data;
+}
+
+export async function openPropertySection(page: Page, label: string) {
+  const section = page.locator('details[data-property-section]').filter({ has: page.locator('summary', { hasText: new RegExp('^' + label + '$') }) });
+  if (!await section.evaluate(node => (node as HTMLDetailsElement).open)) await section.locator(':scope > summary').click();
 }

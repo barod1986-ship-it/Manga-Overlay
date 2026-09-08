@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { fixture, managerApi, readElements, resetEditor } from './editor-fixture';
+import { fixture, managerApi, readElements, resetEditor, openPropertySection } from './editor-fixture';
 const pageId = fixture.editor_page_ids[0] as number;
 const bubble = fixture.editor_element_ids[0] as number;
 test.beforeEach(async ({ playwright }) => resetEditor(playwright));
@@ -11,6 +11,7 @@ async function open(page: Page, mobile: boolean) {
   if (mobile) await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
   await page.locator('.mol-editor-layers button').filter({ hasText: 'نص خاص داخل المحرر' }).click();
   await expect(page.getByLabel('النص العربي', { exact: true })).toBeEditable();
+  for (const label of ['الخط والمحاذاة', 'الموضع والحجم', 'الأنماط المحفوظة']) await openPropertySection(page, label);
   await expect(page.getByRole('button', { name: 'تطبيق النمط', exact: true })).toBeEnabled();
   return JSON.parse((await page.locator('#mol-editor-data').textContent())!);
 }
@@ -44,6 +45,7 @@ test('personal preset is saved, applied without geometry/content changes, used b
     await expect(page.getByLabel('لون النص', { exact: true })).toHaveValue('#335577');
     await page.getByLabel('النص العربي', { exact: true }).fill('نص بنمط افتراضي');
     await expect(page.locator('.mol-editor-save-state')).toContainText('تم الحفظ');
+    await openPropertySection(page, 'الأنماط المحفوظة');
     await page.getByLabel('النمط', { exact: true }).selectOption(String(id));
     await page.getByText('حفظ وإدارة الأنماط', { exact: true }).click();
     await page.getByLabel('اسم النمط', { exact: true }).fill('نمط مترجم محدث');
