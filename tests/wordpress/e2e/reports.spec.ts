@@ -17,7 +17,17 @@ async function openReport(page: Page) {
 test('reader member reports element, page and chapter without editor permissions; message remains plain', async ({ page, playwright }, testInfo) => {
   const boot = await openReport(page);
   const dialog = page.getByRole('dialog');
+  // This account already has saved reading progress; the report must follow the
+  // current reader page instead of silently jumping to the chapter's first page.
+  const currentIndex = Number(await page.locator('#mol-reader-page-select').inputValue());
+  await expect(page.getByLabel('صفحة البلاغ')).toHaveValue(String(boot.pages[currentIndex].id));
   await page.getByLabel('موضع المشكلة', { exact: true }).selectOption('element');
+  if (!boot.overlays.find((row: any) => row.page_id === boot.pages[currentIndex].id)?.elements.length) {
+    await expect(page.getByLabel('عنصر الترجمة', { exact: true })).toHaveValue('0');
+    await page.getByLabel('وصف المشكلة').fill('صفحة بلا عناصر ترجمة');
+    await expect(page.getByRole('button', { name: 'إرسال البلاغ', exact: true })).toBeDisabled();
+  }
+  await page.getByLabel('صفحة البلاغ').selectOption({ value: String(boot.pages[0].id) });
   await expect(page.getByLabel('عنصر الترجمة', { exact: true })).toHaveValue(String(boot.overlays[0].elements[0].id));
   const message = 'بلاغ عربي <img src=x onerror="window.molReportInjected=true"> موضع غير صحيح';
   await page.getByLabel('وصف المشكلة').fill(message);
@@ -32,7 +42,7 @@ test('reader member reports element, page and chapter without editor permissions
   for (const scope of ['page', 'chapter']) {
     await page.getByRole('button', { name: 'كتابة بلاغ آخر', exact: true }).click();
     await page.getByLabel('موضع المشكلة', { exact: true }).selectOption(scope);
-    if (scope === 'page') await page.getByLabel('صفحة البلاغ').selectOption(String(boot.pages[1].id));
+    if (scope === 'page') await page.getByLabel('صفحة البلاغ').selectOption({ value: String(boot.pages[1].id) });
     await page.getByLabel('نوع المشكلة').selectOption('missing');
     await page.getByLabel('وصف المشكلة').fill('ترجمة ناقصة في ' + scope);
     const saved = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith('/reports'));
