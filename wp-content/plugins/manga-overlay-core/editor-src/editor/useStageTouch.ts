@@ -31,7 +31,7 @@ export function useStageTouch(options: Options) {
       if (!active) {
         if (!event.touches.length) return;
         active = true;
-        const editable = event.target instanceof Element && event.target.closest('.mol-element-selected, .moveable-control, .moveable-line');
+        const editable = node.classList.contains('mol-editor-transforming') && event.target instanceof Element && event.target.closest('.mol-element-selected, .moveable-control, .moveable-line');
         pan = editable || event.touches.length !== 1 ? null : { start: point(event.touches[0]), left: node.scrollLeft, top: node.scrollTop };
       }
       if (event.touches.length >= 2) {

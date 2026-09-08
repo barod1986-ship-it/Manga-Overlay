@@ -4,14 +4,16 @@ import { fixture, openPropertySection, readElements, resetEditor } from './edito
 const pageId = fixture.editor_page_ids[0] as number;
 const bubble = fixture.editor_element_ids[0] as number;
 test.beforeEach(async ({ playwright, isMobile }) => { test.skip(!isMobile, 'Native touch sequence uses the Chromium mobile project.'); await resetEditor(playwright); });
-async function open(page: Page) {
+async function open(page: Page, viewer = false) {
+  const prefix = viewer ? 'editor_viewer' : 'editor';
   await page.request.get('/wp-login.php');
-  expect((await page.request.post('/wp-login.php', { form: { log: fixture.editor_username, pwd: fixture.editor_password, testcookie: '1', 'wp-submit': 'Log In' }, maxRedirects: 0 })).status()).toBe(302);
+  expect((await page.request.post('/wp-login.php', { form: { log: fixture[prefix + '_username'], pwd: fixture[prefix + '_password'], testcookie: '1', 'wp-submit': 'Log In' }, maxRedirects: 0 })).status()).toBe(302);
   await page.goto(fixture.editor_url);
   await expect(page.locator('.mol-element')).toHaveCount(4);
   await page.getByRole('button', { name: 'الطبقات', exact: true }).click();
   await page.locator('.mol-editor-layers button').filter({ hasText: 'نص خاص داخل المحرر' }).click();
-  await expect(page.getByLabel('النص العربي', { exact: true })).toBeEditable();
+  if (viewer) await expect(page.getByLabel('النص العربي', { exact: true })).toHaveAttribute('readonly', '');
+  else await expect(page.getByLabel('النص العربي', { exact: true })).toBeEditable();
   return JSON.parse((await page.locator('#mol-editor-data').textContent())!);
 }
 type Finger = { x: number; y: number; id: number };
@@ -133,4 +135,18 @@ test('45/85 percent sheet follows a simulated keyboard viewport and keeps the fo
   await page.getByRole('button', { name: 'إغلاق الخصائص', exact: true }).click();
   await expect(page.getByRole('button', { name: 'الخصائص', exact: true })).toBeFocused();
   await expect(sheet).not.toBeVisible();
+});
+
+
+test('view-only users can pan from a selected overlay without gaining transform controls', async ({ page, context }) => {
+  const boot = await open(page, true);
+  await page.getByRole('button', { name: 'إغلاق الخصائص', exact: true }).click();
+  await page.getByRole('button', { name: 'تكبير الصفحة', exact: true }).click();
+  await expect(page.locator('.moveable-control')).toHaveCount(0);
+  const before = await readElements(page.request, boot.api, boot.nonce, pageId);
+  const cdp = await context.newCDPSession(page);
+  await drag(cdp, page, center((await page.locator('.mol-element-selected').boundingBox())!), -30, -12);
+  await expect.poll(async () => page.locator('.mol-editor-viewport').evaluate(node => node.scrollLeft)).toBeGreaterThan(20);
+  expect(await readElements(page.request, boot.api, boot.nonce, pageId)).toEqual(before);
+  await expect(page.locator('.mol-editor-save-state')).toContainText('عرض فقط');
 });
