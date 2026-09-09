@@ -20,7 +20,7 @@ final class ReportsScreen
 		if ($hook !== $this->hook || !$hook) { return; }
 		$url = plugin_dir_url(dirname(__DIR__, 2) . '/manga-overlay-core.php');
 		wp_enqueue_style('mol-reports-admin', $url . 'assets/admin/reports.css', [], \MOL\Plugin::VERSION);
-		wp_enqueue_script_module('mol-reports-admin', $url . 'assets/admin/reports.mjs', [], \MOL\Plugin::VERSION);
+		wp_enqueue_script_module('mol-reports-admin', $url . 'assets/dist/admin/reports.js', [], \MOL\Plugin::VERSION);
 	}
 	public function render(): void
 	{

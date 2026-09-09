@@ -345,4 +345,10 @@ if (boot) {
     if (queue.running || formDirty || orderDirty) { event.preventDefault(); event.returnValue = ''; }
   });
   renderChapters(); loadForm(null); renderPages(); renderQueue();
+  // Never allow a native GET submission before the REST submit handler is ready.
+  if (config.manage) {
+    form.querySelector('fieldset').disabled = false;
+    $('mol-save-chapter').disabled = false;
+  }
+  notice('');
 }

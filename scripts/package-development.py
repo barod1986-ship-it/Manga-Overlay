@@ -6,14 +6,14 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 root = Path(__file__).resolve().parents[1]
 plugin = root / 'wp-content/plugins/manga-overlay-core'
-required = ['manga-overlay-core.php', 'vendor/autoload.php', 'database/schema.sql', 'templates/editor.php', 'assets/admin/reports.mjs', 'assets/admin/reports.css', 'assets/dist/poc/index.html', 'assets/dist/reader/reader.js', 'assets/dist/reader/reader.css', 'assets/dist/editor/editor.js', 'assets/dist/editor/editor.css']
+required = ['manga-overlay-core.php', 'vendor/autoload.php', 'database/schema.sql', 'templates/editor.php', 'assets/dist/admin/content.js', 'assets/dist/admin/reports.js', 'assets/admin/reports.css', 'assets/dist/poc/index.html', 'assets/dist/reader/reader.js', 'assets/dist/reader/reader.css', 'assets/dist/editor/editor.js', 'assets/dist/editor/editor.css']
 for name in required:
     if not (plugin / name).is_file():
         raise SystemExit(f'Missing build input: {name}; build Composer and the frontend first.')
 
 # Explicit inputs keep credentials, uploads, tests and development dependencies out.
 files = {}
-for name in ['manga-overlay-core.php', 'composer.json', 'src', 'database', 'vendor', 'templates', 'assets/dist/poc', 'assets/dist/reader', 'assets/dist/editor', 'assets/admin']:
+for name in ['manga-overlay-core.php', 'composer.json', 'src', 'database', 'vendor', 'templates', 'assets/dist/poc', 'assets/dist/reader', 'assets/dist/editor', 'assets/dist/admin', 'assets/admin']:
     source = plugin / name
     for path in sorted(source.rglob('*')) if source.is_dir() else [source]:
         if path.is_file():

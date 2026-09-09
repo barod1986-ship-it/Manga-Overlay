@@ -33,7 +33,7 @@ final class ContentScreen
 		}
 		$url = plugin_dir_url(dirname(__DIR__, 2) . '/manga-overlay-core.php');
 		wp_enqueue_style('mol-content-admin', $url . 'assets/admin/content.css', [], \MOL\Plugin::VERSION);
-		wp_enqueue_script_module('mol-content-admin', $url . 'assets/admin/content.mjs', [], \MOL\Plugin::VERSION);
+		wp_enqueue_script_module('mol-content-admin', $url . 'assets/dist/admin/content.js', [], \MOL\Plugin::VERSION);
 	}
 
 	public function render(): void
@@ -62,7 +62,7 @@ final class ContentScreen
 			<header class="mol-admin-header"><div><p class="mol-eyebrow">MANGA OVERLAY</p><h1>الفصول والصفحات</h1><p>أضف الفصول، وارفع صورها، ورتّب صفحات القراءة.</p></div>
 				<?php if ($manage) : ?><a class="button" href="<?php echo esc_url(admin_url('edit.php?post_type=mol_work')); ?>">إدارة الأعمال</a><?php endif; ?>
 			</header>
-			<div id="mol-notice" role="status" aria-live="polite"></div>
+			<div id="mol-notice" role="status" aria-live="polite">جارٍ تحميل أدوات الإدارة. إذا استمرت هذه الرسالة، أعد تحميل الصفحة وتحقق من تحميل ملفات الواجهة.</div>
 			<div class="mol-selectors">
 				<label>العمل<select id="mol-work"><?php foreach ($works as $work) : ?><option value="<?php echo (int) $work->ID; ?>" <?php selected($work_id, $work->ID); ?>><?php echo esc_html($work->post_title); ?></option><?php endforeach; ?></select></label>
 				<label>الفصل<select id="mol-chapter"><option value="">اختر فصلًا</option></select></label>
@@ -74,7 +74,7 @@ final class ContentScreen
 				<section class="mol-panel" id="mol-chapter-panel">
 					<h2>بيانات الفصل</h2>
 					<form id="mol-chapter-form">
-						<fieldset <?php disabled(!$manage); ?>>
+						<fieldset disabled>
 							<label>تسمية الفصل<input name="chapter_label" maxlength="64" required placeholder="مثال: 10.5 أو فصل خاص"></label>
 							<label>العنوان <span>(اختياري)</span><input name="title" maxlength="255"></label>
 							<div class="mol-fields-row"><label>ترتيب الفصل<input name="sort_order" type="number" step="0.0001" value="0"></label>
@@ -84,7 +84,7 @@ final class ContentScreen
 								<label>اتجاه القراءة<select name="direction_override"><option value="">إعداد العمل</option><option value="rtl">من اليمين إلى اليسار</option><option value="ltr">من اليسار إلى اليمين</option></select></label></div>
 							<label class="mol-checkbox"><input name="is_published" type="checkbox">نشر الفصل للقراء</label>
 						</fieldset>
-						<?php if ($manage) : ?><div class="mol-actions"><button class="button button-primary" type="submit" id="mol-save-chapter">حفظ الفصل</button><button class="button mol-danger" type="button" id="mol-delete-chapter" disabled>حذف الفصل</button></div><?php endif; ?>
+						<?php if ($manage) : ?><div class="mol-actions"><button class="button button-primary" type="submit" id="mol-save-chapter" disabled>حفظ الفصل</button><button class="button mol-danger" type="button" id="mol-delete-chapter" disabled>حذف الفصل</button></div><?php endif; ?>
 					</form>
 					<?php if ($review) : ?><div class="mol-actions mol-review"><button type="button" class="button" data-review="needs_review">يحتاج مراجعة</button><button type="button" class="button" data-review="completed">اعتماد الترجمة</button></div><?php endif; ?>
 				</section>
