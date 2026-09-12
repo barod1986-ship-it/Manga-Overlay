@@ -72,15 +72,18 @@ test('browser blocks injected inline scripts, handlers, external scripts and eva
     Object.assign(button.style, { position: 'fixed', left: '8px', bottom: '8px', zIndex: '2147483647' });
     button.setAttribute('onclick', "document.documentElement.dataset.molHandler = 'executed'");
     document.body.append(button);
-    // Run eval from a genuinely executed, authorized script. DevTools evaluation
-    // alone may bypass CSP and would not establish enforcement in page scripts.
-    const trusted = document.createElement('script');
-    trusted.nonce = (document.getElementById('mol-csp-inline-fixture') as HTMLScriptElement).nonce;
-    trusted.textContent = "try { new Function(\"document.documentElement.dataset.molEval = 'executed'\")(); } catch (error) { document.documentElement.dataset.molEval = error.name; }";
-    document.body.append(trusted);
+    const evalButton = document.createElement('button');
+    evalButton.textContent = 'CSP eval probe';
+    evalButton.dataset.molEvalProbe = 'true';
+    Object.assign(evalButton.style, { position: 'fixed', right: '8px', bottom: '8px', zIndex: '2147483647' });
+    document.body.append(evalButton);
   });
   await page.getByRole('button', { name: 'CSP handler probe', exact: true }).click();
+  // The handler was compiled by WordPress in the real response, outside the
+  // privileged DevTools evaluation stack used to prepare the synthetic nodes.
+  await page.getByRole('button', { name: 'CSP eval probe', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-mol-eval', 'EvalError');
+  await expect.poll(async () => (await page.locator('html').getAttribute('data-mol-blocked'))?.trim().split(/\s+/)).toContain('script-src');
   await expect(page.locator('html')).toHaveAttribute('data-mol-blocked', /script-src-elem/);
   await expect(page.locator('html')).toHaveAttribute('data-mol-blocked', /script-src-attr/);
   await expect(page.locator('html')).not.toHaveAttribute('data-mol-injected');
