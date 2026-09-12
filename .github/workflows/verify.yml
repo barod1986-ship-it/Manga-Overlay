@@ -93,6 +93,7 @@ jobs:
           wp rewrite structure '/%postname%/' --path="$MOL_WP_ROOT"
           mkdir -p "$MOL_WP_ROOT/wp-content/mu-plugins"
           cp "$GITHUB_WORKSPACE/tests/wordpress/hold-deletion.php" "$MOL_WP_ROOT/wp-content/mu-plugins/hold-deletion.php"
+          cp "$GITHUB_WORKSPACE/tests/wordpress/security-fixture.php" "$MOL_WP_ROOT/wp-content/mu-plugins/security-fixture.php"
       - uses: actions/download-artifact@v4
         with:
           name: mol-frontend

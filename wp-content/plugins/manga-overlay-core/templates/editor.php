@@ -11,5 +11,5 @@ if (!$mol_editor_context || !current_user_can('mol_use_editor')) {
 <body <?php body_class('mol-editing'); ?>><?php wp_body_open(); ?>
 <div id="mol-editor-root"><p role="status">جارٍ فتح مساحة الترجمة…</p></div>
 <noscript><p>فعّل JavaScript لعرض مساحة الترجمة.</p><a href="<?php echo esc_url($mol_editor_context['backUrl']); ?>"><?php echo esc_html($mol_editor_context['backLabel']); ?></a></noscript>
-<script type="application/json" id="mol-editor-data"><?php echo wp_json_encode($mol_editor_context, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
+<?php wp_print_inline_script_tag(wp_json_encode($mol_editor_context, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), ['type' => 'application/json', 'id' => 'mol-editor-data']); ?>
 <?php wp_footer(); ?></body></html>

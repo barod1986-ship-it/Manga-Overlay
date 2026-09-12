@@ -5,6 +5,7 @@ namespace MOL\Frontend;
 
 use MOL\Database\ChapterRepository;
 use MOL\Domain\Fault;
+use MOL\Security\EditorPolicy;
 
 /** The plugin owns the editor shell; chapter content is loaded through authenticated REST. */
 final class EditorSite
@@ -44,7 +45,7 @@ final class EditorSite
 	public static function resolve(): void
 	{
 		nocache_headers();
-		header('X-Content-Type-Options: nosniff');
+		EditorPolicy::apply();
 		try {
 			self::$context = self::context((string) get_query_var('name'), (string) get_query_var('mol_chapter_slug'));
 			global $wp_query;
