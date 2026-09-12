@@ -1,0 +1,31 @@
+{
+  "name": "manga-overlay",
+  "version": "0.11.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "wp-content/plugins/manga-overlay-core"
+  ],
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=@mol/core --",
+    "build": "npm run build --workspace=@mol/core && node scripts/make-file-preview.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "check:spec": "python scripts/check-spec.py",
+    "generate:types": "npm run check:spec && openapi-typescript docs/spec-v1.1.3/API.openapi.yaml -o wp-content/plugins/manga-overlay-core/editor-src/generated/api.d.ts",
+    "check": "npm run check:spec && npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "vite": "8.2.2"
+  }
+}

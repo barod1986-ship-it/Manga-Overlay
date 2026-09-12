@@ -1,0 +1,2 @@
+# Frozen source files must retain the bytes recorded in their SHA256 manifest.
+docs/spec-v1.1.3/** -text

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1800" viewBox="0 0 1200 1800">
+  <title>Original geometric test illustration for Manga Overlay</title>
+  <desc>Purpose-built engineering fixture. No published comic artwork or production content.</desc>
+  <defs>
+    <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 8L8 0" stroke="#878787" stroke-width="1"/></pattern>
+    <pattern id="windows" width="45" height="65" patternUnits="userSpaceOnUse"><rect x="10" y="12" width="20" height="35" fill="#eee" stroke="#333" stroke-width="3"/></pattern>
+    <clipPath id="top"><rect x="45" y="45" width="1110" height="690"/></clipPath>
+    <clipPath id="bottom"><rect x="45" y="775" width="1110" height="980"/></clipPath>
+  </defs>
+  <rect width="1200" height="1800" fill="#fffdf8"/>
+  <g clip-path="url(#top)" stroke="#252525" stroke-width="5">
+    <rect x="45" y="45" width="1110" height="690" fill="#f1f0eb"/>
+    <path d="M0 200L420 400L850 300L1200 400V750H0Z" fill="#d0d0cb" stroke="none"/>
+    <path d="M-30 240L230 350L230 740H-30Z" fill="url(#windows)"/>
+    <path d="M-30 240L-30 180L230 300V350Z" fill="#383838"/>
+    <path d="M320 410L470 450V740H320Z" fill="#e8e7e1"/>
+    <path d="M350 445L390 460V520L350 505ZM415 470L450 480V535L415 525Z" fill="#646464"/>
+    <path d="M990 350L1200 260V745H990Z" fill="url(#windows)"/>
+    <path d="M550 485L250 735M640 485L1100 735M580 485L540 735" fill="none"/>
+    <path d="M500 540H700M465 565H750M420 600H815M360 650H910M305 700H1010" fill="none" stroke-width="3"/>
+    <path d="M270 200V610M255 220H660M270 200L850 40" fill="none" stroke-width="7"/>
+    <path d="M45 80Q550 400 1155 110M45 135Q550 455 1155 160" fill="none" stroke-width="2"/>
+    <ellipse cx="890" cy="245" rx="156" ry="93" fill="#fff" stroke-width="3"/>
+    <path d="M823 322L760 384L855 330" fill="#fff" stroke-width="3"/>
+    <rect x="98" y="592" width="594" height="118" fill="#fff" stroke-width="3"/>
+  </g>
+  <g clip-path="url(#bottom)" stroke="#252525" stroke-width="5">
+    <rect x="45" y="775" width="1110" height="980" fill="#f5f3ed"/>
+    <path d="M40 780L545 1220L-50 1590ZM1170 780L620 1240L1320 1600Z" fill="url(#hatch)"/>
+    <path d="M210 780L558 1205M280 780L565 1190M990 790L630 1220M1120 895L655 1250" fill="none" stroke-width="2"/>
+    <path d="M400 790L530 1090L600 1180L700 1080L855 790" fill="#dddcd6"/>
+    <path d="M0 1770L557 1240L639 1240L1250 1770" fill="#e8e7e1"/>
+    <path d="M510 1278H684M465 1320H735M385 1390H815M270 1490H925M135 1610H1070" fill="none"/>
+    <path d="M455 1260L170 1755M710 1260L1110 1755" fill="none" stroke-width="9"/>
+    <path d="M460 1260V1340M360 1430V1560M240 1630V1750M712 1270V1350M840 1450V1580M996 1660V1750" fill="none"/>
+    <path d="M880 930L920 1130M1040 980L960 1140M1090 1160L980 1170" fill="none" stroke-width="14"/>
+    <rect x="113" y="1430" width="645" height="133" fill="#fffdf8" stroke="none"/>
+  </g>
+  <g fill="none" stroke="#222" stroke-width="7"><rect x="45" y="45" width="1110" height="690"/><rect x="45" y="775" width="1110" height="980"/></g>
+  <g fill="#444" text-anchor="middle" font-family="sans-serif" font-size="26"><text x="890" y="244">WHY ARE YOU HERE?</text><text x="392" y="655">A QUIET MORNING.</text></g>
+  <text x="118" y="1785" fill="#666" font-family="sans-serif" font-size="15">MOL / ORIGINAL GEOMETRY FIXTURE / T-01–T-02</text>
+</svg>

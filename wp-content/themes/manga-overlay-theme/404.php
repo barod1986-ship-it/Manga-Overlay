@@ -1,0 +1,1 @@
+<?php get_header(); ?><main id="mol-main" class="mol-site-main"><h1>الصفحة غير متاحة</h1><p>قد يكون الرابط غير صحيح أو المحتوى غير متاح للقراءة.</p><a class="mol-button" href="<?php echo esc_url(home_url('/library/')); ?>">العودة إلى المكتبة</a></main><?php get_footer(); ?>

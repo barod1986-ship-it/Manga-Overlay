@@ -1,0 +1,208 @@
+{
+  "ChapterCreate": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "work_id",
+      "chapter_label"
+    ],
+    "properties": {
+      "work_id": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "chapter_label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "sort_order": {
+        "type": "number",
+        "default": 0
+      },
+      "title": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 255
+      },
+      "translation_status": {
+        "type": "string",
+        "enum": [
+          "untranslated",
+          "in_progress",
+          "completed",
+          "needs_review"
+        ],
+        "default": "untranslated"
+      },
+      "source_lang_override": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 255
+      },
+      "reader_mode_override": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "webtoon",
+          "paged",
+          null
+        ]
+      },
+      "direction_override": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "rtl",
+          "ltr",
+          null
+        ]
+      },
+      "is_published": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "x-generated-fields": [
+      "slug"
+    ],
+    "description": "slug is generated server-side from title when present, otherwise from \"chapter-\" + chapter_label. The server sanitizes it, appends -2/-3/... on collision, and relies on uq_work_slug as the final race-safe guard."
+  },
+  "ChapterPatch": {
+    "type": "object",
+    "additionalProperties": false,
+    "minProperties": 1,
+    "properties": {
+      "chapter_label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "sort_order": {
+        "type": "number"
+      },
+      "title": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 255
+      },
+      "translation_status": {
+        "type": "string",
+        "enum": [
+          "untranslated",
+          "in_progress",
+          "completed",
+          "needs_review"
+        ]
+      },
+      "source_lang_override": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 255
+      },
+      "reader_mode_override": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "webtoon",
+          "paged",
+          null
+        ]
+      },
+      "direction_override": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "rtl",
+          "ltr",
+          null
+        ]
+      },
+      "is_published": {
+        "type": "boolean"
+      }
+    }
+  },
+  "ChapterReviewPatch": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "translation_status"
+    ],
+    "properties": {
+      "translation_status": {
+        "type": "string",
+        "enum": [
+          "needs_review",
+          "completed"
+        ]
+      }
+    }
+  },
+  "PageReorder": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "page_ids"
+    ],
+    "properties": {
+      "page_ids": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  },
+  "ReadingProgressUpdate": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "chapter_id",
+      "page_index",
+      "progress_unit",
+      "reader_mode"
+    ],
+    "properties": {
+      "chapter_id": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "page_index": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "progress_unit": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000
+      },
+      "reader_mode": {
+        "type": "string",
+        "enum": [
+          "webtoon",
+          "paged"
+        ]
+      }
+    }
+  }
+}

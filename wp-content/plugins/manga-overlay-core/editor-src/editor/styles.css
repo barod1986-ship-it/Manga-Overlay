@@ -1,0 +1,92 @@
+body.mol-editing { margin:0; background:#161d19; color:#eef0e8; overflow:hidden; }
+.mol-editor { --mol-editor-line:#3e4a40; --mol-editor-muted:#bbc5b9; font-family:'Noto Sans Arabic Variable',Tahoma,sans-serif; height:100dvh; display:flex; flex-direction:column; font-size:13px; line-height:1.6; }
+.mol-editor *, .mol-editor *::before, .mol-editor *::after { box-sizing:border-box; }
+.mol-editor [hidden] { display:none !important; }
+.mol-editor button,.mol-editor select,.mol-editor textarea { font:inherit; color:inherit; background:#28372c; border:1px solid #687861; border-radius:3px; }
+.mol-editor button,.mol-editor select,.mol-editor a { min-height:44px; }
+.mol-editor button { cursor:pointer; padding:8px 14px; }
+.mol-editor button:disabled,.mol-editor select:disabled { opacity:.45; cursor:default; }
+.mol-editor button[aria-pressed=true] { background:#c4d5b8; color:#1b2b20; }
+.mol-editor a { color:#d1e3c4; display:inline-flex; align-items:center; text-decoration:underline; text-underline-offset:4px; }
+.mol-editor :focus-visible { outline:2px solid #e6c584; outline-offset:3px; }
+.mol-editor h1,.mol-editor h2,.mol-editor p { margin:0; }
+.mol-editor h1 { font-size:18px; font-weight:650; line-height:1.5; }
+.mol-editor h2 { font-size:14px; }
+.mol-editor-header { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:4px 28px; padding:12px 22px 8px; border-block-end:1px solid var(--mol-editor-line); }
+.mol-editor-title { min-width:0; }.mol-editor-title p { font-size:11px; color:var(--mol-editor-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mol-editor-save-state { grid-column:1/-1; color:#ddc891; font-size:11px; }
+.mol-editor-controls { display:flex; gap:14px; align-items:center; padding:10px 22px; background:#202b23; border-block-end:1px solid var(--mol-editor-line); flex-wrap:wrap; }
+.mol-editor-page-controls,.mol-editor-zoom { display:flex; align-items:center; gap:6px; }
+.mol-editor-page-controls label { display:flex; align-items:center; gap:10px; }.mol-editor-page-controls select { padding:7px; min-width:100px; }
+.mol-editor-zoom { margin-inline-start:auto; }.mol-editor-zoom button { min-width:44px; padding-inline:10px; }
+.mol-editor-workspace { flex:1; min-height:0; display:grid; grid-template-columns:270px minmax(0,1fr) 220px; overflow:hidden; }
+.mol-editor-properties,.mol-editor-layers { background:#202b23; padding:18px; overflow:auto; }
+.mol-editor-properties { border-inline-end:1px solid var(--mol-editor-line); }.mol-editor-layers { border-inline-start:1px solid var(--mol-editor-line); }
+.mol-editor-panel-title { display:flex; gap:10px; align-items:center; justify-content:space-between; margin-block-end:18px; }
+.mol-editor-muted { color:var(--mol-editor-muted); line-height:1.9; }.mol-editor-type { color:#d8c794; margin-block-end:12px !important; }
+.mol-editor-properties label { display:grid; gap:8px; }.mol-editor textarea { margin-block-start:8px; width:100%; resize:vertical; min-height:120px; padding:12px; background:#152018; }
+.mol-editor details { border-block-start:1px solid var(--mol-editor-line); margin-block-start:16px; }.mol-editor summary { cursor:pointer; min-height:44px; padding-block:12px; }
+.mol-editor dl { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px; }.mol-editor dt { color:var(--mol-editor-muted); }.mol-editor dd { margin:0; overflow-wrap:anywhere; }
+.mol-editor-layers details { margin:0; border:0; }.mol-editor-layers summary span { margin-inline-start:10px; color:var(--mol-editor-muted); }
+.mol-editor-layers ol { padding:0; list-style:none; margin:8px 0; }.mol-editor-layers li+li { border-block-start:1px solid var(--mol-editor-line); }
+.mol-editor-layers li button { width:100%; display:grid; text-align:start; gap:4px; border:0; border-radius:0; background:transparent; padding:12px 8px; }
+.mol-editor-layers li strong { font-size:11px; font-weight:500; }.mol-editor-layers li span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mol-editor-page-area { min-width:0; min-height:0; display:flex; flex-direction:column; }.mol-editor-viewport { flex:1; overflow:auto; direction:ltr; padding:16px; overscroll-behavior:contain; touch-action:pan-x pan-y pinch-zoom; }
+.mol-editor-stage-wrap { margin-inline:auto; }.mol-editor-page-caption { display:flex; justify-content:space-between; direction:rtl; padding-block-end:12px; color:var(--mol-editor-muted); font-size:11px; }
+.mol-editor-stage { position:relative; isolation:isolate; background:white; }.mol-editor .mol-page-image { display:block; width:100%; height:100%; user-select:none; }.mol-editor .mol-overlay-layer { position:absolute; inset:0; pointer-events:none; }
+.mol-editor .mol-element { position:absolute; transform-origin:center center; }.mol-editor .mol-element-editable { pointer-events:auto; cursor:pointer; }.mol-editor .mol-element-selected { outline:2px solid #4da9ca; outline-offset:3px; }
+.mol-editor .mol-shape { position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; }.mol-editor .mol-element-text { position:absolute; inset:0; display:flex; align-items:safe center; justify-content:center; white-space:pre-wrap; overflow-wrap:anywhere; word-break:normal; pointer-events:none; box-sizing:border-box; }.mol-editor .mol-element-text span { width:100%; }
+.mol-editor-message { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:32px 20px; text-align:center; }.mol-editor-message p { max-width:540px; }.mol-editor-bottom { border-block-start:1px solid var(--mol-editor-line); padding:8px 22px; display:flex; align-items:center; gap:8px; background:#202b23; color:var(--mol-editor-muted); font-size:11px; }
+.mol-editor-mobile { display:none !important; }.mol-editor-preview .mol-editor-workspace { grid-template-columns:minmax(0,1fr); }
+@media(max-width:1100px) { .mol-editor-workspace { grid-template-columns:230px minmax(0,1fr) 180px; }.mol-editor-properties,.mol-editor-layers { padding:12px; } }
+@media(max-width:800px) {
+  .mol-editor-header { padding:8px 12px; gap:4px 10px; }.mol-editor-header>a { font-size:11px; max-width:78px; }.mol-editor h1 { font-size:14px; }.mol-editor-title p { font-size:10px; }.mol-editor-save-state { font-size:10px; }
+  .mol-editor-controls { gap:8px; padding:8px 12px; }.mol-editor-page-controls { width:100%; justify-content:space-between; }.mol-editor-page-controls label { flex:none; }.mol-editor-page-controls select { flex:1; min-width:0; font-size:16px; }
+  .mol-editor-workspace { grid-template-columns:minmax(0,1fr); }.mol-editor-properties,.mol-editor-layers { display:none; }
+  .mol-editor-open-properties .mol-editor-properties,.mol-editor-open-layers .mol-editor-layers { display:block; position:fixed; inset-inline:0; inset-block-end:var(--mol-toolbar-height,112px); height:calc(var(--mol-visual-height,100dvh) * .45); max-height:calc(var(--mol-visual-height,100dvh) - var(--mol-toolbar-height,112px) - 8px); z-index:20000; padding:16px; border-block-start:2px solid #83947b; }
+  .mol-editor-properties textarea { font-size:16px; }.mol-editor-bottom { min-height:62px; padding:8px 12px max(8px,env(safe-area-inset-bottom)); }.mol-editor-bottom>span { margin-inline-end:auto; font-size:10px; max-width:130px; }
+  .mol-editor-mobile { display:inline-flex !important; align-items:center; justify-content:center; }.mol-editor-panel-title { margin-block-end:10px; }
+}
+/* Connected editing controls; geometry always uses the actual image content box. */
+.mol-editor input { font:inherit; color:inherit; background:#152018; border:1px solid #687861; border-radius:3px; min-height:44px; padding:7px; min-width:0; width:100%; }
+.mol-editor fieldset { border:0; padding:0; margin:0; min-width:0; }
+.mol-editor fieldset:disabled { opacity:.65; }
+.mol-editor-fields { display:grid; gap:12px; padding-block:4px 12px; }
+.mol-editor-field { min-width:0; display:grid; gap:5px; }.mol-editor-field select { min-width:0; max-width:100%; padding:6px; }
+.mol-editor-check { display:flex; gap:8px; align-items:center; }.mol-editor-check input { width:22px; min-height:22px; flex:none; }.mol-editor-check label { min-height:44px; align-content:center; }
+.mol-editor-transform-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }.mol-editor-steps { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:5px; }.mol-editor-steps button { flex:1; min-width:44px; padding:7px; }
+.mol-editor-actions { display:flex; flex-wrap:wrap; gap:8px; margin-block:16px; }.mol-editor-actions button { flex:1; }
+.mol-editor-bottom { flex-wrap:wrap; gap:6px; }.mol-editor-tools,.mol-editor-panel-buttons { display:flex; gap:6px; }.mol-editor-panel-buttons { margin-inline-start:auto; }
+.mol-editor .moveable-control-box { z-index:20000 !important; }.mol-editor .moveable-control { width:14px; height:14px; margin-left:-7px; margin-top:-7px; }
+.mol-editor .moveable-control::before { content:''; position:absolute; width:44px; height:44px; left:50%; top:50%; transform:translate(-50%,-50%); }
+.mol-editor-transforming .mol-element-selected,.mol-editor-transforming .moveable-control { touch-action:none; }
+.mol-editor-transforming .mol-element-selected { cursor:move; }
+@media(max-width:800px) {
+  .mol-editor-tools { width:100%; overflow-x:auto; }.mol-editor-tools button { flex:1; padding:7px; white-space:nowrap; }
+  .mol-editor-bottom { flex:none; min-height:112px; }.mol-editor-panel-buttons { width:100%; justify-content:flex-end; }
+  .mol-editor-open-properties .mol-editor-sheet-expanded { height:calc(var(--mol-visual-height,100dvh) * .85); }
+  .mol-editor-properties input,.mol-editor-properties select { font-size:16px; }.mol-editor-panel-title { position:sticky; top:-16px; background:#202b23; z-index:1; padding-block:8px; }
+}
+
+.mol-editor-recovery{padding:12px 20px;background:#40282a;color:#fff;border-block-end:1px solid #ba6970}.mol-editor-recovery button{margin:4px}.mol-editor-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mol-editor-comparison pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;font-size:12px;direction:ltr}.mol-editor-comparison h2{font-size:16px}.mol-editor-comparison p{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:600px){.mol-editor-comparison{grid-template-columns:1fr}}
+
+.mol-editor-presets { border-block:1px solid var(--mol-editor-line,#c9cfc5); padding-block:12px; margin-block:12px; }
+.mol-editor-presets h3 { font-size:14px; margin:0 0 8px; }.mol-editor-presets label { display:grid; gap:5px; margin-block:8px; }.mol-editor-presets button { margin-block:4px; max-width:100%; }.mol-editor-presets .mol-editor-check { display:flex; align-items:center; }.mol-editor-presets input:not([type=checkbox]),.mol-editor-presets select { width:100%; min-width:0; }
+.mol-editor-presets fieldset { min-width:0; }.mol-editor .moveable-guideline { --moveable-color:#b45309; }
+
+/* Touch arbitration is confined to the page viewport; sheets retain native scrolling. */
+.mol-editor-touch-stage { touch-action:none; }
+.mol-editor-touch-help { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+@media(max-width:800px) {
+  .mol-editor { position:fixed; inset-inline:0; top:var(--mol-visual-top,0px); height:var(--mol-visual-height,100dvh); }
+  .mol-editor-header,.mol-editor-controls { flex:none; }
+  .mol-editor-open-properties .mol-editor-properties,.mol-editor-open-layers .mol-editor-layers { position:absolute; overscroll-behavior:contain; scroll-padding-block:80px 16px; }
+  .mol-editor-properties textarea { min-height:88px; height:110px; max-height:30vh; resize:vertical; }
+  .mol-editor-properties .mol-editor-panel-title { gap:6px; }
+  .mol-editor-properties .mol-editor-panel-title h2 { font-size:12px; }
+  .mol-editor-properties .mol-editor-panel-title button { min-width:44px; padding-inline:8px; font-size:12px; }
+  .mol-editor .moveable-control { width:20px; height:20px; margin-left:-10px; margin-top:-10px; border-width:2px; }
+  .mol-editor .moveable-rotation-control { background:#efc875; border-color:#493917; }
+  .mol-editor .moveable-rotation-line { height:36px; }
+  .mol-editor-panel-buttons { align-items:center; }
+}

@@ -1,0 +1,16 @@
+node_modules/
+build/
+**/assets/dist/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+vendor/
+__pycache__/
+.venv/
+.DS_Store
+wp-config.php
+wp-content/uploads/
+
+DELIVERY_SHA256SUMS.txt
