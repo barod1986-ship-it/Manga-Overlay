@@ -158,3 +158,14 @@ References: [Cloudflare compression and no-transform](https://developers.cloudfl
 The WordPress browser suite checks real header/nonce freshness, trusted inline script initialization, blocked inline scripts/handlers/external scripts/eval, and same-origin versus cross-origin framing with only the legacy X-Frame-Options header removed in the test response. The fixture is installed solely into disposable CI, guarded by the local environment and MOL_TEST_ENV, and is excluded from the package. Existing save/reload, gesture and permission tests run under the policy. After installation on managed hosting, verify the browser assets and normal save flow before claiming live acceptance; CDN-added scripts or another stricter site policy may need integration work.
 
 References: [WordPress script attribute filters](https://make.wordpress.org/core/2021/02/23/introducing-script-attributes-related-functions-in-wordpress-5-7/), [WordPress import maps](https://developer.wordpress.org/reference/classes/wp_script_modules/print_import_map/), [CSP script sources](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/script-src), [frame-ancestors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors).
+
+
+The exact Core 0.11.0 ZIP from [Actions #42](https://github.com/barod1986-ship-it/Manga-Overlay/actions/runs/34716796219), code head `62ceac2`, was installed on the target site on 2026-09-12. The header probe, editor assets, Arabic autosave acknowledgement, persistence after reload, preview and translation toggle passed. See the verification record for hashes and the distinction between CI enforcement tests and live compatibility checks.
+
+For a repeatable read-only staging header check, copy `scripts/deployment/editor-policy-smoke.php` outside the web root and run:
+
+```bash
+php8.4 /usr/local/bin/wp eval-file /private/path/editor-policy-smoke.php EDITOR_LOGIN '/series/WORK/chapter/CHAPTER/edit/'
+```
+
+Use an existing authorized editor and an actual route. The probe checks an anonymous redirect, two authenticated documents with distinct CSP nonces, bootstrap/policy agreement, security/cache headers and this deployment's public-library scope. It normalizes repeated WordPress HTTP header values, verifies HTTPS normally, prints no response bodies or credentials, and destroys its own temporary five-minute session in `finally`. Remove the server copy afterwards. This is a manual document check, not a substitute for browser enforcement, physical-device or performance acceptance.
